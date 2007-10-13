@@ -56,6 +56,8 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.cellViewTab.cellView.set(self.glyphs)
         self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
 
+        self.setUpBaseWindowBehavior()
+
         self.w.open()
 
     # window

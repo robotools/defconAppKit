@@ -1,8 +1,39 @@
+from AppKit import NSColor
 import vanilla
 import vanilla.dialogs
 from defconAppKit.windows.progressWindow import ProgressWindow
 
 class BaseWindowController(object):
+
+    def setUpBaseWindowBehavior(self):
+        self.w.bind("close", self.windowCloseCallback)
+        if isinstance(self.w, vanilla.Sheet):
+            self.w.bind("became key", self.windowSelectCallback)
+            self.w.bind("resigned key", self.windowDeselectCallback)
+        else:
+            self.w.bind("became main", self.windowSelectCallback)
+            self.w.bind("resigned main", self.windowDeselectCallback)
+
+    def windowCloseCallback(self, sender):
+        self.w.unbind("close", self.windowCloseCallback)
+        if isinstance(self.w, vanilla.Sheet):
+            self.w.unbind("became key", self.windowSelectCallback)
+            self.w.unbind("resigned key", self.windowDeselectCallback)
+        else:
+            self.w.unbind("became main", self.windowSelectCallback)
+            self.w.unbind("resigned main", self.windowDeselectCallback)
+
+    def windowSelectCallback(self, sender):
+        nsWindow = self.w.getNSWindow()
+        color = NSColor.colorWithCalibratedRed_green_blue_alpha_(.84, .84, .84, 1.0)
+        nsWindow.setBackgroundColor_(color)
+        nsWindow.contentView().setNeedsDisplay_(True)
+
+    def windowDeselectCallback(self, sender):
+        nsWindow = self.w.getNSWindow()
+        if nsWindow is not None:
+            nsWindow.setBackgroundColor_(None)
+            nsWindow.contentView().setNeedsDisplay_(True)
 
     def startProgress(self, text="", tickCount=None):
         return ProgressWindow(text, tickCount, self.w)
