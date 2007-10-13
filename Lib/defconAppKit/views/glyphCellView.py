@@ -272,9 +272,11 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._mouseSelection(event, mouseDown=True)
         if event.clickCount() > 1:
             self.vanillaWrapper()._doubleClick()
+        self.autoscroll_(event)
 
     def mouseDragged_(self, event):
         self._mouseSelection(event)
+        self.autoscroll_(event)
 
     def mouseUp_(self, event):
         if self._selection != self._oldSelection:
