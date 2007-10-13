@@ -23,7 +23,7 @@ class ProgressWindow(object):
         self.w.close()
 
     def update(self, text=None):
-        self.w.progressBar.increment()
+        self.w.progress.increment()
         if text is not None:
-            self.w.textBox.set(text)
-        self.w.textBox._nsObject.display()
+            self.w.text.set(text)
+        self.w.text._nsObject.display()

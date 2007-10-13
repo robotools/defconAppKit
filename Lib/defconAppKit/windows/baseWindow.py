@@ -1,7 +1,8 @@
 import vanilla
 import vanilla.dialogs
+from defconAppKit.windows.progressWindow import ProgressWindow
 
-class BaseWindow(object):
+class BaseWindowController(object):
 
     def startProgress(self, text="", tickCount=None):
         return ProgressWindow(text, tickCount, self.w)
@@ -20,6 +21,7 @@ class BaseWindow(object):
         if accessoryView is not None:
             w, h = accessoryView._posSize[2:]
             accessoryView._nsObject.setFrame_(((0, 0), (w, h)))
+            accessoryView = accessoryView._nsObject
         vanilla.dialogs.putFile(fileTypes=fileTypes,
-            parentWindow=self.w.getNSWindow(), resultCallback=callback, accessoryView=accessoryView._nsObject)
+            parentWindow=self.w.getNSWindow(), resultCallback=callback, accessoryView=accessoryView)
 

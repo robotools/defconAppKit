@@ -1,7 +1,9 @@
+import time
 from PyObjCTools import NibClassBuilder, AppHelper
 from AppKit import *
 import vanilla
 from defcon import Font
+from defconAppKit.windows.baseWindow import BaseWindowController
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
 from defconAppKit.views.cellView import GlyphCellView
@@ -24,16 +26,23 @@ class DefconAppKitTestDocument(NSDocument):
         return True
 
 
-class DefconAppKitTestDocumentWindow(object):
+class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     def __init__(self, font):
         self.font = font
         self.glyphs = [font[k] for k in sorted(font.keys())]
-        self.w = vanilla.Window((500, 500), minSize=(300, 100))
+        self.w = vanilla.Window((500, 500), minSize=(400, 400))
 
         self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView"])
         self.windowTab = self.w.tabs[0]
         self.cellViewTab = self.w.tabs[1]
+
+        self.windowTab.messageButton = vanilla.Button((10, 10, 200, 20), "Show Message", callback=self.windowMessage)
+        self.windowTab.progress1Button = vanilla.Button((10, 40, 200, 20), "Show Progress 1", callback=self.windowProgress1)
+        self.windowTab.progress2Button = vanilla.Button((10, 70, 200, 20), "Show Progress 2", callback=self.windowProgress2)
+        self.windowTab.askYesNoButton = vanilla.Button((10, 100, 200, 20), "Show Ask Yes No", callback=self.windowAskYesNo)
+        self.windowTab.putFileButton = vanilla.Button((10, 130, 200, 20), "Show Put File", callback=self.windowPutFile)
+        self.windowTab.getFileButton = vanilla.Button((10, 160, 200, 20), "Show Get File", callback=self.windowGetFile)
 
         # test automatic updating
         self.cellViewTab.cellViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.cellViewModify)
@@ -48,6 +57,42 @@ class DefconAppKitTestDocumentWindow(object):
         self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
 
         self.w.open()
+
+    # window
+
+    def windowMessage(self, sender):
+        self.showMessage("Message text.", "Informative text.")
+
+    def windowProgress1(self, sender):
+        progress = self.startProgress("Progress", 30)
+        for i in xrange(30):
+            progress.update("Progress: %d" % (i + 1))
+            time.sleep(.1)
+        progress.close()
+
+    def windowProgress2(self, sender):
+        progress = self.startProgress("Progress")
+        for i in xrange(30):
+            time.sleep(.1)
+        progress.close()
+
+    def windowAskYesNo(self, sender):
+        self.showAskYesNo("Message text.", "Informative text.", self._windowAskYesNoResult)
+
+    def _windowAskYesNoResult(self, result):
+        print "Ask Yes No:", result
+
+    def windowPutFile(self, sender):
+        self.showPutFile(["txt"], self._windowPutFileResult)
+
+    def _windowPutFileResult(self, result):
+        print "Put File:", result
+
+    def windowGetFile(self, sender):
+        self.showGetFile(["ufo"], self._windowGetFileResult)
+
+    def _windowGetFileResult(self, result):
+        print "Get File:", result
 
     # cell view
 
