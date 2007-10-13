@@ -659,7 +659,7 @@ class GlyphCellView(vanilla.ScrollView):
     def setSelection(self, selection):
         self._glyphCellView.setSelection_(selection)
 
-    def setRepresentationArguments(self, **kwargs):
+    def setCellRepresentationArguments(self, **kwargs):
         self._glyphCellView.setCellRepresentationArguments_(**kwargs)
 
     def getCellRepresentationArguments(self):

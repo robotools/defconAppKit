@@ -133,7 +133,7 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         if drawHeader:
             height += GlyphCellHeaderHeight
         self.cellViewTab.cellView.setCellSize((width, height))
-        self.cellViewTab.cellView.setRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
+        self.cellViewTab.cellView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
 
 
 if __name__ == "__main__":
