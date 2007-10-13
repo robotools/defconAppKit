@@ -209,6 +209,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             shadow.setShadowColor_(NSColor.blackColor())
             shadow.setShadowBlurRadius_(10.0)
             shadow.set()
+
             point, image = self._getPositionForGlyphDetailMenu()
             image.drawAtPoint_fromRect_operation_fraction_(
                 point, ((0, 0), image.size()), NSCompositeSourceOver, 1.0)
@@ -263,13 +264,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def scrollToCell_(self, index):
         superview = self.superview()
         rect = self._indexToClickRects[index]
-        scrollToY = rect[0][1]
-        (minX, minY), (w, h) = superview.documentVisibleRect()
-        maxY = minY + h
-        if scrollToY < minY or scrollToY > maxY:
-            pt = superview.constrainScrollPoint_((0, scrollToY))
-            superview.scrollToPoint_(pt)
-            superview.superview().reflectScrolledClipView_(superview)
+        self.scrollRectToVisible_(rect)
 
     # mouse
 
