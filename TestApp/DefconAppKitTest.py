@@ -4,6 +4,7 @@ from AppKit import *
 import vanilla
 from defcon import Font
 from defconAppKit.windows.baseWindow import BaseWindowController
+from defconAppKit.windows.progressWindow import ProgressWindow
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
 from defconAppKit.views.glyphCellView import GlyphCellView
@@ -20,9 +21,13 @@ NibClassBuilder.extractClasses("MainMenu")
 class DefconAppKitTestDocument(NSDocument):
 
     def readFromFile_ofType_(self, path, tp):
-        font = Font(path)
-        window = self.vanillaWindowController = DefconAppKitTestDocumentWindow(font)
-        self.addWindowController_(window.w.getNSWindowController())
+        progress = ProgressWindow("Opening...")
+        try:
+            font = Font(path)
+            window = self.vanillaWindowController = DefconAppKitTestDocumentWindow(font)
+            self.addWindowController_(window.w.getNSWindowController())
+        finally:
+            progress.close()
         return True
 
 
@@ -57,6 +62,8 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
 
         self.setUpBaseWindowBehavior()
+
+        self.w.tabs.set(1)
 
         self.w.open()
 

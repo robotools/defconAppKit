@@ -1,7 +1,6 @@
 from AppKit import NSColor
 import vanilla
 import vanilla.dialogs
-from defconAppKit.windows.progressWindow import ProgressWindow
 
 class BaseWindowController(object):
 
@@ -36,6 +35,7 @@ class BaseWindowController(object):
             nsWindow.contentView().setNeedsDisplay_(True)
 
     def startProgress(self, text="", tickCount=None):
+        from defconAppKit.windows.progressWindow import ProgressWindow
         return ProgressWindow(text, tickCount, self.w)
 
     def showMessage(self, messageText, informativeText):

@@ -1,6 +1,7 @@
 import vanilla
+from defconAppKit.windows.baseWindow import BaseWindowController
 
-class ProgressWindow(object):
+class ProgressWindow(BaseWindowController):
 
     def __init__(self, text="", tickCount=None, parentWindow=None):
         if parentWindow is None:
@@ -16,6 +17,7 @@ class ProgressWindow(object):
         self.w.text = vanilla.TextBox((15, 32, -15, 14), text, sizeStyle="small")
         self.w.progress.start()
         self.w.center()
+        self.setUpBaseWindowBehavior()
         self.w.open()
 
     def close(self):
