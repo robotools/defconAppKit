@@ -64,16 +64,18 @@ class DefconAppKitGlyphCellNSView(NSView):
         return dict(self._representationArguments)
 
     def recalculateFrame(self):
-        if not self._glyphs:
-            self.setFrame_(((0, 0), (0, 0)))
-            return
         width, height = self.superview().frame().size
-        columnCount = int(width / self._cellWidth)
-        rowCount = len(self._glyphs) / columnCount
-        if columnCount * rowCount < len(self._glyphs):
-            rowCount += 1
-        newWidth = self._cellWidth * columnCount
-        newHeight = self._cellHeight * rowCount
+        if width == 0 or height == 0:
+            return
+        if self._glyphs:
+            columnCount = int(width / self._cellWidth)
+            rowCount = len(self._glyphs) / columnCount
+            if columnCount * rowCount < len(self._glyphs):
+                rowCount += 1
+            newWidth = self._cellWidth * columnCount
+            newHeight = self._cellHeight * rowCount
+        else:
+            newWidth = newHeight = 0
         if not self.inLiveResize():
             if width > newWidth:
                 newWidth = width
