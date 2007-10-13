@@ -70,24 +70,50 @@ def GlyphCellFactory(glyph, font, width, height, bufferPercent=.2, color=(0, 0, 
     if drawHeader:
         headerRect = ((0, -height+headerHeight), (width, headerHeight))
         headerColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.5, .5, .55, .4)
+        headerShadowColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.25, .25, .3, .5)
 
         paragraph = NSMutableParagraphStyle.alloc().init()
         paragraph.setAlignment_(NSCenterTextAlignment)
         paragraph.setLineBreakMode_(NSLineBreakByTruncatingMiddle)
+        shadow = NSShadow.alloc().init()
+        shadow.setShadowOffset_((1, 1))
+        shadow.setShadowColor_(NSColor.whiteColor())
+        shadow.setShadowBlurRadius_(1.0)
         attributes = {
             NSFontAttributeName : NSFont.systemFontOfSize_(10.0),
-            NSForegroundColorAttributeName : NSColor.colorWithCalibratedWhite_alpha_(0, .6),
-            NSParagraphStyleAttributeName : paragraph
+            NSForegroundColorAttributeName : NSColor.colorWithCalibratedRed_green_blue_alpha_(.12, .12, .17, 1.0),
+            NSParagraphStyleAttributeName : paragraph,
+            NSShadowAttributeName : shadow
         }
         text = NSAttributedString.alloc().initWithString_attributes_(glyph.name, attributes)
 
+        context.saveGraphicsState()
         transform = NSAffineTransform.transform()
         transform.translateXBy_yBy_(0, headerHeight)
         transform.scaleXBy_yBy_(1.0, -1.0)
         transform.concat()
         headerColor.set()
         NSRectFill(headerRect)
+        context.restoreGraphicsState()
+
+        context.saveGraphicsState()
+        shadow = NSShadow.alloc().init()
+        shadow.setShadowOffset_((0, -5))
+        shadow.setShadowColor_(headerShadowColor)
+        shadow.setShadowBlurRadius_(10.0)
+        shadow.set()
+        NSBezierPath.clipRect_(((0, height - headerHeight), (width, headerHeight)))
+        NSColor.whiteColor().set()
+        NSRectFill(((-10, 0), (width + 20, height - headerHeight)))
+        context.restoreGraphicsState()
+
+        context.saveGraphicsState()
+        transform = NSAffineTransform.transform()
+        transform.translateXBy_yBy_(0, headerHeight)
+        transform.scaleXBy_yBy_(1.0, -1.0)
+        transform.concat()
         text.drawInRect_(headerRect)
+        context.restoreGraphicsState()
 
     image.unlockFocus()
 
