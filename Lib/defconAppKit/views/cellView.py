@@ -558,12 +558,13 @@ class GlyphCellView(vanilla.ScrollView):
         self._glyphs = []
 
     def _breakCycles(self):
-        self._glyphCellView.unsubscribeToScrollViewFrameChange_(self._nsObject)
-        del self._glyphCellView.vanillaWrapper
-        del self._glyphCellView
-        del self._selectionCallback
-        del self._doubleClickCallback
-        del self._deleteCallback
+        if hasattr(self, "_glyphCellView"):
+            self._glyphCellView.unsubscribeToScrollViewFrameChange_(self._nsObject)
+            del self._glyphCellView.vanillaWrapper
+            del self._glyphCellView
+        self._selectionCallback = None
+        self._doubleClickCallback = None
+        self._deleteCallback = None
         super(GlyphCellView, self)._breakCycles()
 
     def _selection(self):
