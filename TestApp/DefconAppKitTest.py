@@ -6,7 +6,7 @@ from defcon import Font
 from defconAppKit.windows.baseWindow import BaseWindowController
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
-from defconAppKit.views.cellView import GlyphCellView
+from defconAppKit.views.glyphCellView import GlyphCellView
 
 registerAllFactories()
 
