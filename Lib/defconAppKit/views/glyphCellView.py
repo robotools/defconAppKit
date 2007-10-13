@@ -15,7 +15,8 @@ DefconAppKitGlyphPboardType = "DefconAppKitGlyphPboardType"
 
 class DefconAppKitGlyphCellNSView(NSView):
 
-    def initWithFrame_representationName_allowDragAndDrop_(self, frame, representationName, allowDragAndDrop):
+    def initWithFrame_cellRepresentationName_detailRepresentationName_allowDragAndDrop_(self,
+        frame, cellRepresentationName, detailRepresentationName, allowDragAndDrop):
         self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
         self._cellWidth = 50
         self._cellHeight = 50
@@ -32,12 +33,15 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._columnCount = 0
         self._rowCount = 0
 
-        self._representationName = representationName
-        self._representationArguments = {}
+        self._cellRepresentationName = cellRepresentationName
+        self._detailRepresentationName = detailRepresentationName
+        self._cellRepresentationArguments = {}
 
         self._allowDragAndDrop = allowDragAndDrop
         if allowDragAndDrop:
             self.registerForDraggedTypes_([DefconAppKitGlyphPboardType])
+
+        self._glyphDetailMenu = None
 
         return self
 
@@ -56,12 +60,12 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellHeight = height
         self.recalculateFrame()
 
-    def setRepresentationArguments_(self, **kwargs):
-        self._representationArguments = kwargs
+    def setCellRepresentationArguments_(self, **kwargs):
+        self._cellRepresentationArguments = kwargs
         self.setNeedsDisplay_(True)
 
-    def getRepresentationArguments(self):
-        return dict(self._representationArguments)
+    def getCellRepresentationArguments(self):
+        return dict(self._cellRepresentationArguments)
 
     def recalculateFrame(self):
         width, height = self.superview().frame().size
@@ -148,8 +152,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         backgroundColor.set()
         NSRectFill(self.frame())
 
-        representationName = self._representationName
-        representationArguments = self._representationArguments
+        representationName = self._cellRepresentationName
+        representationArguments = self._cellRepresentationArguments
 
         cellWidth = self._cellWidth
         cellHeight = self._cellHeight
@@ -199,6 +203,40 @@ class DefconAppKitGlyphCellNSView(NSView):
         path.setLineWidth_(1.0)
         path.stroke()
 
+        if self._glyphDetailMenu is not None:
+            shadow = NSShadow.alloc().init()
+            shadow.setShadowOffset_((0, -3))
+            shadow.setShadowColor_(NSColor.blackColor())
+            shadow.setShadowBlurRadius_(10.0)
+            shadow.set()
+            point, image = self._getPositionForGlyphDetailMenu()
+            image.drawAtPoint_fromRect_operation_fraction_(
+                point, ((0, 0), image.size()), NSCompositeSourceOver, 1.0)
+
+    def _getPositionForGlyphDetailMenu(self):
+        (left, top), image = self._glyphDetailMenu
+        width, height = image.size()
+        right = left + width
+        bottom = top + height
+
+        (visibleLeft, visibleTop), (visibleWidth, visibleHeight) = self.superview().documentVisibleRect()
+        visibleRight = visibleLeft + visibleWidth
+        visibleBottom = visibleTop + visibleHeight
+
+        if visibleBottom < bottom:
+            bottom = visibleBottom
+            top = bottom - height
+        if visibleTop > top:
+            top = visibleTop
+
+        if visibleRight < right:
+            right = visibleRight
+            left = right - width
+        if visibleLeft > left:
+            left = visibleLeft
+
+        return (left, top), image
+
     # ---------
     # Selection
     # ---------
@@ -247,6 +285,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         if self._selection != self._oldSelection:
             self.vanillaWrapper()._selection()
         del self._oldSelection
+        if self._glyphDetailMenu is not None:
+            self._glyphDetailMenu = None
+            self.setNeedsDisplay_(True)
 
     def _mouseSelection(self, event, mouseDown=False):
         if mouseDown:
@@ -262,14 +303,21 @@ class DefconAppKitGlyphCellNSView(NSView):
                 found = index
                 break
 
-        if found is None:
-            return
-
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
         commandDown = modifiers & NSCommandKeyMask
         optionDown = modifiers & NSAlternateKeyMask
+        controlDown = modifiers & NSControlKeyMask
 
+        # turn off glyph detail menu if necessary
+        if (not controlDown or found is None) and self._glyphDetailMenu is not None:
+            self._glyphDetailMenu = None
+            self.setNeedsDisplay_(True)
+
+        if found is None:
+            return
+
+        # dragging
         if mouseDown and optionDown and found in self._selection and self._allowDragAndDrop:
             if found is None:
                 return
@@ -279,7 +327,17 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         newSelection = None
 
-        if commandDown:
+        # detail menu
+        if controlDown and found is not None:
+            newSelection = set([found])
+            x, y = mouseLocation
+            x += 10
+            y -= 10
+            glyph = self._glyphs[found]
+            self._glyphDetailMenu = ((int(x), int(y)), glyph.getRepresentation("defconAppKitGlyphCellDetail"))
+            self.setNeedsDisplay_(True)
+        # selecting
+        elif commandDown:
             if found is None:
                 return
             if mouseDown:
@@ -545,9 +603,11 @@ class DefconAppKitGlyphCellNSView(NSView):
 
 class GlyphCellView(vanilla.ScrollView):
 
-    def __init__(self, posSize, selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None, representationName="defconAppKitGlyphCell"):
-        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_representationName_allowDragAndDrop_(
-            ((0, 0), (400, 400)), representationName, dropCallback is not None)
+    def __init__(self, posSize,
+        selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None,
+        cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail"):
+        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_allowDragAndDrop_(
+            ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName, dropCallback is not None)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
         super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=True, backgroundColor=backgroundColor)
         self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
@@ -600,10 +660,10 @@ class GlyphCellView(vanilla.ScrollView):
         self._glyphCellView.setSelection_(selection)
 
     def setRepresentationArguments(self, **kwargs):
-        self._glyphCellView.setRepresentationArguments_(**kwargs)
+        self._glyphCellView.setCellRepresentationArguments_(**kwargs)
 
-    def getRepresentationArguments(self):
-        return self._glyphCellView.getRepresentationArguments()
+    def getCellRepresentationArguments(self):
+        return self._glyphCellView.getCellRepresentationArguments()
 
 
 def makeDragBadge(count):
