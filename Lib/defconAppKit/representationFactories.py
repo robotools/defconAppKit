@@ -75,15 +75,10 @@ def GlyphCellFactory(glyph, font, width, height, bufferPercent=.2, color=(0, 0, 
         paragraph = NSMutableParagraphStyle.alloc().init()
         paragraph.setAlignment_(NSCenterTextAlignment)
         paragraph.setLineBreakMode_(NSLineBreakByTruncatingMiddle)
-        shadow = NSShadow.alloc().init()
-        shadow.setShadowOffset_((1, 1))
-        shadow.setShadowColor_(NSColor.whiteColor())
-        shadow.setShadowBlurRadius_(1.0)
         attributes = {
             NSFontAttributeName : NSFont.systemFontOfSize_(10.0),
-            NSForegroundColorAttributeName : NSColor.colorWithCalibratedRed_green_blue_alpha_(.12, .12, .17, 1.0),
-            NSParagraphStyleAttributeName : paragraph,
-            NSShadowAttributeName : shadow
+            NSForegroundColorAttributeName : NSColor.colorWithCalibratedRed_green_blue_alpha_(.22, .22, .27, 1.0),
+            NSParagraphStyleAttributeName : paragraph
         }
         text = NSAttributedString.alloc().initWithString_attributes_(glyph.name, attributes)
 
