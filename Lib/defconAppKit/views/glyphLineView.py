@@ -18,6 +18,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._upm = 1000
         self._descender = -250
         self._buffer = 15
+        self._applyKerning = True
 
         self._fitToFrame = None
 
@@ -80,8 +81,17 @@ class DefconAppKitGlyphLineNSView(NSView):
             width = 0
         else:
             width = 0
+            previousGlyph = None
+            previousFont = None
             for glyph in self._glyphs:
-                width += glyph.width
+                kerning = 0
+                if self._applyKerning:
+                    font = glyph.getParent()
+                    if previousGlyph is not None and font is not None and (previousFont == font):
+                        kerning = font.kerning.get((previousGlyph.name, glyph.name))
+                    previousGlyph = glyph
+                    previousFont = font
+                width += glyph.width + kerning
             width = width * self._scale
         width += self._buffer * 2
 
@@ -194,12 +204,13 @@ class DefconAppKitGlyphLineNSView(NSView):
         previousGlyph = None
         previousFont = None
         for glyph in self._glyphs:
-            font = glyph.getParent()
-
             kerning = 0
             if self._applyKerning:
+                font = glyph.getParent()
                 if previousGlyph is not None and font is not None and (previousFont == font):
                     kerning = font.kerning.get((previousGlyph.name, glyph.name))
+                previousGlyph = glyph
+                previousFont = font
             if kerning:
                 transform = NSAffineTransform.transform()
                 transform.translateXBy_yBy_(kerning, 0)
