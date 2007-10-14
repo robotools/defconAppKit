@@ -15,8 +15,8 @@ DefconAppKitGlyphPboardType = "DefconAppKitGlyphPboardType"
 
 class DefconAppKitGlyphCellNSView(NSView):
 
-    def initWithFrame_cellRepresentationName_detailRepresentationName_allowDragAndDrop_(self,
-        frame, cellRepresentationName, detailRepresentationName, allowDragAndDrop):
+    def initWithFrame_cellRepresentationName_detailRepresentationName_(self,
+        frame, cellRepresentationName, detailRepresentationName):
         self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
         self._cellWidth = 50
         self._cellHeight = 50
@@ -37,9 +37,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._detailRepresentationName = detailRepresentationName
         self._cellRepresentationArguments = {}
 
-        self._allowDragAndDrop = allowDragAndDrop
-        if allowDragAndDrop:
-            self.registerForDraggedTypes_([DefconAppKitGlyphPboardType])
+        self._allowDrag = False
 
         self._glyphDetailMenu = None
 
@@ -48,6 +46,15 @@ class DefconAppKitGlyphCellNSView(NSView):
     # --------------
     # custom methods
     # --------------
+
+    def setAllowsDrag_(self, value):
+        self._allowDrag = value
+
+    def setAllowsDrop_(self, value):
+        if value:
+            self.registerForDraggedTypes_([DefconAppKitGlyphPboardType])
+        else:
+            self.unregisterDraggedTypes()
 
     def setGlyphs_(self, glyphs):
         self._unsubscribeFromGlyphs()
@@ -315,7 +322,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
 
         # dragging
-        if mouseDown and optionDown and found in self._selection and self._allowDragAndDrop:
+        if self._allowDrag and mouseDown and optionDown and found in self._selection:
             if found is None:
                 return
             else:
@@ -325,7 +332,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         newSelection = None
 
         # detail menu
-        if controlDown and found is not None:
+        if controlDown and found is not None and self._detailRepresentationName is not None:
             newSelection = set([found])
             x, y = mouseLocation
             x += 10
@@ -600,14 +607,16 @@ class DefconAppKitGlyphCellNSView(NSView):
 
 class GlyphCellView(vanilla.ScrollView):
 
-    def __init__(self, posSize,
+    def __init__(self, posSize, allowDrag=False,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None,
         cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail"):
-        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_allowDragAndDrop_(
-            ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName, dropCallback is not None)
+        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_(
+            ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
         super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=True, backgroundColor=backgroundColor)
         self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
+        self._glyphCellView.setAllowsDrag_(allowDrag)
+        self._glyphCellView.setAllowsDrop_(dropCallback is not None)
         self._selectionCallback = selectionCallback
         self._doubleClickCallback = doubleClickCallback
         self._deleteCallback = deleteCallback
@@ -639,6 +648,7 @@ class GlyphCellView(vanilla.ScrollView):
     def _proposeDrop(self, glyphs, testing):
         if self._dropCallback is not None:
             return self._dropCallback(self, glyphs, testing)
+        return False
 
     def __getitem__(self, index):
         return self._glyphs[index]
