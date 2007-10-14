@@ -113,8 +113,12 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._notificationObserver.add(self, "_glyphChanged", glyph, "Glyph.Changed")
 
     def _unsubscribeFromGlyphs(self):
+        done = set()
         for glyph in self._glyphs:
+            if glyph in done:
+                continue
             self._notificationObserver.remove(self, glyph, "Glyph.Changed")
+            done.add(glyphs)
 
     def _glyphChanged(self, notification):
         self.setNeedsDisplay_(True)
