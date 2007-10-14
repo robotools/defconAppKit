@@ -8,6 +8,8 @@ from defconAppKit.windows.progressWindow import ProgressWindow
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
 from defconAppKit.views.glyphCellView import GlyphCellView
+from defconAppKit.views.glyphLineView import GlyphLineView
+from fontAppTools import splitText
 
 registerAllFactories()
 
@@ -38,10 +40,12 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.glyphs = [font[k] for k in sorted(font.keys())]
         self.w = vanilla.Window((500, 500), minSize=(400, 400))
 
-        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView"])
+        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView", "GlyphLineView"])
         self.windowTab = self.w.tabs[0]
         self.cellViewTab = self.w.tabs[1]
+        self.lineViewTab = self.w.tabs[2]
 
+        # test various window methods
         self.windowTab.messageButton = vanilla.Button((10, 10, 200, 20), "Show Message", callback=self.windowMessage)
         self.windowTab.progress1Button = vanilla.Button((10, 40, 200, 20), "Show Progress 1", callback=self.windowProgress1)
         self.windowTab.progress2Button = vanilla.Button((10, 70, 200, 20), "Show Progress 2", callback=self.windowProgress2)
@@ -49,21 +53,26 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.windowTab.putFileButton = vanilla.Button((10, 130, 200, 20), "Show Put File", callback=self.windowPutFile)
         self.windowTab.getFileButton = vanilla.Button((10, 160, 200, 20), "Show Get File", callback=self.windowGetFile)
 
+        # test cell view
         # test automatic updating
         self.cellViewTab.cellViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.cellViewModify)
         # test cell sizes
         self.cellViewTab.cellViewSizeSlider = vanilla.Slider((170, 10, 150, 20), minValue=10, maxValue=100, value=50,
             continuous=False, callback=self.cellViewResize)
         # the cell view
-        self.cellViewTab.cellView = GlyphCellView((10, 40, -10, -10),
+        self.cellViewTab.cellView = GlyphCellView((10, 40, -10, -10), allowDrag=True,
             selectionCallback=self.cellViewSelectionCallback, doubleClickCallback=self.cellViewDoubleClickCallback,
             deleteCallback=self.cellViewDeleteCallback, dropCallback=self.cellViewDropCallback)
         self.cellViewTab.cellView.set(self.glyphs)
         self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
 
+        # test line view
+        self.lineViewTab.textInput = vanilla.EditText((10, 10, -10, 22), callback=self.lineViewTextInput)
+        self.lineViewTab.lineView = GlyphLineView((10, 40, -10, -10), dropCallback=self.lineViewDropCallback)
+
         self.setUpBaseWindowBehavior()
 
-        self.w.tabs.set(1)
+        self.w.tabs.set(2)
 
         self.w.open()
 
@@ -135,6 +144,17 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.cellViewTab.cellView.setCellSize((width, height))
         self.cellViewTab.cellView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
 
+    # line view
+
+    def lineViewTextInput(self, sender):
+        glyphNames = splitText(sender.get(), self.font.cmap)
+        glyphs = [self.font[glyphName] for glyphName in glyphNames if glyphName in self.font]
+        self.lineViewTab.lineView.set(glyphs)
+
+    def lineViewDropCallback(self, sender, glyphs, testing):
+        if not testing:
+            self.lineViewTab.lineView.set(glyphs)
+        return True
 
 if __name__ == "__main__":
     AppHelper.runEventLoop()
