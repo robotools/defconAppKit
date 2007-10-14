@@ -130,13 +130,21 @@ def GlyphCellDetailFactory(glyph, font):
     glyphLeftOffset = (imageWidth - (glyph.width * scale)) / 2
 
     basePath = roundedRectBezierPath(((.5, .5), (imageWidth - 1, imageHeight - 1)), 7)
+    basePath.setLineWidth_(1.0)
 
     glyphPath = glyph.getRepresentation("NSBezierPath")
 
-    linePath = NSBezierPath.bezierPath()
-    linePath.moveToPoint_((10, 120.5))
-    linePath.lineToPoint_((imageWidth - 10, 120.5))
-    linePath.setLineWidth_(1.0)
+    line1Path = NSBezierPath.bezierPath()
+    line1Path.moveToPoint_((1, 120.5))
+    line1Path.lineToPoint_((imageWidth-1, 120.5))
+    line1Path.setLineWidth_(1.0)
+
+    line2Path = NSBezierPath.bezierPath()
+    line2Path.moveToPoint_((1, 121.5))
+    line2Path.lineToPoint_((imageWidth-1, 121.5))
+    line2Path.setLineWidth_(1.0)
+
+    lineColor = NSColor.colorWithCalibratedWhite_alpha_(.5, 1.0)
 
     paragraph = NSMutableParagraphStyle.alloc().init()
     paragraph.setAlignment_(NSRightTextAlignment)
@@ -173,7 +181,7 @@ def GlyphCellDetailFactory(glyph, font):
     width = glyph.width
     if width is None:
         width = 0
-    width = round(width)
+    width = round(width, 3)
     if width == int(width):
         width = int(width)
     widthText = NSAttributedString.alloc().initWithString_attributes_(str(width), rightAttributes)
@@ -182,7 +190,7 @@ def GlyphCellDetailFactory(glyph, font):
     leftMargin = glyph.leftMargin
     if leftMargin is None:
         leftMargin = 0
-    leftMargin = round(leftMargin)
+    leftMargin = round(leftMargin, 3)
     if leftMargin == int(leftMargin):
         leftMargin = int(leftMargin)
     leftText = NSAttributedString.alloc().initWithString_attributes_(str(leftMargin), rightAttributes)
@@ -191,7 +199,7 @@ def GlyphCellDetailFactory(glyph, font):
     rightMargin = glyph.rightMargin
     if rightMargin is None:
         rightMargin = 0
-    rightMargin = round(rightMargin)
+    rightMargin = round(rightMargin, 3)
     if rightMargin == int(rightMargin):
         rightMargin = int(rightMargin)
     rightText = NSAttributedString.alloc().initWithString_attributes_(str(rightMargin), rightAttributes)
@@ -202,6 +210,8 @@ def GlyphCellDetailFactory(glyph, font):
 
     NSColor.colorWithCalibratedWhite_alpha_(0, .65).set()
     basePath.fill()
+    lineColor.set()
+    basePath.stroke()
 
     context = NSGraphicsContext.currentContext()
     context.saveGraphicsState()
@@ -215,8 +225,10 @@ def GlyphCellDetailFactory(glyph, font):
     glyphPath.fill()
     context.restoreGraphicsState()
 
-    NSColor.whiteColor().set()
-    linePath.stroke()
+    lineColor.set()
+    line1Path.stroke()
+    NSColor.colorWithCalibratedWhite_alpha_(0, .5).set()
+    line2Path.stroke()
 
     transform = NSAffineTransform.transform()
     transform.translateXBy_yBy_(0, 110)
