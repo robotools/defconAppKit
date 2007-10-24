@@ -87,6 +87,8 @@ class DefconAppKitGlyphCellNSView(NSView):
             newWidth = self._cellWidth * columnCount
             newHeight = self._cellHeight * rowCount
         else:
+            columnCount = 0
+            rowCount = 0
             newWidth = newHeight = 0
         if not self.inLiveResize():
             if width > newWidth:
