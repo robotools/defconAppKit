@@ -616,11 +616,12 @@ class GlyphCellView(vanilla.ScrollView):
 
     def __init__(self, posSize, allowDrag=False,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None,
-        cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail"):
+        cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail",
+        autohidesScrollers=True):
         self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_(
             ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
-        super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=True, backgroundColor=backgroundColor)
+        super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=autohidesScrollers, backgroundColor=backgroundColor)
         self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
         self._glyphCellView.setAllowsDrag_(allowDrag)
         self._glyphCellView.setAllowsDrop_(dropCallback is not None)
