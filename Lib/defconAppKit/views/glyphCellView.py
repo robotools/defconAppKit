@@ -121,7 +121,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             if glyph in done:
                 continue
             self._notificationObserver.remove(self, glyph, "Glyph.Changed")
-            done.add(glyphs)
+            done.add(glyph)
 
     def _glyphChanged(self, notification):
         self.setNeedsDisplay_(True)
