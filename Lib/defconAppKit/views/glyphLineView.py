@@ -67,7 +67,7 @@ class DefconAppKitGlyphLineNSView(NSView):
     def _calcScale(self):
         if self._pointSize is None:
             w, h = self.superview().visibleRect()[1]
-            fitH = h
+            fitH = h - (self._buffer * 2)
             self._scale = fitH / self._upm
         else:
             self._scale = self._pointSize / float(self._upm)
