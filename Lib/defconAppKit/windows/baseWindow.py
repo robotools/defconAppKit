@@ -23,16 +23,10 @@ class BaseWindowController(object):
             self.w.unbind("resigned main", self.windowDeselectCallback)
 
     def windowSelectCallback(self, sender):
-        nsWindow = self.w.getNSWindow()
-        color = NSColor.colorWithCalibratedRed_green_blue_alpha_(.84, .84, .84, 1.0)
-        nsWindow.setBackgroundColor_(color)
-        nsWindow.contentView().setNeedsDisplay_(True)
+        pass
 
     def windowDeselectCallback(self, sender):
-        nsWindow = self.w.getNSWindow()
-        if nsWindow is not None:
-            nsWindow.setBackgroundColor_(None)
-            nsWindow.contentView().setNeedsDisplay_(True)
+        pass
 
     def startProgress(self, text="", tickCount=None):
         from defconAppKit.windows.progressWindow import ProgressWindow
@@ -48,11 +42,11 @@ class BaseWindowController(object):
         vanilla.dialogs.getFile(fileTypes=fileTypes, allowsMultipleSelection=allowsMultipleSelection,
             parentWindow=self.w.getNSWindow(), resultCallback=callback)
 
-    def showPutFile(self, fileTypes, callback, accessoryView=None):
+    def showPutFile(self, fileTypes, callback, fileName=None, directory=None, accessoryView=None):
         if accessoryView is not None:
             w, h = accessoryView._posSize[2:]
             accessoryView._nsObject.setFrame_(((0, 0), (w, h)))
             accessoryView = accessoryView._nsObject
         vanilla.dialogs.putFile(fileTypes=fileTypes,
-            parentWindow=self.w.getNSWindow(), resultCallback=callback, accessoryView=accessoryView)
+            parentWindow=self.w.getNSWindow(), resultCallback=callback, fileName=fileName, directory=directory, accessoryView=accessoryView)
 
