@@ -261,7 +261,7 @@ class DefconAppKitGlyphLineNSView(NSView):
 
 class GlyphLineView(vanilla.ScrollView):
 
-    def __init__(self, posSize, pointSize=100, applyKerning=True, glyphColor=None, backgroundColor=None, dropCallback=None):
+    def __init__(self, posSize, pointSize=100, applyKerning=True, glyphColor=None, backgroundColor=None, dropCallback=None, autohideScrollers=True):
         if glyphColor is None:
             glyphColor = NSColor.blackColor()
         if backgroundColor is None:
@@ -274,7 +274,7 @@ class GlyphLineView(vanilla.ScrollView):
         self._glyphLineView.setAllowsDrop_(dropCallback is not None)
         self._dropCallback = dropCallback
         self._glyphLineView.vanillaWrapper = weakref.ref(self)
-        super(GlyphLineView, self).__init__(posSize, self._glyphLineView, autohidesScrollers=True, backgroundColor=backgroundColor)
+        super(GlyphLineView, self).__init__(posSize, self._glyphLineView, autohidesScrollers=autohideScrollers, backgroundColor=backgroundColor)
 
     def _breakCycles(self):
         if hasattr(self, "_glyphLineView"):
