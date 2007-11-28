@@ -295,10 +295,11 @@ class DefconAppKitGlyphCellNSView(NSView):
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):
-        self._mouseSelection(event)
+        self._mouseSelection(event, mouseDragged=True)
         self.autoscroll_(event)
 
     def mouseUp_(self, event):
+        self._mouseSelection(event, mouseUp=True)
         if self._selection != self._oldSelection:
             self.vanillaWrapper()._selection()
         del self._oldSelection
@@ -306,7 +307,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._glyphDetailMenu = None
             self.setNeedsDisplay_(True)
 
-    def _mouseSelection(self, event, mouseDown=False):
+    def _mouseSelection(self, event, mouseDown=False, mouseDragged=False, mouseUp=False):
         if mouseDown:
             self._oldSelection = set(self._selection)
 
@@ -335,7 +336,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
 
         # dragging
-        if self._allowDrag and mouseDown and found in self._selection:
+        if mouseDragged and self._allowDrag and found in self._selection and not commandDown and not shiftDown:
             if found is None:
                 return
             else:
@@ -362,6 +363,8 @@ class DefconAppKitGlyphCellNSView(NSView):
                     self._selection.remove(found)
                 else:
                     self._selection.add(found)
+            elif mouseUp:
+                pass
             else:
                 if found in self._selection and found in self._oldSelection:
                     self._selection.remove(found)
@@ -376,6 +379,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         else:
             if found is None:
                 newSelection = set()
+            elif mouseDown and found in self._selection:
+                pass
             else:
                 newSelection = set([found])
 
