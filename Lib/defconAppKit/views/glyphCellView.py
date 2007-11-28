@@ -61,6 +61,12 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._unsubscribeFromGlyphs()
         self._glyphs = glyphs
         self._subscribeToGlyphs()
+        maxIndex = len(glyphs) - 1
+        toRemove = set()
+        for index in self._selection:
+            if index > maxIndex:
+                toRemove.add(index)
+        self._selection = self._selection - toRemove
         self.recalculateFrame()
 
     def setCellSize_(self, (width, height)):
@@ -329,7 +335,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
 
         # dragging
-        if self._allowDrag and mouseDown and optionDown and found in self._selection:
+        if self._allowDrag and mouseDown and found in self._selection:
             if found is None:
                 return
             else:
@@ -657,6 +663,9 @@ class GlyphCellView(vanilla.ScrollView):
         if self._dropCallback is not None:
             return self._dropCallback(self, glyphs, testing)
         return False
+
+    def getGlyphCellView(self):
+        return self._glyphCellView
 
     def __getitem__(self, index):
         return self._glyphs[index]
