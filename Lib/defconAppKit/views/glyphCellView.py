@@ -352,7 +352,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             x += 10
             y -= 10
             glyph = self._glyphs[found]
-            self._glyphDetailMenu = ((int(x), int(y)), glyph.getRepresentation("defconAppKitGlyphCellDetail"))
+            self._glyphDetailMenu = ((int(x), int(y)), glyph.getRepresentation(self._detailRepresentationName))
             self.setNeedsDisplay_(True)
         # selecting
         elif commandDown:
