@@ -336,7 +336,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
 
         # dragging
-        if mouseDragged and self._allowDrag and found in self._selection and not commandDown and not shiftDown:
+        if mouseDragged and self._allowDrag and found in self._selection and not commandDown and not shiftDown and not controlDown:
             if found is None:
                 return
             else:
