@@ -32,8 +32,8 @@ class BaseWindowController(object):
         from defconAppKit.windows.progressWindow import ProgressWindow
         return ProgressWindow(text, tickCount, self.w)
 
-    def showMessage(self, messageText, informativeText):
-        vanilla.dialogs.message(parentWindow=self.w.getNSWindow(), messageText=messageText, informativeText=informativeText)
+    def showMessage(self, messageText, informativeText, callback=None):
+        vanilla.dialogs.message(parentWindow=self.w.getNSWindow(), messageText=messageText, informativeText=informativeText, resultCallback=callback)
 
     def showAskYesNo(self, messageText, informativeText, callback):
         vanilla.dialogs.askYesNo(parentWindow=self.w.getNSWindow(), messageText=messageText, informativeText=informativeText, resultCallback=callback)
