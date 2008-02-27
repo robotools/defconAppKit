@@ -71,6 +71,8 @@ class DefconAppKitGlyphLineNSView(NSView):
             self._scale = fitH / self._upm
         else:
             self._scale = self._pointSize / float(self._upm)
+        if self._scale < 0:
+            self._scale = 0
 
     def _setFrame(self):
         scrollHeight = None
