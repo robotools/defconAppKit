@@ -41,7 +41,8 @@ class GlyphNameComboBox(vanilla.EditText):
         elif len(text) == 1:
             uniValue = ord(text)
             match = self._font.unicodeData.glyphNameForUnicode(uniValue)
-            text = ""
+            if match is not None:
+                text = ""
         # fallback. find closest match
         if match is None:
             glyphNames = list(sorted(glyphNames))
