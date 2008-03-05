@@ -8,7 +8,9 @@ from defconAppKit.windows.progressWindow import ProgressWindow
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
 from defconAppKit.views.glyphCellView import GlyphCellView
+from defconAppKit.views.glyphList import GlyphList
 from defconAppKit.views.glyphLineView import GlyphLineView
+from defconAppKit.views.glyphNameComboBox import GlyphNameComboBox
 from fontAppTools import splitText
 
 registerAllFactories()
@@ -33,17 +35,29 @@ class DefconAppKitTestDocument(NSDocument):
         return True
 
 
+glyphSortDescriptors = [
+    dict(type="alphabetical", allowPseudoUnicode=True),
+    dict(type="category", allowPseudoUnicode=True),
+    dict(type="unicode", allowPseudoUnicode=True),
+    dict(type="script", allowPseudoUnicode=True),
+    dict(type="suffix", allowPseudoUnicode=True),
+    dict(type="decompositionBase", allowPseudoUnicode=True)
+]
+
+
 class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     def __init__(self, font):
         self.font = font
-        self.glyphs = [font[k] for k in sorted(font.keys())]
-        self.w = vanilla.Window((500, 500), minSize=(400, 400))
+        self.glyphs = [font[k] for k in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
+        self.w = vanilla.Window((700, 500), minSize=(400, 400))
 
-        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView", "GlyphLineView"])
+        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView", "GlyphList", "GlyphLineView", "Misc. Controls"])
         self.windowTab = self.w.tabs[0]
         self.cellViewTab = self.w.tabs[1]
-        self.lineViewTab = self.w.tabs[2]
+        self.listTab = self.w.tabs[2]
+        self.lineViewTab = self.w.tabs[3]
+        self.controlsTab = self.w.tabs[4]
 
         # test various window methods
         self.windowTab.messageButton = vanilla.Button((10, 10, 200, 20), "Show Message", callback=self.windowMessage)
@@ -54,21 +68,33 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.windowTab.getFileButton = vanilla.Button((10, 160, 200, 20), "Show Get File", callback=self.windowGetFile)
 
         # test cell view
-        # test automatic updating
         self.cellViewTab.cellViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.cellViewModify)
-        # test cell sizes
         self.cellViewTab.cellViewSizeSlider = vanilla.Slider((170, 10, 150, 20), minValue=10, maxValue=100, value=50,
             continuous=False, callback=self.cellViewResize)
-        # the cell view
         self.cellViewTab.cellView = GlyphCellView((10, 40, -10, -10), allowDrag=True,
             selectionCallback=self.cellViewSelectionCallback, doubleClickCallback=self.cellViewDoubleClickCallback,
             deleteCallback=self.cellViewDeleteCallback, dropCallback=self.cellViewDropCallback)
         self.cellViewTab.cellView.set(self.glyphs)
         self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
 
+        ## test list
+        #formatter = NSNumberFormatter.alloc().init()
+        #formatter.setAllowsFloats_(False)
+        #columnDescriptions = [
+        #    dict(title="name", editable=False),
+        #    dict(title="width", editable=True, formatter=formatter),
+        #    dict(title="leftMargin", editable=True, formatter=formatter),
+        #    dict(title="rightMargin", editable=True, formatter=formatter),
+        #]
+        #self.listTab.glyphList = GlyphList((10, 10, -10, -10), self.glyphs, columnDescriptions=columnDescriptions, editCallback=self.listViewEdit)
+
         # test line view
         self.lineViewTab.textInput = vanilla.EditText((10, 10, -10, 22), callback=self.lineViewTextInput)
         self.lineViewTab.lineView = GlyphLineView((10, 40, -10, -10), dropCallback=self.lineViewDropCallback)
+
+        # test controls
+
+        self.controlsTab.glyphNameComboBox = GlyphNameComboBox((10, 10, -10, 22), self.font)
 
         self.setUpBaseWindowBehavior()
 
@@ -144,6 +170,11 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.cellViewTab.cellView.setCellSize((width, height))
         self.cellViewTab.cellView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
 
+    # list view
+
+    def listViewEdit(self, sender):
+        pass
+
     # line view
 
     def lineViewTextInput(self, sender):
@@ -155,6 +186,7 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         if not testing:
             self.lineViewTab.lineView.set(glyphs)
         return True
+
 
 if __name__ == "__main__":
     AppHelper.runEventLoop()
