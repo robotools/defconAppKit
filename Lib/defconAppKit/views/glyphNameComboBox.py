@@ -1,12 +1,14 @@
 from AppKit import *
 import vanilla
 
+
 class GlyphNameComboBox(vanilla.EditText):
 
     def __init__(self, posSize, font, callback=None, sizeStyle="regular"):
         super(GlyphNameComboBox, self).__init__(posSize, callback=self._textInputCallback, sizeStyle=sizeStyle)
         self._font = font
         self._finalCallback = callback
+        self._currentText = ""
 
     def _breakCycles(self):
         self._font = None
@@ -14,7 +16,13 @@ class GlyphNameComboBox(vanilla.EditText):
         super(GlyphNameComboBox, self)._breakCycles()
 
     def _textInputCallback(self, sender):
-        input, match = self._searchForMatch(self.get())
+        input = sender.get()
+        deleting = False
+        if len(input) <= len(self._currentText):
+            if self._currentText.startswith(input):
+                deleting = True
+        self._currentText = input
+        input, match = self._searchForMatch(input, deleting=deleting)
         if match is None:
             return
         if match != input:
@@ -24,11 +32,12 @@ class GlyphNameComboBox(vanilla.EditText):
             textField = self._nsObject
             window = textField.window()
             fieldEditor = window.fieldEditor_forObject_(True, textField)
-            fieldEditor.setSelectedRange_((selectionStart, selectionLength))
+            if not deleting:
+                fieldEditor.setSelectedRange_((selectionStart, selectionLength))
         if self._finalCallback is not None:
             self._finalCallback(self)
 
-    def _searchForMatch(self, text):
+    def _searchForMatch(self, text, deleting=False):
         # no text
         if not text:
             return text, None
@@ -46,10 +55,16 @@ class GlyphNameComboBox(vanilla.EditText):
         # fallback. find closest match
         if match is None:
             glyphNames = list(sorted(glyphNames))
-            for glyphName in glyphNames:
-                if glyphName.startswith(text):
-                    match = glyphName
-                    break
+            if not deleting:
+                for glyphName in glyphNames:
+                    if glyphName.startswith(text):
+                        match = glyphName
+                        break
+            else:
+                for glyphName in glyphNames:
+                    if text.startswith(glyphName):
+                        match = glyphName
+                    elif match is not None:
+                        break
         return text, match
 
-    
