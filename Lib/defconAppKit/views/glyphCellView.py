@@ -8,10 +8,77 @@ from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.87, .87, .9, 1.0)
+selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 
 
 DefconAppKitGlyphPboardType = "DefconAppKitGlyphPboardType"
+
+
+def _makeGlyphCellDragIcon(glyphs):
+    font = None
+    glyphRepresentation = None
+    glyphWidth = None
+    for glyph in glyphs:
+        rep = glyph.getRepresentation("NSBezierPath")
+        if not rep.isEmpty():
+            font = glyph.getParent()
+            glyphRepresentation = rep
+            glyphWidth = glyph.width
+            break
+    # set up the image
+    iconImage = NSImage.alloc().initWithSize_((40, 40))
+    iconImage.lockFocus()
+    context = NSGraphicsContext.currentContext()
+    # draw the page base
+    pageSize = 35
+    pagePath = NSBezierPath.bezierPath()
+    pagePath.moveToPoint_((.5, 5.5))
+    pagePath.lineToPoint_((.5, 39.5))
+    pagePath.lineToPoint_((34.5, 39.5))
+    pagePath.lineToPoint_((34.5, 5.5))
+    pagePath.lineToPoint_((.5, 5.5))
+    # set the shadow
+    context.saveGraphicsState()
+    shadow = NSShadow.alloc().init()
+    shadow.setShadowOffset_((1, -1))
+    shadow.setShadowColor_(NSColor.blackColor())
+    shadow.setShadowBlurRadius_(2.0)
+    shadow.set()
+    # fill the page
+    NSColor.whiteColor().set()
+    pagePath.fill()
+    try:
+        color1 = NSColor.colorWithCalibratedWhite_alpha_(.95, 1)
+        color2 = NSColor.colorWithCalibratedWhite_alpha_(.85, 1)
+        gradient = NSGradient.alloc().initWithColors_([color1, color2])
+        gradient.drawInBezierPath_angle_(pagePath, -90)
+    except NameError:
+        pass
+    # remove the shadow
+    context.restoreGraphicsState()
+    # draw the glyph
+    if glyphRepresentation is not None:
+        context.saveGraphicsState()
+        buffer = pageSize * .125
+        upm = font.info.unitsPerEm
+        scale = (pageSize - buffer - buffer) / float(upm)
+        xOffset = ((pageSize * (1.0 / scale)) - glyphWidth) / 2
+        transform = NSAffineTransform.transform()
+        transform.translateXBy_yBy_(0, 5 + buffer)
+        transform.scaleBy_(scale)
+        transform.translateXBy_yBy_(xOffset, -font.info.descender)
+        transform.concat()
+        NSColor.colorWithCalibratedWhite_alpha_(0, .8).set()
+        # XXX should clip the glyph path here to prevent overflow
+        glyphRepresentation.fill()
+        context.restoreGraphicsState()
+    # draw the page border
+    NSColor.grayColor().set()
+    pagePath.stroke()
+    # done
+    iconImage.unlockFocus()
+    # add the count badge
+    return addCountBadgeToIcon(len(glyphs), iconImage)
 
 
 class DefconAppKitGlyphCellNSView(NSView):
@@ -569,7 +636,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def _beginDrag(self, event):
         s = " ".join([str(i) for i in sorted(self._selection)])
-        image = addCountBadgeToIcon(len(self._selection))
+        image = _makeGlyphCellDragIcon([self._glyphs[i] for i in self._selection])
 
         eventLocation = event.locationInWindow()
         location = self.convertPoint_fromView_(eventLocation, None)
