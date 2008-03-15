@@ -742,6 +742,9 @@ class GlyphCellView(vanilla.ScrollView):
     def __getitem__(self, index):
         return self._glyphs[index]
 
+    def get(self):
+        return list(self._glyphs)
+
     def set(self, glyphs):
         self._glyphCellView.setGlyphs_(glyphs)
         self._glyphs = glyphs
