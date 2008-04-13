@@ -125,15 +125,12 @@ class DefconAppKitGlyphCellNSView(NSView):
             self.unregisterDraggedTypes()
 
     def setGlyphs_(self, glyphs):
+        currentSelection = [self._glyphs[index] for index in self._selection]
+        newSelection = [glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs]
+        self._selection = newSelection
         self._unsubscribeFromGlyphs()
         self._glyphs = glyphs
         self._subscribeToGlyphs()
-        maxIndex = len(glyphs) - 1
-        toRemove = set()
-        for index in self._selection:
-            if index > maxIndex:
-                toRemove.add(index)
-        self._selection = self._selection - toRemove
         self.recalculateFrame()
 
     def setCellSize_(self, (width, height)):
