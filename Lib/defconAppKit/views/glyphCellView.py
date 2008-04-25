@@ -126,7 +126,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
-        newSelection = [glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs]
+        newSelection = set([glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs])
         self._selection = newSelection
         self._unsubscribeFromGlyphs()
         self._glyphs = glyphs
@@ -146,7 +146,10 @@ class DefconAppKitGlyphCellNSView(NSView):
         return dict(self._cellRepresentationArguments)
 
     def recalculateFrame(self):
-        width, height = self.superview().frame().size
+        superview = self.superview()
+        if superview is None:
+            return
+        width, height = superview.frame().size
         if width == 0 or height == 0:
             return
         if self._glyphs:
