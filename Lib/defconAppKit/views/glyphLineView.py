@@ -250,14 +250,14 @@ class DefconAppKitGlyphLineNSView(NSView):
         source = sender.draggingSource()
         if source == self:
             return NSDragOperationNone
-        glyphs = source.getGlyphsFromDragPasteboard_(sender.draggingPasteboard())
+        glyphs = source.getGlyphsFromDraggingInfo_(sender)
         return self.vanillaWrapper()._proposeDrop(glyphs, testing=True)
 
     def performDragOperation_(self, sender):
         source = sender.draggingSource()
         if source == self:
             return NSDragOperationNone
-        glyphs = source.getGlyphsFromDragPasteboard_(sender.draggingPasteboard())
+        glyphs = source.getGlyphsFromDraggingInfo_(sender)
         return self.vanillaWrapper()._proposeDrop(glyphs, testing=False)
 
 

@@ -11,7 +11,7 @@ gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 
 
-DefconAppKitGlyphPboardType = "DefconAppKitGlyphPboardType"
+DefconAppKitSelectedGlyphIndexesPboardType = "DefconAppKitSelectedGlyphIndexesPboardType"
 
 
 def _makeGlyphCellDragIcon(glyphs):
@@ -120,7 +120,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def setAllowsDrop_(self, value):
         if value:
-            self.registerForDraggedTypes_([DefconAppKitGlyphPboardType])
+            self.registerForDraggedTypes_([DefconAppKitSelectedGlyphIndexesPboardType])
         else:
             self.unregisterDraggedTypes()
 
@@ -132,6 +132,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphs = glyphs
         self._subscribeToGlyphs()
         self.recalculateFrame()
+
+    def getGlyphsAtIndexes_(self, indexes):
+        return [self._glyphs[i] for i in indexes]
 
     def setCellSize_(self, (width, height)):
         self._cellWidth = width
@@ -644,17 +647,21 @@ class DefconAppKitGlyphCellNSView(NSView):
         location = (location[0] - 10, location[1] + 10)
 
         pboard = NSPasteboard.pasteboardWithName_(NSDragPboard)
-        pboard.declareTypes_owner_([DefconAppKitGlyphPboardType], self)
-        pboard.setPropertyList_forType_(indexes, DefconAppKitGlyphPboardType)
+        pboard.declareTypes_owner_([DefconAppKitSelectedGlyphIndexesPboardType], self)
+        pboard.setPropertyList_forType_(indexes, DefconAppKitSelectedGlyphIndexesPboardType)
 
         self.dragImage_at_offset_event_pasteboard_source_slideBack_(
             image, location, (0, 0),
             event, pboard, self, True
         )
 
-    def getGlyphsFromDragPasteboard_(self, pboard):
-        indexes = pboard.propertyListForType_(DefconAppKitGlyphPboardType)
-        glyphs = [self._glyphs[i] for i in indexes]
+    def getGlyphsFromDraggingInfo_(self, draggingInfo):
+        source = draggingInfo.draggingSource()
+        if source != self:
+            return None
+        pboard = draggingInfo.draggingPasteboard()
+        indexes = pboard.propertyListForType_("DefconAppKitSelectedGlyphIndexesPboardType")
+        glyphs = self.getGlyphsAtIndexes_(indexes)
         return glyphs
 
     # drop
@@ -678,14 +685,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         source = sender.draggingSource()
         if source == self:
             return NSDragOperationNone
-        glyphs = source.getGlyphsFromDragPasteboard_(sender.draggingPasteboard())
+        glyphs = source.getGlyphsFromDraggingInfo_(sender)
         return self.vanillaWrapper()._proposeDrop(glyphs, testing=True)
 
     def performDragOperation_(self, sender):
         source = sender.draggingSource()
         if source == self:
             return NSDragOperationNone
-        glyphs = source.getGlyphsFromDragPasteboard_(sender.draggingPasteboard())
+        glyphs = source.getGlyphsFromDraggingInfo_(sender)
         return self.vanillaWrapper()._proposeDrop(glyphs, testing=False)
 
 
