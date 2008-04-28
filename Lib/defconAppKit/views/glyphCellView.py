@@ -635,7 +635,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         return NSDragOperationGeneric
 
     def _beginDrag(self, event):
-        s = " ".join([str(i) for i in sorted(self._selection)])
+        indexes = [i for i in sorted(self._selection)]
         image = _makeGlyphCellDragIcon([self._glyphs[i] for i in self._selection])
 
         eventLocation = event.locationInWindow()
@@ -645,7 +645,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         pboard = NSPasteboard.pasteboardWithName_(NSDragPboard)
         pboard.declareTypes_owner_([DefconAppKitGlyphPboardType], self)
-        pboard.setString_forType_(s, DefconAppKitGlyphPboardType)
+        pboard.setPropertyList_forType_(indexes, DefconAppKitGlyphPboardType)
 
         self.dragImage_at_offset_event_pasteboard_source_slideBack_(
             image, location, (0, 0),
@@ -653,8 +653,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         )
 
     def getGlyphsFromDragPasteboard_(self, pboard):
-        indexes = pboard.stringForType_(DefconAppKitGlyphPboardType)
-        indexes = [int(i) for i in indexes.split(" ")]
+        indexes = pboard.propertyListForType_(DefconAppKitGlyphPboardType)
         glyphs = [self._glyphs[i] for i in indexes]
         return glyphs
 
