@@ -1,5 +1,6 @@
 import weakref
 import time
+import objc
 from Foundation import *
 from AppKit import *
 import vanilla
@@ -10,8 +11,6 @@ from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 
-
-DefconAppKitSelectedGlyphIndexesPboardType = "DefconAppKitSelectedGlyphIndexesPboardType"
 
 
 def _makeGlyphCellDragIcon(glyphs):
@@ -117,12 +116,6 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def setAllowsDrag_(self, value):
         self._allowDrag = value
-
-    def setAllowsDrop_(self, value):
-        if value:
-            self.registerForDraggedTypes_([DefconAppKitSelectedGlyphIndexesPboardType])
-        else:
-            self.unregisterDraggedTypes()
 
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
@@ -361,7 +354,9 @@ class DefconAppKitGlyphCellNSView(NSView):
     def mouseDown_(self, event):
         self._mouseSelection(event, mouseDown=True)
         if event.clickCount() > 1:
-            self.vanillaWrapper()._doubleClick()
+            vanillaWrapper = self.vanillaWrapper()
+            if vanillaWrapper._doubleClickCallback is not None:
+                vanillaWrapper._doubleClickCallback(vanillaWrapper)
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):
@@ -371,7 +366,9 @@ class DefconAppKitGlyphCellNSView(NSView):
     def mouseUp_(self, event):
         self._mouseSelection(event, mouseUp=True)
         if self._selection != self._oldSelection:
-            self.vanillaWrapper()._selection()
+            vanillaWrapper = self.vanillaWrapper()
+            if vanillaWrapper._selectionCallback is not None:
+                vanillaWrapper._selectionCallback(vanillaWrapper)
         del self._oldSelection
         if self._glyphDetailMenu is not None:
             self._glyphDetailMenu = None
@@ -501,7 +498,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         # delete key. call the delete callback.
         if characters in deleteCharacters:
-            self.vanillaWrapper()._delete()
+            self.vanillaWrapper()._removeSelection()
         # non key. reset the typing entry if necessary.
         elif characters in nonCharacters:
             self._lastKeyInputTime = None
@@ -646,9 +643,10 @@ class DefconAppKitGlyphCellNSView(NSView):
         w, h = image.size()
         location = (location[0] - 10, location[1] + 10)
 
+        dragAndDropType = self.vanillaWrapper()._dragAndDropType
         pboard = NSPasteboard.pasteboardWithName_(NSDragPboard)
-        pboard.declareTypes_owner_([DefconAppKitSelectedGlyphIndexesPboardType], self)
-        pboard.setPropertyList_forType_(indexes, DefconAppKitSelectedGlyphIndexesPboardType)
+        pboard.declareTypes_owner_([dragAndDropType], self)
+        pboard.setPropertyList_forType_(indexes, dragAndDropType)
 
         self.dragImage_at_offset_event_pasteboard_source_slideBack_(
             image, location, (0, 0),
@@ -659,60 +657,131 @@ class DefconAppKitGlyphCellNSView(NSView):
         source = draggingInfo.draggingSource()
         if source != self:
             return None
+        dragAndDropType = self.vanillaWrapper()._dragAndDropType
         pboard = draggingInfo.draggingPasteboard()
-        indexes = pboard.propertyListForType_("DefconAppKitSelectedGlyphIndexesPboardType")
+        indexes = pboard.propertyListForType_(dragAndDropType)
         glyphs = self.getGlyphsAtIndexes_(indexes)
         return glyphs
 
     # drop
 
-    def draggingEntered_(self, sender):
-        source = sender.draggingSource()
-        if source == self:
+    def _handleDrop(self, draggingInfo, isProposal=False, callCallback=False):
+        vanillaWrapper = self.vanillaWrapper()
+        draggingSource = draggingInfo.draggingSource()
+        sourceForCallback = draggingSource
+        if hasattr(draggingSource, "vanillaWrapper") and getattr(draggingSource, "vanillaWrapper") is not None:
+            sourceForCallback = getattr(draggingSource, "vanillaWrapper")()
+        # make the info dict
+        dropOnRow = False # XXX support in future
+        rowIndex = len(self._glyphs)
+        dropInformation = dict(isProposal=isProposal, dropOnRow=dropOnRow, rowIndex=rowIndex, data=None, source=sourceForCallback)
+        # drag from self
+        if draggingSource == self:
+            # XXX not supported yet
             return NSDragOperationNone
-        return NSDragOperationCopy
+        # drag from same window
+        window = self.window()
+        if window is not None and draggingSource is not None and window == draggingSource.window() and vanillaWrapper._selfWindowDropSettings is not None:
+            if vanillaWrapper._selfWindowDropSettings is None:
+                return NSDragOperationNone
+            settings = vanillaWrapper._selfWindowDropSettings
+            return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
+        # drag from same document
+        document = self.window().document()
+        if document is not None and document == draggingSource.window().document():
+            if vanillaWrapper._selfDocumentDropSettings is None:
+                return NSDragOperationNone
+            settings = vanillaWrapper._selfDocumentDropSettings
+            return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
+        # drag from same application
+        applicationWindows = NSApp().windows()
+        if draggingSource is not None and draggingSource.window() in applicationWindows:
+            if vanillaWrapper._selfApplicationDropSettings is None:
+                return NSDragOperationNone
+            settings = vanillaWrapper._selfApplicationDropSettings
+            return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
+        # fall back to drag from other application
+        if vanillaWrapper._otherApplicationDropSettings is None:
+            return NSDragOperationNone
+        settings = vanillaWrapper._otherApplicationDropSettings
+        return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
+
+    def _handleDropBasedOnSettings(self, settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback):
+        # XXX validate drop position in future
+        # sometimes the callback will need to be called
+        if callCallback:
+            dropInformation["data"] = self._unpackPboard(settings, draggingInfo)
+            result = settings["callback"](vanillaWrapper, dropInformation)
+            if result:
+                return settings.get("operation", NSDragOperationCopy)
+        # other times it won't
+        else:
+            return settings.get("operation", NSDragOperationCopy)
+        return NSDragOperationNone
+
+    def _unpackPboard(self, settings, draggingInfo):
+        pboard = draggingInfo.draggingPasteboard()
+        data = pboard.propertyListForType_(settings["type"])
+        if isinstance(data, (NSString, objc.pyobjc_unicode)):
+            data = data.propertyList()
+        return data
+
+    def draggingEntered_(self, sender):
+        return self._handleDrop(sender, isProposal=True, callCallback=False)
 
     def draggingUpdated_(self, sender):
-        source = sender.draggingSource()
-        if source == self:
-            return NSDragOperationNone
-        return NSDragOperationCopy
+        return self._handleDrop(sender, isProposal=True, callCallback=False)
 
     def draggingExited_(self, sender):
         return None
 
     def prepareForDragOperation_(self, sender):
-        source = sender.draggingSource()
-        if source == self:
-            return NSDragOperationNone
-        glyphs = source.getGlyphsFromDraggingInfo_(sender)
-        return self.vanillaWrapper()._proposeDrop(glyphs, testing=True)
+        return self._handleDrop(sender, isProposal=True, callCallback=True)
 
     def performDragOperation_(self, sender):
-        source = sender.draggingSource()
-        if source == self:
-            return NSDragOperationNone
-        glyphs = source.getGlyphsFromDraggingInfo_(sender)
-        return self.vanillaWrapper()._proposeDrop(glyphs, testing=False)
+        return self._handleDrop(sender, isProposal=False, callCallback=True)
 
 
 class GlyphCellView(vanilla.ScrollView):
 
-    def __init__(self, posSize, allowDrag=False,
+    def __init__(self, posSize,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None,
         cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail",
-        autohidesScrollers=True):
+        autohidesScrollers=True, selfWindowDropSettings=None, selfDocumentDropSettings=None,
+        selfApplicationDropSettings=None, otherApplicationDropSettings=None, allowDrag=False,
+        dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
         self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_(
             ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
         super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=autohidesScrollers, backgroundColor=backgroundColor)
         self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
+
+        if dropCallback is not None:
+            from warnings import warn
+            warn(DeprecationWarning("dropCallback is deprecated. Use the new drop attributes."))
+            selfWindowDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
+            selfDocumentDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
+            selfApplicationDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
+            otherApplicationDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
+        for i in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
+            if i is not None:
+                i["type"] = dragAndDropType
+        for i in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
+            if i is not None:
+                self._glyphCellView.registerForDraggedTypes_([dragAndDropType])
+                break
+        self._selfWindowDropSettings = selfWindowDropSettings
+        self._selfDocumentDropSettings = selfDocumentDropSettings
+        self._otherApplicationDropSettings = selfApplicationDropSettings
+        self._otherApplicationDropSettings = otherApplicationDropSettings
         self._glyphCellView.setAllowsDrag_(allowDrag)
-        self._glyphCellView.setAllowsDrop_(dropCallback is not None)
+        self._dragAndDropType = dragAndDropType
+        # callbacks
+        self._dropCallback = dropCallback
         self._selectionCallback = selectionCallback
         self._doubleClickCallback = doubleClickCallback
         self._deleteCallback = deleteCallback
-        self._dropCallback = dropCallback
+        # storage
         self._glyphs = []
 
     def _breakCycles(self):
@@ -725,22 +794,18 @@ class GlyphCellView(vanilla.ScrollView):
         self._deleteCallback = None
         super(GlyphCellView, self)._breakCycles()
 
-    def _selection(self):
-        if self._selectionCallback is not None:
-            self._selectionCallback(self)
-
-    def _doubleClick(self):
-        if self._doubleClickCallback is not None:
-            self._doubleClickCallback(self)
-
-    def _delete(self):
+    def _removeSelection(self):
         if self._deleteCallback is not None:
             self._deleteCallback(self)
 
-    def _proposeDrop(self, glyphs, testing):
-        if self._dropCallback is not None:
-            return self._dropCallback(self, glyphs, testing)
-        return False
+    def _deprecatedDropCallback(self, sender, dropInfo):
+        source = dropInfo["source"]
+        indexes = [int(i) for i in dropInfo["data"]]
+        if isinstance(source, vanilla.VanillaBaseObject):
+            glyphs = [source[i] for i in indexes]
+        else:
+            glyphs = source.getGlyphsAtIndexes_(indexes)
+        return self._dropCallback(self, glyphs, not dropInfo["isProposal"])
 
     def getGlyphCellView(self):
         return self._glyphCellView
