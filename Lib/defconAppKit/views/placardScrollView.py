@@ -16,12 +16,13 @@ class DefconAppKitPlacardNSScrollView(NSScrollView):
         super(DefconAppKitPlacardNSScrollView, self).tile()
         if self.window() is None:
             return
-        placardWidth = self.placard.frame().size[0]
-        scroller = self.horizontalScroller()
-        (x, y), (w, h) = scroller.frame()
-        if w > 0 and h > 0:
-            scroller.setFrame_(((x + placardWidth, y), (w - placardWidth, h)))
-        self.placard.setFrame_(((x, y), (placardWidth, h)))
+        if hasattr(self, "placard"):
+            placardWidth = self.placard.frame().size[0]
+            scroller = self.horizontalScroller()
+            (x, y), (w, h) = scroller.frame()
+            if w > 0 and h > 0:
+                scroller.setFrame_(((x + placardWidth, y), (w - placardWidth, h)))
+            self.placard.setFrame_(((x, y), (placardWidth, h)))
 
     def setPlacard_(self, view):
         if hasattr(self, "placard") and self.placard is not None:
@@ -37,8 +38,18 @@ class PlacardScrollView(vanilla.ScrollView):
     nsScrollViewClass = DefconAppKitPlacardNSScrollView
 
     def setPlacard(self, placard):
+        if isinstance(placard, vanilla.VanillaBaseObject):
+            placard = placard.getNSView()
         self._nsObject.setPlacard_(placard)
 
+
+# -------------
+# Button Colors
+# -------------
+
+placardGradientColor1 = NSColor.whiteColor()
+placardGradientColor2 = NSColor.colorWithCalibratedWhite_alpha_(.9, 1)
+placardGradientColorFallback = NSColor.colorWithCalibratedWhite_alpha_(.95, 1)
 
 # ----------------
 # Segmented Button
@@ -56,12 +67,11 @@ class DefconAppKitPlacardNSSegmentedCell(NSSegmentedCell):
     def drawWithFrame_inView_(self, frame, view):
         # draw background
         try:
-            gray = NSColor.colorWithCalibratedWhite_alpha_(.9, 1)
-            white = NSColor.whiteColor()
-            gradient = NSGradient.alloc().initWithColors_([white, gray])
+            gradient = NSGradient.alloc().initWithColors_([placardGradientColor1, placardGradientColor2])
             gradient.drawInRect_angle_(frame, 90)
         except NameError:
-            NSColor.colorWithCalibratedWhite_alpha_(.95, 1).set()
+            placardGradientColorFallback.set()
+            NSRectFill(frame)
         # draw border
         (x, y), (w, h) = frame
         path = NSBezierPath.bezierPath()
@@ -103,4 +113,41 @@ class DefconAppKitPlacardNSSegmentedCell(NSSegmentedCell):
 class PlacardSegmentedButton(vanilla.SegmentedButton):
 
     nsSegmentedCellClass = DefconAppKitPlacardNSSegmentedCell
+
+
+# ------------
+# PopUp Button
+# ------------
+
+class DefconAppKitPlacardNSPopUpButtonCell(NSPopUpButtonCell):
+
+    def drawBorderAndBackgroundWithFrame_inView_(self, frame, view):
+        # draw background
+        try:
+            gradient = NSGradient.alloc().initWithColors_([placardGradientColor1, placardGradientColor2])
+            gradient.drawInRect_angle_(frame, 90)
+        except NameError:
+            placardGradientColorFallback.set()
+            NSRectFill(frame)
+        # draw border
+        (x, y), (w, h) = frame
+        path = NSBezierPath.bezierPath()
+        path.moveToPoint_((x + w - .5, h))
+        path.lineToPoint_((x + w - .5, .5))
+        path.lineToPoint_((x, .5))
+        path.setLineWidth_(1.0)
+        NSColor.colorWithCalibratedWhite_alpha_(.5, .7).set()
+        path.stroke()
+        # let the super do the rest
+        super(DefconAppKitPlacardNSPopUpButtonCell, self).drawBorderAndBackgroundWithFrame_inView_(frame, view)
+
+
+class PlacardPopUpButton(vanilla.PopUpButton):
+
+    nsPopUpButtonCellClass = DefconAppKitPlacardNSPopUpButtonCell
+
+    def __init__(self, posSize, items, **kwargs):
+        super(PlacardPopUpButton, self).__init__(posSize, items, **kwargs)
+        self._nsObject.setBordered_(False)
+        self._nsObject.cell().setGradientType_(NSGradientConvexStrong)
 
