@@ -78,7 +78,7 @@ class GlyphCollectionView(vanilla.List):
         # placeholder attributes
         self._selectionCallback = None
         self._doubleClickCallback = None
-        self._deleteCallback = None
+        self._deleteCallback = deleteCallback
         self._dragAndDropType = dragAndDropType
         ## set up the list
         self._listEditChangingAttribute = None
@@ -357,6 +357,9 @@ class GlyphCollectionView(vanilla.List):
         super(GlyphCollectionView, self)._removeSelection()
         # cell
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        # call the callback
+        if self._deleteCallback is not None:
+            self._deleteCallback(self)
 
     def __contains__(self, glyph):
         return glyph in self._wrappedListItems
