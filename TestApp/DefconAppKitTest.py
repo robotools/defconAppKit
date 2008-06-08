@@ -6,9 +6,8 @@ from defcon import Font
 from defconAppKit.windows.baseWindow import BaseWindowController
 from defconAppKit.windows.progressWindow import ProgressWindow
 from defconAppKit.representationFactories import registerAllFactories
-from defconAppKit.representationFactories import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
-from defconAppKit.views.glyphCellView import GlyphCellView
-from defconAppKit.views.glyphList import GlyphList
+from defconAppKit.representationFactories.glyphCellFactory import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
+from defconAppKit.views.glyphCollectionView import GlyphCollectionView
 from defconAppKit.views.glyphLineView import GlyphLineView
 from defconAppKit.views.glyphNameComboBox import GlyphNameComboBox
 from fontAppTools import splitText
@@ -52,12 +51,11 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.glyphs = [font[k] for k in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
         self.w = vanilla.Window((700, 500), minSize=(400, 400))
 
-        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCellView", "GlyphList", "GlyphLineView", "Misc. Controls"])
+        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCollectionView", "GlyphLineView", "Misc. Controls"])
         self.windowTab = self.w.tabs[0]
-        self.cellViewTab = self.w.tabs[1]
-        self.listTab = self.w.tabs[2]
-        self.lineViewTab = self.w.tabs[3]
-        self.controlsTab = self.w.tabs[4]
+        self.collectionViewTab = self.w.tabs[1]
+        self.lineViewTab = self.w.tabs[2]
+        self.controlsTab = self.w.tabs[3]
 
         # test various window methods
         self.windowTab.messageButton = vanilla.Button((10, 10, 200, 20), "Show Message", callback=self.windowMessage)
@@ -68,25 +66,15 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.windowTab.getFileButton = vanilla.Button((10, 160, 200, 20), "Show Get File", callback=self.windowGetFile)
 
         # test cell view
-        self.cellViewTab.cellViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.cellViewModify)
-        self.cellViewTab.cellViewSizeSlider = vanilla.Slider((170, 10, 150, 20), minValue=10, maxValue=100, value=50,
-            continuous=False, callback=self.cellViewResize)
-        self.cellViewTab.cellView = GlyphCellView((10, 40, -10, -10), allowDrag=True,
-            selectionCallback=self.cellViewSelectionCallback, doubleClickCallback=self.cellViewDoubleClickCallback,
-            deleteCallback=self.cellViewDeleteCallback, dropCallback=self.cellViewDropCallback)
-        self.cellViewTab.cellView.set(self.glyphs)
-        self.cellViewResize(self.cellViewTab.cellViewSizeSlider)
-
-        ## test list
-        #formatter = NSNumberFormatter.alloc().init()
-        #formatter.setAllowsFloats_(False)
-        #columnDescriptions = [
-        #    dict(title="name", editable=False),
-        #    dict(title="width", editable=True, formatter=formatter),
-        #    dict(title="leftMargin", editable=True, formatter=formatter),
-        #    dict(title="rightMargin", editable=True, formatter=formatter),
-        #]
-        #self.listTab.glyphList = GlyphList((10, 10, -10, -10), self.glyphs, columnDescriptions=columnDescriptions, editCallback=self.listViewEdit)
+        dropSettings = dict(callback=self.collectionViewDropCallback)
+        self.collectionViewTab.collectionViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.collectionViewModify)
+        self.collectionViewTab.collectionViewSizeSlider = vanilla.Slider((170, 10, 150, 20), minValue=10, maxValue=100, value=50,
+            continuous=False, callback=self.collectionViewResize)
+        self.collectionViewTab.collectionView = GlyphCollectionView((10, 40, -10, -10), allowDrag=True,
+            selectionCallback=self.collectionViewSelectionCallback, doubleClickCallback=self.collectionViewDoubleClickCallback,
+            deleteCallback=self.collectionViewDeleteCallback, selfApplicationDropSettings=dropSettings)
+        self.collectionViewTab.collectionView.set(self.glyphs)
+        self.collectionViewResize(self.collectionViewTab.collectionViewSizeSlider)
 
         # test line view
         self.lineViewTab.textInput = vanilla.EditText((10, 10, -10, 22), callback=self.lineViewTextInput)
@@ -140,35 +128,37 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     # cell view
 
-    def cellViewDoubleClickCallback(self, sender):
+    def collectionViewDoubleClickCallback(self, sender):
         print "double click"
 
-    def cellViewDeleteCallback(self, sender):
+    def collectionViewDeleteCallback(self, sender):
         print "delete", sender.getSelection()
 
-    def cellViewDropCallback(self, sender, glyphs, testing):
-        if not testing:
+    def collectionViewDropCallback(self, sender, dropInfo):
+        glyphs = dropInfo["data"]
+        isProposal = dropInfo["isProposal"]
+        if not isProposal:
             for glyph in glyphs:
                 self.font.insertGlyph(glyph, name=".glyph%d" % len(self.font))
             self.glyphs = [self.font[k] for k in sorted(self.font.keys())]
-            self.cellViewTab.cellView.set(self.glyphs)
+            self.collectionViewTab.collectionView.set(self.glyphs)
         return True
 
-    def cellViewSelectionCallback(self, sender):
-        self.cellViewTab.cellView.setSelection(sender.getSelection())
+    def collectionViewSelectionCallback(self, sender):
+        self.collectionViewTab.collectionView.setSelection(sender.getSelection())
 
-    def cellViewModify(self, sender):
-        selection = [self.glyphs[index] for index in self.cellViewTab.cellView.getSelection()]
+    def collectionViewModify(self, sender):
+        selection = [self.glyphs[index] for index in self.collectionViewTab.collectionView.getSelection()]
         for glyph in selection:
             glyph.move((100, 100))
 
-    def cellViewResize(self, sender):
+    def collectionViewResize(self, sender):
         width = height = int(sender.get())
         drawHeader = height > GlyphCellMinHeightForHeader
         if drawHeader:
             height += GlyphCellHeaderHeight
-        self.cellViewTab.cellView.setCellSize((width, height))
-        self.cellViewTab.cellView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
+        self.collectionViewTab.collectionView.setCellSize((width, height))
+        self.collectionViewTab.collectionView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
 
     # list view
 
