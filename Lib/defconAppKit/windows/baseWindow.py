@@ -38,6 +38,9 @@ class BaseWindowController(object):
     def showAskYesNo(self, messageText, informativeText, callback):
         vanilla.dialogs.askYesNo(parentWindow=self.w.getNSWindow(), messageText=messageText, informativeText=informativeText, resultCallback=callback)
 
+    def showGetFolder(self, callback):
+        vanilla.dialogs.getFolder(parentWindow=self.w.getNSWindow(), resultCallback=callback)
+
     def showGetFile(self, fileTypes, callback, allowsMultipleSelection=False):
         vanilla.dialogs.getFile(fileTypes=fileTypes, allowsMultipleSelection=allowsMultipleSelection,
             parentWindow=self.w.getNSWindow(), resultCallback=callback)
