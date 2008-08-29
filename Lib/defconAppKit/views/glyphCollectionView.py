@@ -207,6 +207,12 @@ class GlyphCollectionView(vanilla.List):
         else:
             self._glyphCellView.setSelection_(selection)
 
+    def scrollToSelection(self):
+        super(GlyphCollectionView, self).scrollToSelection()
+        selection = self.getSelection()
+        if selection:
+            self._glyphCellView.scrollToCell_(selection[0])
+
     # -------------
     # drag and drop
     # -------------

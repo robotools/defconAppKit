@@ -214,6 +214,7 @@ class InsertGlyphView(vanilla.Window):
             index = self.orderedGlyphNames.index(glyphName)
             selection.append(index)
         self.glyphCollectionView.setSelection(selection)
+        self.glyphCollectionView.scrollToSelection()
 
     def glyphCollectionCallback(self, sender):
         selection = sender.getSelection()
