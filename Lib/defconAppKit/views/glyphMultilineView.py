@@ -145,7 +145,7 @@ class InsertGlyphView(vanilla.Window):
         self._callback = callback
 
         # setup the window
-        width = 352
+        width = 351
         height = 300
         x, y = center
         x -= (width / 2)
@@ -198,13 +198,18 @@ class InsertGlyphView(vanilla.Window):
             time.sleep(.02)
         self._window.setAlphaValue_(1.0)
 
+        self._closing = False
+
     def finish(self, sender=None):
+        if self._closing:
+            return
         for i in xrange(5):
             a = 1.0 - (i * .2)
             self._window.setAlphaValue_(a)
             time.sleep(.02)
         self._font = None
         self._callback = None
+        self._closing = True
         self.close()
 
     def glyphNameEntryCallback(self, sender):
