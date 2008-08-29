@@ -90,10 +90,10 @@ class GlyphMultilineView(vanilla.TextEditor):
         viewFrame = (viewFramePosition, viewFrameSize)
         (sL, sB), (sW, sH) = NSScreen.mainScreen().frame()
         (vL, vB), (vW, vH) =  viewFrame
-        wT = sH - vB - wH - 40
+        vT = sH - vB - vH - 40
         w, h = self._nsObject.frame().size
-        x = wL + (w / 2)
-        y = wT + (h / 2)
+        x = vL + (w / 2)
+        y = vT + (h / 2)
         # open the view
         font = self._font()
         InsertGlyphView((x, y), font, self._insertGlyphResultCallback)
