@@ -46,7 +46,13 @@ class GlyphCellFactoryDrawingController(object):
         bodyRect = ((0, 0), (self.width, self.height-self.headerHeight))
         headerRect = ((0, -self.height+self.headerHeight), (self.width, self.headerHeight))
         # background
+        context.saveGraphicsState()
+        transform = NSAffineTransform.transform()
+        transform.translateXBy_yBy_(0, self.height-self.headerHeight)
+        transform.scaleXBy_yBy_(1.0, -1.0)
+        transform.concat()
         self.drawCellBackground(bodyRect)
+        context.restoreGraphicsState()
         # glyph
         if self.shouldDrawMetrics:
             self.drawCellHorizontalMetrics(bodyRect)
