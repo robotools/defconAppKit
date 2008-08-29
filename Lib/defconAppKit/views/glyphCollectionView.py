@@ -114,7 +114,7 @@ class GlyphCollectionView(vanilla.List):
         if listColumnDescriptions is None:
             listColumnDescriptions = [dict(title="Name", attribute="name")]
         super(GlyphCollectionView, self).__init__(posSize, [], columnDescriptions=listColumnDescriptions,
-            editCallback=editCallback,
+            editCallback=editCallback, selectionCallback=selectionCallback,
             showColumnTitles=listShowColumnTitles, enableTypingSensitivity=True, enableDelete=enableDelete,
             autohidesScrollers=False,
             selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,

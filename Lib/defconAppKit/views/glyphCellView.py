@@ -10,6 +10,7 @@ from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
+selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
 
 
 
@@ -252,25 +253,26 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         NSColor.whiteColor().set()
         for index, glyph in enumerate(self._glyphs):
-            t = top-cellHeight
+            t = top - cellHeight
             rect = ((left, t), (cellWidth, cellHeight))
+
+            NSRectFill(rect)
 
             self._clickRectsToIndex[rect] = index
             self._indexToClickRects[index] = rect
-
-            if index in self._selection:
-                selectionColor.set()
-                NSRectFill(rect)
-                NSColor.whiteColor().set()
-            else:
-                NSRectFill(rect)
 
             image = glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
             image.drawAtPoint_fromRect_operation_fraction_(
                 (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                 )
-            left += cellWidth
 
+            if index in self._selection:
+                selectionColor.set()
+                r = ((left+1, t+1), (cellWidth-3, cellHeight-3))
+                NSRectFillUsingOperation(r, NSCompositePlusDarker)
+                NSColor.whiteColor().set()
+
+            left += cellWidth
             if left + cellWidth > width:
                 left = 0
                 top += cellHeight
