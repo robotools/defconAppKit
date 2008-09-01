@@ -11,7 +11,7 @@ class DefconAppKitNSTextView(NSTextView):
         characters = event.charactersIgnoringModifiers()
         modifiers = event.modifierFlags()
         if characters == "/" and modifiers & NSAlternateKeyMask:
-            self.vanillaWrapper().showInsertGlyphView()
+            self.vanillaWrapper().showGlyphSelectionPopUp()
         else:
             super(DefconAppKitNSTextView, self).keyDown_(event)
 
@@ -67,13 +67,34 @@ class GlyphMultilineView(vanilla.TextEditor):
         self._pointSize = value
         self._updateTextView()
 
-    def set(self, text):
-        pass
+    def set(self, lines):
+        font = self._font()
+        composed = []
+        for line in lines:
+            composed.append([])
+            for glyphName in line:
+                if glyphName not in font:
+                    glyphName = ".notdef"
+                uniValue = font.unicodeData.forcedUnicodeForGlyphName(glyphName)
+                character = unichr(uniValue)
+                composed[-1].append(character)
+        composed = [u"".join(line) for line in composed]
+        composed = u"\n".join(composed)
+        self._textView.setString_(composed)
 
     def get(self):
-        pass
+        font = self._font()
+        text = self._textView.string()
+        lines = []
+        for line in text.splitlines():
+            lines.append([])
+            for character in line:
+                uniValue = ord(character)
+                glyphName = font.unicodeData.glyphNameForForcedUnicode(uniValue)
+                lines[-1].append(glyphName)
+        return lines
 
-    def showInsertGlyphView(self):
+    def showGlyphSelectionPopUp(self):
         # work out the center of the view in screen coordinates
         viewFrame = self._nsObject.frame()
         previous = self._nsObject
@@ -96,7 +117,7 @@ class GlyphMultilineView(vanilla.TextEditor):
         y = vT + (h / 2)
         # open the view
         font = self._font()
-        InsertGlyphView((x, y), font, self._insertGlyphResultCallback)
+        GlyphSelectionPopUp((x, y), font, self._insertGlyphResultCallback)
 
     def _insertGlyphResultCallback(self, glyphName):
         if glyphName is None:
@@ -107,7 +128,7 @@ class GlyphMultilineView(vanilla.TextEditor):
 
 
 # ---------------------
-# Glyph Insertion Panel
+# Glyph Selection Panel
 # ---------------------
 
 
@@ -120,13 +141,13 @@ from glyphCollectionView import GlyphCollectionView
 viewColor = NSColor.colorWithCalibratedWhite_alpha_(.9, .9)
 
 
-class DefconAppKitGlyphInsertionNSWindow(NSPanel):
+class DefconAppKitGlyphSelectionNSWindow(NSPanel):
 
     def canBecomeKeyWindow(self):
         return True
 
 
-class DefconAppKitGlyphInsertionBackgroundView(NSView):
+class DefconAppKitGlyphSelectionBackgroundView(NSView):
 
     def drawRect_(self, rect):
         rect = self.bounds()
@@ -135,9 +156,9 @@ class DefconAppKitGlyphInsertionBackgroundView(NSView):
         path.fill()
 
 
-class InsertGlyphView(vanilla.Window):
+class GlyphSelectionPopUp(vanilla.Window):
 
-    nsWindowClass = DefconAppKitGlyphInsertionNSWindow
+    nsWindowClass = DefconAppKitGlyphSelectionNSWindow
     nsWindowStyleMask = NSBorderlessWindowMask
 
     def __init__(self, center, font, callback, glyphSortDescriptors=None):
@@ -151,11 +172,11 @@ class InsertGlyphView(vanilla.Window):
         x -= (width / 2)
         y -= (height / 2)
         posSize = (x, y, width, height)
-        super(InsertGlyphView, self).__init__(posSize)
+        super(GlyphSelectionPopUp, self).__init__(posSize)
         self._window.setMovableByWindowBackground_(True)
 
         # set the background
-        contentView = DefconAppKitGlyphInsertionBackgroundView.alloc().init()
+        contentView = DefconAppKitGlyphSelectionBackgroundView.alloc().init()
         self._window.setContentView_(contentView)
         self._window.setAlphaValue_(0.0)
         self._window.setOpaque_(False)
@@ -165,22 +186,11 @@ class InsertGlyphView(vanilla.Window):
         self.glyphNameComboBox = GlyphNameComboBox((20, 20, -20, 22), font, callback=self.glyphNameEntryCallback)
 
         # collection view
-        if glyphSortDescriptors is None:
-            glyphSortDescriptors = [
-                dict(type="alphabetical", allowPseudoUnicode=True),
-                dict(type="category", allowPseudoUnicode=True),
-                dict(type="unicode", allowPseudoUnicode=True),
-                dict(type="script", allowPseudoUnicode=True),
-                dict(type="suffix", allowPseudoUnicode=True),
-                dict(type="decompositionBase", allowPseudoUnicode=True)
-            ]
-        glyphs = [font[glyphName] for glyphName in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
-        self.orderedGlyphNames = [glyph.name for glyph in glyphs]
-
+        self.progressSpinner = vanilla.ProgressSpinner((155, 143, 16, 16), sizeStyle="small")
         self.glyphCollectionView = GlyphCollectionView((20, 52, -20, -65), selectionCallback=self.glyphCollectionCallback)
         self.glyphCollectionView.setCellSize((42, 56))
         self.glyphCollectionView.setCellRepresentationArguments(drawHeader=True)
-        self.glyphCollectionView.set(glyphs)
+        self.glyphCollectionView.show(False)
 
         # bottom
         self.bottomLine = vanilla.HorizontalLine((20, -55, -20, 1))
@@ -192,17 +202,38 @@ class InsertGlyphView(vanilla.Window):
         self.bind("resigned key", self.finish)
         self.open()
 
+        # fade in
         for i in xrange(5):
             a = i * .2
             self._window.setAlphaValue_(a)
             time.sleep(.02)
         self._window.setAlphaValue_(1.0)
 
+        # populate collection view
+        self.progressSpinner.start()
+        if glyphSortDescriptors is None:
+            glyphSortDescriptors = [
+                dict(type="alphabetical", allowPseudoUnicode=True),
+                dict(type="category", allowPseudoUnicode=True),
+                dict(type="unicode", allowPseudoUnicode=True),
+                dict(type="script", allowPseudoUnicode=True),
+                dict(type="suffix", allowPseudoUnicode=True),
+                dict(type="decompositionBase", allowPseudoUnicode=True)
+            ]
+        glyphs = [font[glyphName] for glyphName in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
+        self.orderedGlyphNames = [glyph.name for glyph in glyphs]
+        self.glyphCollectionView.set(glyphs)
+        self.glyphCollectionView.getGlyphCellView().display()
+        self.progressSpinner.stop()
+        self.progressSpinner.show(False)
+        self.glyphCollectionView.show(True)
+
         self._closing = False
 
     def finish(self, sender=None):
         if self._closing:
             return
+        # fade out
         for i in xrange(5):
             a = 1.0 - (i * .2)
             self._window.setAlphaValue_(a)
@@ -237,3 +268,4 @@ class InsertGlyphView(vanilla.Window):
             glyphName = None
         self._callback(glyphName)
         self.finish()
+
