@@ -9,7 +9,9 @@ from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories.glyphCellFactory import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
 from defconAppKit.views.glyphCollectionView import GlyphCollectionView
 from defconAppKit.views.glyphLineView import GlyphLineView
+from defconAppKit.views.glyphMultilineView import GlyphMultilineView
 from defconAppKit.views.glyphNameComboBox import GlyphNameComboBox
+from defconAppKit.tools.osFontBridgeManager import OSFontBridgeManager
 from fontAppTools import splitText
 
 registerAllFactories()
@@ -21,17 +23,33 @@ objc.setVerbose(True)
 NibClassBuilder.extractClasses("MainMenu")
 
 
+class DefconAppKitTestAppDelegate(NSObject):
+
+    def init(self):
+        self = super(DefconAppKitTestAppDelegate, self).init()
+        self._osFontBridgeManager = OSFontBridgeManager()
+        return self
+
+    def OSFontBridgeManager(self):
+        return self._osFontBridgeManager
+
+
 class DefconAppKitTestDocument(NSDocument):
 
     def readFromFile_ofType_(self, path, tp):
         progress = ProgressWindow("Opening...")
         try:
-            font = Font(path)
+            font = self.font = Font(path)
+            NSApp().delegate().OSFontBridgeManager().addFont(font)
             window = self.vanillaWindowController = DefconAppKitTestDocumentWindow(font)
             self.addWindowController_(window.w.getNSWindowController())
         finally:
             progress.close()
         return True
+
+    def dealloc(self):
+        NSApp().delegate().OSFontBridgeManager().removeFont(self.font)
+        super(DefconAppKitTestDocument, self).dealloc()
 
 
 glyphSortDescriptors = [
@@ -51,11 +69,12 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.glyphs = [font[k] for k in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
         self.w = vanilla.Window((700, 500), minSize=(400, 400))
 
-        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCollectionView", "GlyphLineView", "Misc. Controls"])
+        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCollectionView", "GlyphLineView", "GlyphMultilineView", "Misc. Controls"])
         self.windowTab = self.w.tabs[0]
         self.collectionViewTab = self.w.tabs[1]
         self.lineViewTab = self.w.tabs[2]
-        self.controlsTab = self.w.tabs[3]
+        self.multilineViewTab = self.w.tabs[3]
+        self.controlsTab = self.w.tabs[4]
 
         # test various window methods
         self.windowTab.messageButton = vanilla.Button((10, 10, 200, 20), "Show Message", callback=self.windowMessage)
@@ -77,8 +96,22 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.collectionViewResize(self.collectionViewTab.collectionViewSizeSlider)
 
         # test line view
-        self.lineViewTab.textInput = vanilla.EditText((10, 10, -10, 22), callback=self.lineViewTextInput)
+        self.lineViewTab.lineViewSizeSlider = vanilla.Slider((-160, 11, 150, 20), minValue=10, maxValue=500, value=100,
+            continuous=True, callback=self.lineViewResize)
+        self.lineViewTab.textInput = vanilla.EditText((10, 10, -170, 22), callback=self.lineViewTextInput)
         self.lineViewTab.lineView = GlyphLineView((10, 40, -10, -10), dropCallback=self.lineViewDropCallback)
+
+        # test multiline view
+        self.multilineViewTab.multilineViewSizeSlider = vanilla.Slider((10, 10, 150, 20), minValue=10, maxValue=500, value=100,
+            continuous=True, callback=self.multilineViewResize)
+        self.multilineViewTab.multilineView = GlyphMultilineView((10, 40, -10, -10), callback=self.multilineViewTextInput)
+        self.multilineViewTab.multilineView.setFont(font)
+        lines = [[]]
+        for glyph in self.glyphs:
+            lines[-1].append(glyph.name)
+            if len(lines[-1]) == 10:
+                lines.append([])
+        self.multilineViewTab.multilineView.set(lines)
 
         # test controls
 
@@ -86,7 +119,7 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
         self.setUpBaseWindowBehavior()
 
-        self.w.tabs.set(2)
+        self.w.tabs.set(3)
 
         self.w.open()
 
@@ -176,6 +209,19 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         if not testing:
             self.lineViewTab.lineView.set(glyphs)
         return True
+
+    def lineViewResize(self, sender):
+        self.lineViewTab.lineView.setPointSize(sender.get())
+
+    # multiline view
+
+    def multilineViewTextInput(self, sender):
+        lines = sender.get()
+        print "multiline input:", lines
+
+    def multilineViewResize(self, sender):
+        self.multilineViewTab.multilineView.setPointSize(sender.get())
+
 
 
 if __name__ == "__main__":
