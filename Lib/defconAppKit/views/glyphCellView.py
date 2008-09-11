@@ -6,13 +6,12 @@ from AppKit import *
 import vanilla
 from defconAppKit.notificationObserver import NSObjectNotificationObserver
 from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
+from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox, HUDHorizontalLine
 
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
-
-
 
 def _makeGlyphCellDragIcon(glyphs):
     font = None
@@ -83,8 +82,8 @@ def _makeGlyphCellDragIcon(glyphs):
 
 class DefconAppKitGlyphCellNSView(NSView):
 
-    def initWithFrame_cellRepresentationName_detailRepresentationName_(self,
-        frame, cellRepresentationName, detailRepresentationName):
+    def initWithFrame_cellRepresentationName_detailWindowClass_(self,
+        frame, cellRepresentationName, detailWindowClass):
         self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
         self._cellWidth = 50
         self._cellHeight = 50
@@ -102,12 +101,19 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._rowCount = 0
 
         self._cellRepresentationName = cellRepresentationName
-        self._detailRepresentationName = detailRepresentationName
         self._cellRepresentationArguments = {}
 
         self._allowDrag = False
 
-        self._glyphDetailMenu = None
+        if detailWindowClass is not None:
+            self._glyphDetailWindow = detailWindowClass()
+        else:
+            self._glyphDetailWindow = None
+        self._glyphDetailRequiredModifiers = [NSControlKeyMask]
+        self._glyphDetailOnMouseDown = True
+        self._glyphDetailOnMouseUp = False
+        self._glyphDetailOnMouseDragged = True
+        self._glyphDetailOnMouseMoved = False
 
         return self
 
@@ -172,6 +178,20 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._rowCount = rowCount
         self.setNeedsDisplay_(True)
 
+    def setGlyphDetailConditions_(self, modifiers=[], mouseDown=False, mouseUp=False, mouseDragged=False, mouseMoved=False):
+        """
+        Set the conditions that will be used to determine the visibility of the detail window.
+        This is subject to change, so use it at your own risk.
+        """
+        self._glyphDetailRequiredModifiers = modifiers
+        self._glyphDetailOnMouseDown = mouseDown
+        self._glyphDetailOnMouseUp = mouseUp
+        self._glyphDetailOnMouseDragged = mouseDragged
+        self._glyphDetailOnMouseMoved = mouseMoved
+
+    def glyphDetailWindow(self):
+        return self._glyphDetailWindow
+
     # selection
 
     def getSelection(self):
@@ -226,6 +246,8 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def dealloc(self):
         self._unsubscribeFromGlyphs()
+        if self._glyphDetailWindow is not None:
+            self._glyphDetailWindow = None
         super(DefconAppKitGlyphCellNSView, self).dealloc()
 
     def isFlipped(self):
@@ -290,41 +312,6 @@ class DefconAppKitGlyphCellNSView(NSView):
         path.setLineWidth_(1.0)
         path.stroke()
 
-        if self._glyphDetailMenu is not None:
-            shadow = NSShadow.alloc().init()
-            shadow.setShadowOffset_((0, -3))
-            shadow.setShadowColor_(NSColor.blackColor())
-            shadow.setShadowBlurRadius_(10.0)
-            shadow.set()
-
-            point, image = self._getPositionForGlyphDetailMenu()
-            image.drawAtPoint_fromRect_operation_fraction_(
-                point, ((0, 0), image.size()), NSCompositeSourceOver, 1.0)
-
-    def _getPositionForGlyphDetailMenu(self):
-        (left, top), image = self._glyphDetailMenu
-        width, height = image.size()
-        right = left + width
-        bottom = top + height
-
-        (visibleLeft, visibleTop), (visibleWidth, visibleHeight) = self.superview().documentVisibleRect()
-        visibleRight = visibleLeft + visibleWidth
-        visibleBottom = visibleTop + visibleHeight
-
-        if visibleBottom < bottom:
-            bottom = visibleBottom
-            top = bottom - height
-        if visibleTop > top:
-            top = visibleTop
-
-        if visibleRight < right:
-            right = visibleRight
-            left = right - width
-        if visibleLeft > left:
-            left = visibleLeft
-
-        return (left, top), image
-
     # ---------
     # Selection
     # ---------
@@ -356,7 +343,9 @@ class DefconAppKitGlyphCellNSView(NSView):
     # mouse
 
     def mouseDown_(self, event):
-        self._mouseSelection(event, mouseDown=True)
+        found = self._findGlyphForEvent(event)
+        self._mouseSelection(event, found, mouseDown=True)
+        self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
             if vanillaWrapper._doubleClickCallback is not None:
@@ -364,47 +353,99 @@ class DefconAppKitGlyphCellNSView(NSView):
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):
-        self._mouseSelection(event, mouseDragged=True)
+        found = self._findGlyphForEvent(event)
+        self._mouseSelection(event, found, mouseDragged=True)
+        self._handleDetailWindow(event, found, mouseDragged=True)
         self.autoscroll_(event)
 
+    def mouseMoved_(self, event):
+        found = self._findGlyphForEvent(event)
+        self._handleDetailWindow(event, found, mouseMoved=True)
+
     def mouseUp_(self, event):
-        self._mouseSelection(event, mouseUp=True)
+        found = self._findGlyphForEvent(event)
+        self._mouseSelection(event, found, mouseUp=True)
+        self._handleDetailWindow(event, found, mouseUp=True)
         if self._selection != self._oldSelection:
             vanillaWrapper = self.vanillaWrapper()
             if vanillaWrapper._selectionCallback is not None:
                 vanillaWrapper._selectionCallback(vanillaWrapper)
         del self._oldSelection
-        if self._glyphDetailMenu is not None:
-            self._glyphDetailMenu = None
-            self.setNeedsDisplay_(True)
 
-    def _mouseSelection(self, event, mouseDown=False, mouseDragged=False, mouseUp=False):
-        if mouseDown:
-            self._oldSelection = set(self._selection)
-
+    def _findGlyphForEvent(self, event):
         eventLocation = event.locationInWindow()
         mouseLocation = self.convertPoint_fromView_(eventLocation, None)
-
         found = None
-
         for rect, index in self._clickRectsToIndex.items():
             if NSPointInRect(mouseLocation, rect):
                 found = index
                 break
+        return found
+
+    def _handleDetailWindow(self, event, found, mouseDown=False, mouseMoved=False, mouseDragged=False, mouseUp=False, inDragAndDrop=False):
+        # no window
+        if self._glyphDetailWindow is None:
+            return
+        # determine show/hide
+        shouldBeVisible = True
+        eventLocation = event.locationInWindow()
+        mouseLocation = self.convertPoint_fromView_(eventLocation, None)
+        ## drag and drop
+        if inDragAndDrop:
+            shouldBeVisible = False
+        ## modifiers
+        modifiers = event.modifierFlags()
+        for modifier in self._glyphDetailRequiredModifiers:
+            if not modifiers & modifier:
+                shouldBeVisible = False
+                break
+        ## mouse conditions
+        haveMouseCondition = False
+        requireMouseCondition = True in (self._glyphDetailOnMouseDown, self._glyphDetailOnMouseUp, self._glyphDetailOnMouseMoved, self._glyphDetailOnMouseDragged)
+        if not requireMouseCondition:
+            haveMouseCondition = True
+        else:
+            if self._glyphDetailOnMouseDown and mouseDown:
+                haveMouseCondition = True
+            elif self._glyphDetailOnMouseUp and mouseUp:
+                haveMouseCondition = True
+            elif self._glyphDetailOnMouseMoved and mouseMoved:
+                haveMouseCondition = True
+            elif self._glyphDetailOnMouseDragged and mouseDragged:
+                haveMouseCondition = True
+        if not haveMouseCondition:
+            shouldBeVisible = False
+        ## glyph hit
+        if not found:
+            shouldBeVisible = False
+        ## mouse position is visible
+        if not NSPointInRect(mouseLocation, self.visibleRect()):
+            shouldBeVisible = False
+        # set the position
+        if shouldBeVisible:
+            x, y = eventLocation
+            windowX, windowY = event.window().frame().origin
+            detailX = windowX + x
+            detailY = windowY + y
+            glyph = self._glyphs[found]
+            self._glyphDetailWindow.setPositionNearCursor((detailX, detailY))
+            self._glyphDetailWindow.set(glyph)
+            if not self._glyphDetailWindow.isVisible():
+                self._glyphDetailWindow.show()
+        else:
+            self._glyphDetailWindow.hide()
+
+    def _mouseSelection(self, event, found, mouseDown=False, mouseDragged=False, mouseUp=False, mouseMoved=False):
+        if mouseDown:
+            self._oldSelection = set(self._selection)
+        if found is None:
+            return
 
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
         commandDown = modifiers & NSCommandKeyMask
         optionDown = modifiers & NSAlternateKeyMask
         controlDown = modifiers & NSControlKeyMask
-
-        # turn off glyph detail menu if necessary
-        if (not controlDown or found is None) and self._glyphDetailMenu is not None:
-            self._glyphDetailMenu = None
-            self.setNeedsDisplay_(True)
-
-        if found is None:
-            return
 
         # dragging
         if mouseDragged and self._allowDrag and found in self._selection and not commandDown and not shiftDown and not controlDown:
@@ -413,20 +454,9 @@ class DefconAppKitGlyphCellNSView(NSView):
             else:
                 self._beginDrag(event)
                 return
-
-        newSelection = None
-
-        # detail menu
-        if controlDown and found is not None and self._detailRepresentationName is not None:
-            newSelection = set([found])
-            x, y = mouseLocation
-            x += 10
-            y -= 10
-            glyph = self._glyphs[found]
-            self._glyphDetailMenu = ((int(x), int(y)), glyph.getRepresentation(self._detailRepresentationName))
-            self.setNeedsDisplay_(True)
         # selecting
-        elif commandDown:
+        newSelection = None
+        if commandDown:
             if found is None:
                 return
             if mouseDown:
@@ -454,7 +484,6 @@ class DefconAppKitGlyphCellNSView(NSView):
                 pass
             else:
                 newSelection = set([found])
-
         if newSelection is not None:
             self._selection = newSelection
             self.setNeedsDisplay_(True)
@@ -639,6 +668,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         return NSDragOperationGeneric
 
     def _beginDrag(self, event):
+        # hide the detail window
+        self._handleDetailWindow(event=event, found=None, inDragAndDrop=True)
+        # prep
         indexes = [i for i in sorted(self._selection)]
         image = _makeGlyphCellDragIcon([self._glyphs[i] for i in self._selection])
 
@@ -746,96 +778,113 @@ class DefconAppKitGlyphCellNSView(NSView):
         return self._handleDrop(sender, isProposal=False, callCallback=True)
 
 
-class GlyphCellView(vanilla.ScrollView):
+# -------------------------
+# Information Pop Up Window
+# -------------------------
 
-    def __init__(self, posSize,
-        selectionCallback=None, doubleClickCallback=None, deleteCallback=None, dropCallback=None,
-        cellRepresentationName="defconAppKitGlyphCell", detailRepresentationName="defconAppKitGlyphCellDetail",
-        autohidesScrollers=True, selfWindowDropSettings=None, selfDocumentDropSettings=None,
-        selfApplicationDropSettings=None, otherApplicationDropSettings=None, allowDrag=False,
-        dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
-        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_(
-            ((0, 0), (400, 400)), cellRepresentationName, detailRepresentationName)
-        self._glyphCellView.vanillaWrapper = weakref.ref(self)
-        super(GlyphCellView, self).__init__(posSize, self._glyphCellView, hasHorizontalScroller=False, autohidesScrollers=autohidesScrollers, backgroundColor=backgroundColor)
-        self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
 
-        if dropCallback is not None:
-            from warnings import warn
-            warn(DeprecationWarning("dropCallback is deprecated. Use the new drop attributes."))
-            selfWindowDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
-            selfDocumentDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
-            selfApplicationDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
-            otherApplicationDropSettings = dict(operation=NSDragOperationCopy, callback=self._deprecatedDropCallback)
-        for i in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
-            if i is not None:
-                i["type"] = dragAndDropType
-        for i in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
-            if i is not None:
-                self._glyphCellView.registerForDraggedTypes_([dragAndDropType])
-                break
-        self._selfWindowDropSettings = selfWindowDropSettings
-        self._selfDocumentDropSettings = selfDocumentDropSettings
-        self._otherApplicationDropSettings = selfApplicationDropSettings
-        self._otherApplicationDropSettings = otherApplicationDropSettings
-        self._glyphCellView.setAllowsDrag_(allowDrag)
-        self._dragAndDropType = dragAndDropType
-        # callbacks
-        self._dropCallback = dropCallback
-        self._selectionCallback = selectionCallback
-        self._doubleClickCallback = doubleClickCallback
-        self._deleteCallback = deleteCallback
-        # storage
-        self._glyphs = []
+class GlyphInformationPopUpWindow(InformationPopUpWindow):
 
-    def _breakCycles(self):
-        if hasattr(self, "_glyphCellView"):
-            self._glyphCellView.unsubscribeToScrollViewFrameChange_(self._nsObject)
-            del self._glyphCellView.vanillaWrapper
-            del self._glyphCellView
-        self._selectionCallback = None
-        self._doubleClickCallback = None
-        self._deleteCallback = None
-        super(GlyphCellView, self)._breakCycles()
+    def __init__(self):
+        posSize = (200, 280)
+        super(GlyphInformationPopUpWindow, self).__init__(posSize)
+        self.glyphView = GlyphInformationGlyphView((5, 5, -5, 145))
 
-    def _removeSelection(self):
-        if self._deleteCallback is not None:
-            self._deleteCallback(self)
+        self.line = HUDHorizontalLine((0, 160, -0, 1))
 
-    def _deprecatedDropCallback(self, sender, dropInfo):
-        source = dropInfo["source"]
-        indexes = [int(i) for i in dropInfo["data"]]
-        if isinstance(source, vanilla.VanillaBaseObject):
-            glyphs = [source[i] for i in indexes]
+        titleWidth = 100
+        entryLeft = 105
+        self.nameTitle = HUDTextBox((0, 170, titleWidth, 17), "Name:", alignment="right")
+        self.name = HUDTextBox((entryLeft, 170, -5, 17), "")
+        self.unicodeTitle = HUDTextBox((0, 190, titleWidth, 17), "Unicode:", alignment="right")
+        self.unicode = HUDTextBox((entryLeft, 190, -5, 17), "")
+        self.widthTitle = HUDTextBox((0, 210, titleWidth, 17), "Width:", alignment="right")
+        self.width = HUDTextBox((entryLeft, 210, -5, 17), "")
+        self.leftMarginTitle = HUDTextBox((0, 230, titleWidth, 17), "Left Margin:", alignment="right")
+        self.leftMargin = HUDTextBox((entryLeft, 230, -5, 17), "")
+        self.rightMarginTitle = HUDTextBox((0, 250, titleWidth, 17), "Right Margin:", alignment="right")
+        self.rightMargin = HUDTextBox((entryLeft, 250, -5, 17), "")
+
+    def set(self, glyph):
+        # name
+        name = glyph.name
+        # unicode
+        uni = glyph.unicode
+        if uni is None:
+            uni = ""
         else:
-            glyphs = source.getGlyphsAtIndexes_(indexes)
-        return self._dropCallback(self, glyphs, not dropInfo["isProposal"])
+            uni = hex(uni)[2:].upper()
+            if len(uni) < 4:
+                uni = uni.zfill(4)
+        # width
+        width = glyph.width
+        if width is None:
+            width = 0
+        width = round(width, 3)
+        if width == int(width):
+            width = int(width)
+        # left margin
+        leftMargin = glyph.leftMargin
+        if leftMargin is None:
+            leftMargin = 0
+        leftMargin = round(leftMargin, 3)
+        if leftMargin == int(leftMargin):
+            leftMargin = int(leftMargin)
+        # right margin
+        rightMargin = glyph.rightMargin
+        if rightMargin is None:
+            rightMargin = 0
+        rightMargin = round(rightMargin, 3)
+        if rightMargin == int(rightMargin):
+            rightMargin = int(rightMargin)
+        # set
+        self.name.set(name)
+        self.unicode.set(uni)
+        self.width.set(width)
+        self.leftMargin.set(leftMargin)
+        self.rightMargin.set(rightMargin)
+        self.glyphView.set(glyph)
+        self._window.invalidateShadow()
 
-    def getGlyphCellView(self):
-        return self._glyphCellView
 
-    def __getitem__(self, index):
-        return self._glyphs[index]
+class DefconAppKitGlyphInformationNSView(NSView):
 
-    def get(self):
-        return list(self._glyphs)
+    def setGlyph_(self, glyph):
+        self._glyph = glyph
+        self.setNeedsDisplay_(True)
 
-    def set(self, glyphs):
-        self._glyphCellView.setGlyphs_(glyphs)
-        self._glyphs = glyphs
+    def drawRect_(self, rect):
+        if not hasattr(self, "_glyph"):
+            return
+        inset = 10
+        bounds = self.bounds()
+        bounds = NSInsetRect(bounds, inset, inset)
+        vWidth, vHeight = bounds.size
+        glyph = self._glyph
+        font = glyph.getParent()
+        if font is None:
+            upm = 1000
+            descender = -250
+        else:
+            upm = font.info.unitsPerEm
+            descender = font.info.descender
+        scale = vHeight / upm
+        centerOffset = (vWidth - (glyph.width * scale)) / 2
+        transform = NSAffineTransform.transform()
+        transform.translateXBy_yBy_(centerOffset+inset, inset)
+        transform.scaleBy_(scale)
+        transform.translateXBy_yBy_(0, -descender)
+        transform.concat()
+        NSColor.whiteColor().set()
+        path = glyph.getRepresentation("NSBezierPath")
+        path.fill()
 
-    def setCellSize(self, (width, height)):
-        self._glyphCellView.setCellSize_((width, height))
 
-    def getSelection(self):
-        return self._glyphCellView.getSelection()
+class GlyphInformationGlyphView(vanilla.VanillaBaseObject):
 
-    def setSelection(self, selection):
-        self._glyphCellView.setSelection_(selection)
+    def __init__(self, posSize):
+        self._setupView(DefconAppKitGlyphInformationNSView, posSize)
 
-    def setCellRepresentationArguments(self, **kwargs):
-        self._glyphCellView.setCellRepresentationArguments_(**kwargs)
-
-    def getCellRepresentationArguments(self):
-        return self._glyphCellView.getCellRepresentationArguments()
+    def set(self, glyph):
+        self._nsObject.setGlyph_(glyph)
 

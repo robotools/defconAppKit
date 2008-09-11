@@ -2,7 +2,7 @@ import weakref
 from AppKit import *
 import vanilla
 from defconAppKit.views.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardSegmentedButton
-from defconAppKit.views.glyphCellView import DefconAppKitGlyphCellNSView, gridColor
+from defconAppKit.views.glyphCellView import DefconAppKitGlyphCellNSView, gridColor, GlyphInformationPopUpWindow
 
 
 class GlyphCollectionView(vanilla.List):
@@ -42,8 +42,11 @@ class GlyphCollectionView(vanilla.List):
     cellRepresentationName
     The representation name used to fetch the cell representations.
 
-    cellDetailRepresentationName
-    The representation name used for showing the detail popup in cell mode.
+    glyphDetailWindowClass
+    A window class to use when the user control-clicks a cell. This must be a
+    subclass of vanilla.Window and it must have the following methods:
+        window.set(glyph)
+        window.setPosition((x, y))
 
     selectionCallback, doubleClickCallback, deleteCallback, editCallback
     Sames as the arguments in vanilla.List
@@ -70,7 +73,7 @@ class GlyphCollectionView(vanilla.List):
     nsScrollViewClass = DefconAppKitPlacardNSScrollView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
-        cellRepresentationName="defconAppKitGlyphCell", cellDetailRepresentationName="defconAppKitGlyphCellDetail",
+        cellRepresentationName="defconAppKitGlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
         selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
@@ -130,8 +133,8 @@ class GlyphCollectionView(vanilla.List):
             self._keyToAttribute[key] = attribute
             self._orderedListKeys.append(key)
         ## set up the cell view
-        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailRepresentationName_(
-            ((0, 0), (400, 400)), cellRepresentationName, cellDetailRepresentationName)
+        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailWindowClass_(
+            ((0, 0), (400, 400)), cellRepresentationName, glyphDetailWindowClass)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
         self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
         self._glyphCellView.setAllowsDrag_(allowDrag)
