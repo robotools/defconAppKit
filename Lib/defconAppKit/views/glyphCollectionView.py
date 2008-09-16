@@ -71,6 +71,7 @@ class GlyphCollectionView(vanilla.List):
     """
 
     nsScrollViewClass = DefconAppKitPlacardNSScrollView
+    glyphCellViewClass = DefconAppKitGlyphCellNSView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
         cellRepresentationName="defconAppKitGlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
@@ -133,10 +134,9 @@ class GlyphCollectionView(vanilla.List):
             self._keyToAttribute[key] = attribute
             self._orderedListKeys.append(key)
         ## set up the cell view
-        self._glyphCellView = DefconAppKitGlyphCellNSView.alloc().initWithFrame_cellRepresentationName_detailWindowClass_(
+        self._glyphCellView = self.glyphCellViewClass.alloc().initWithFrame_cellRepresentationName_detailWindowClass_(
             ((0, 0), (400, 400)), cellRepresentationName, glyphDetailWindowClass)
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
-        self._glyphCellView.subscribeToScrollViewFrameChange_(self._nsObject)
         self._glyphCellView.setAllowsDrag_(allowDrag)
         dropTypes = []
         for d in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
@@ -160,7 +160,11 @@ class GlyphCollectionView(vanilla.List):
         self._haveTweakedColumnWidths = initialMode == "list"
 
     def _breakCycles(self):
+        for glyph in self._wrappedListItems.keys():
+            del self._wrappedListItems[glyph]
+            self._unsubscribeFromGlyph(glyph)
         self._placard = None
+        self._glyphCellView = None
         super(GlyphCollectionView, self)._breakCycles()
 
     def _placardSelection(self, sender):
@@ -266,6 +270,7 @@ class GlyphCollectionView(vanilla.List):
         d = self._wrappedListItems[glyph]
         for key, attr in self._keyToAttribute.items():
             d[key] = getattr(glyph, attr)
+        self._glyphCellView.setNeedsDisplay_(True)
 
     # editing
 

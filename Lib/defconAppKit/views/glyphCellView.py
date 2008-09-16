@@ -105,10 +105,8 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         self._allowDrag = False
 
-        if detailWindowClass is not None:
-            self._glyphDetailWindow = detailWindowClass()
-        else:
-            self._glyphDetailWindow = None
+        self._glyphDetailWindowClass = detailWindowClass
+        self._glyphDetailWindow = None
         self._glyphDetailRequiredModifiers = [NSControlKeyMask]
         self._glyphDetailOnMouseDown = True
         self._glyphDetailOnMouseUp = False
@@ -128,9 +126,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         currentSelection = [self._glyphs[index] for index in self._selection]
         newSelection = set([glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs])
         self._selection = newSelection
-        self._unsubscribeFromGlyphs()
         self._glyphs = glyphs
-        self._subscribeToGlyphs()
         self.recalculateFrame()
 
     def getGlyphsAtIndexes_(self, indexes):
@@ -201,54 +197,55 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._selection = set(selection)
         self.setNeedsDisplay_(True)
 
-    # glyph change notification support
-
-    def _subscribeToGlyphs(self):
-        for glyph in self._glyphs:
-            self._notificationObserver.add(self, "_glyphChanged", glyph, "Glyph.Changed")
-
-    def _unsubscribeFromGlyphs(self):
-        done = set()
-        for glyph in self._glyphs:
-            if glyph in done:
-                continue
-            self._notificationObserver.remove(self, glyph, "Glyph.Changed")
-            done.add(glyph)
-
-    def _glyphChanged(self, notification):
-        self.setNeedsDisplay_(True)
-
     # window resize notification support
 
     def clipViewFrameChangeNotification_(self, notification):
         self.recalculateFrame()
 
-    def subscribeToScrollViewFrameChange_(self, scrollView):
-        notificationCenter = NSNotificationCenter.defaultCenter()
-        notificationCenter.addObserver_selector_name_object_(
-            self, "clipViewFrameChangeNotification:", NSViewFrameDidChangeNotification, scrollView
-        )
-        scrollView.setPostsFrameChangedNotifications_(True)
-
-    def unsubscribeToScrollViewFrameChange_(self, scrollView):
-        notificationCenter = NSNotificationCenter.defaultCenter()
-        notificationCenter.removeObserver_name_object_(
-            self, NSViewFrameDidChangeNotification, scrollView
-        )
-        scrollView.setPostsFrameChangedNotifications_(False)
+    def subscribeToScrollViewFrameChange(self):
+        scrollView = self.enclosingScrollView()
+        if scrollView is not None:
+            notificationCenter = NSNotificationCenter.defaultCenter()
+            notificationCenter.addObserver_selector_name_object_(
+                self, "clipViewFrameChangeNotification:", NSViewFrameDidChangeNotification, scrollView
+            )
+            scrollView.setPostsFrameChangedNotifications_(True)
 
     def viewDidEndLiveResize(self):
         self.recalculateFrame()
+
+    # close notification support
+
+    def windowResignMainNotification_(self, notification):
+        self._handleDetailWindow(None, None)
+
+    def windowCloseNotification_(self, notification):
+        if self._glyphDetailWindow is not None:
+            if self._glyphDetailWindow.getNSWindow() is not None:
+                self._glyphDetailWindow.close()
+        notificationCenter = NSNotificationCenter.defaultCenter()
+        notificationCenter.removeObserver_(self)
+
+    def subscribeToWindow(self):
+        notificationCenter = NSNotificationCenter.defaultCenter()
+        notificationCenter.addObserver_selector_name_object_(
+            self, "windowResignMainNotification:", NSWindowDidResignKeyNotification, self.window()
+        )
+        notificationCenter.addObserver_selector_name_object_(
+            self, "windowCloseNotification:", NSWindowWillCloseNotification, self.window()
+        )
 
     # --------------
     # NSView methods
     # --------------
 
-    def dealloc(self):
-        self._unsubscribeFromGlyphs()
-        if self._glyphDetailWindow is not None:
-            self._glyphDetailWindow = None
-        super(DefconAppKitGlyphCellNSView, self).dealloc()
+    def viewDidMoveToWindow(self):
+        # if window() returns an object, open the detail window
+        if self.window() is not None:
+            if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None:
+                self._glyphDetailWindow = self._glyphDetailWindowClass()
+            self.subscribeToWindow()
+            self.subscribeToScrollViewFrameChange()
 
     def isFlipped(self):
         return True
@@ -388,39 +385,47 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
         # determine show/hide
         shouldBeVisible = True
-        eventLocation = event.locationInWindow()
-        mouseLocation = self.convertPoint_fromView_(eventLocation, None)
-        ## drag and drop
-        if inDragAndDrop:
+        ## event is None
+        if event is None:
             shouldBeVisible = False
-        ## modifiers
-        modifiers = event.modifierFlags()
-        for modifier in self._glyphDetailRequiredModifiers:
-            if not modifiers & modifier:
-                shouldBeVisible = False
-                break
-        ## mouse conditions
-        haveMouseCondition = False
-        requireMouseCondition = True in (self._glyphDetailOnMouseDown, self._glyphDetailOnMouseUp, self._glyphDetailOnMouseMoved, self._glyphDetailOnMouseDragged)
-        if not requireMouseCondition:
-            haveMouseCondition = True
+        ## window is not key
+        elif NSApp().keyWindow() != self.window():
+            shouldBeVisible = False
+        ## event requirements
         else:
-            if self._glyphDetailOnMouseDown and mouseDown:
+            eventLocation = event.locationInWindow()
+            mouseLocation = self.convertPoint_fromView_(eventLocation, None)
+            ## drag and drop
+            if inDragAndDrop:
+                shouldBeVisible = False
+            ## modifiers
+            modifiers = event.modifierFlags()
+            for modifier in self._glyphDetailRequiredModifiers:
+                if not modifiers & modifier:
+                    shouldBeVisible = False
+                    break
+            ## mouse conditions
+            haveMouseCondition = False
+            requireMouseCondition = True in (self._glyphDetailOnMouseDown, self._glyphDetailOnMouseUp, self._glyphDetailOnMouseMoved, self._glyphDetailOnMouseDragged)
+            if not requireMouseCondition:
                 haveMouseCondition = True
-            elif self._glyphDetailOnMouseUp and mouseUp:
-                haveMouseCondition = True
-            elif self._glyphDetailOnMouseMoved and mouseMoved:
-                haveMouseCondition = True
-            elif self._glyphDetailOnMouseDragged and mouseDragged:
-                haveMouseCondition = True
-        if not haveMouseCondition:
-            shouldBeVisible = False
-        ## glyph hit
-        if not found:
-            shouldBeVisible = False
-        ## mouse position is visible
-        if not NSPointInRect(mouseLocation, self.visibleRect()):
-            shouldBeVisible = False
+            else:
+                if self._glyphDetailOnMouseDown and mouseDown:
+                    haveMouseCondition = True
+                elif self._glyphDetailOnMouseUp and mouseUp:
+                    haveMouseCondition = True
+                elif self._glyphDetailOnMouseMoved and mouseMoved:
+                    haveMouseCondition = True
+                elif self._glyphDetailOnMouseDragged and mouseDragged:
+                    haveMouseCondition = True
+            if not haveMouseCondition:
+                shouldBeVisible = False
+            ## glyph hit
+            if not found:
+                shouldBeVisible = False
+            ## mouse position is visible
+            if not NSPointInRect(mouseLocation, self.visibleRect()):
+                shouldBeVisible = False
         # set the position
         if shouldBeVisible:
             x, y = eventLocation

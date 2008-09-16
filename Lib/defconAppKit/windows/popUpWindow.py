@@ -78,8 +78,8 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
         self._fadeIn()
 
     def close(self):
-        super(InformationPopUpWindow, self).close()
         self._fadeOut()
+        super(InformationPopUpWindow, self).close()
 
     def show(self):
         super(InformationPopUpWindow, self).show()
