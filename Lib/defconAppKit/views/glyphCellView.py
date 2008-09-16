@@ -246,6 +246,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 self._glyphDetailWindow = self._glyphDetailWindowClass()
             self.subscribeToWindow()
             self.subscribeToScrollViewFrameChange()
+            self.recalculateFrame()
 
     def isFlipped(self):
         return True
