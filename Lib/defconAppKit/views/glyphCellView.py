@@ -422,7 +422,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             if not haveMouseCondition:
                 shouldBeVisible = False
             ## glyph hit
-            if not found:
+            if found is None:
                 shouldBeVisible = False
             ## mouse position is visible
             if not NSPointInRect(mouseLocation, self.visibleRect()):
