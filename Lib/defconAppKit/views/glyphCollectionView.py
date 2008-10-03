@@ -39,6 +39,10 @@ class GlyphCollectionView(vanilla.List):
     listShowColumnTitles
     Same as showColumnTitles in vanilla.List
 
+    showModePlacard
+    Flag to indicate if the mode switch placard should be shown. This can be
+    useful if you only want to show the list or the cell view.
+
     cellRepresentationName
     The representation name used to fetch the cell representations.
 
@@ -74,6 +78,7 @@ class GlyphCollectionView(vanilla.List):
     glyphCellViewClass = DefconAppKitGlyphCellNSView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
+        showModePlacard=True,
         cellRepresentationName="defconAppKitGlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
@@ -143,14 +148,16 @@ class GlyphCollectionView(vanilla.List):
             if d is not None:
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
+        self._placard = None
         ## set up the placard
-        placardW = 34
-        placardH = 16
-        self._placard = vanilla.Group((0, 0, placardW, placardH))
-        self._placard.button = PlacardSegmentedButton((0, 0, placardW, placardH),
-            [dict(imageObject=placardCellImage, width=16), dict(imageObject=placardListImage, width=18)],
-            callback=self._placardSelection, sizeStyle="mini")
-        self._nsObject.setPlacard_(self._placard.getNSView())
+        if showModePlacard:
+            placardW = 34
+            placardH = 16
+            self._placard = vanilla.Group((0, 0, placardW, placardH))
+            self._placard.button = PlacardSegmentedButton((0, 0, placardW, placardH),
+                [dict(imageObject=placardCellImage, width=16), dict(imageObject=placardListImage, width=18)],
+                callback=self._placardSelection, sizeStyle="mini")
+            self._nsObject.setPlacard_(self._placard.getNSView())
         ## tweak the scroll view
         self._nsObject.setBackgroundColor_(gridColor)
         ## table view tweak
@@ -185,10 +192,12 @@ class GlyphCollectionView(vanilla.List):
         placard = self._placard
         if mode == "list":
             documentView = self._tableView
-            placard.button.set(1)
+            if placard is not None:
+                placard.button.set(1)
         elif mode == "cell":
             documentView = self._glyphCellView
-            placard.button.set(0)
+            if placard is not None:
+                placard.button.set(0)
         self._nsObject.setDocumentView_(documentView)
         self._mode = mode
         self.setSelection(selection)
