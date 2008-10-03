@@ -153,11 +153,11 @@ class GlyphCollectionView(vanilla.List):
         self._nsObject.setPlacard_(self._placard.getNSView())
         ## tweak the scroll view
         self._nsObject.setBackgroundColor_(gridColor)
+        ## table view tweak
+        self._haveTweakedColumnWidths = initialMode == "list"
         ## set the mode
         self._mode = None
         self.setMode(initialMode)
-        ## table view tweak
-        self._haveTweakedColumnWidths = initialMode == "list"
 
     def _breakCycles(self):
         for glyph in self._wrappedListItems.keys():
@@ -199,22 +199,38 @@ class GlyphCollectionView(vanilla.List):
             tableView.sizeToFit()
             self._haveTweakedColumnWidths = True
 
+    def getMode(self):
+        """
+        Get the current mode.
+        """
+        return self._mode
+
     # --------------------
     # selection management
     # --------------------
 
     def getSelection(self):
+        """
+        Get the selection in the view as a list of indexes.
+        """
         if self._mode == "list":
             return super(GlyphCollectionView, self).getSelection()
         return self._glyphCellView.getSelection()
 
     def setSelection(self, selection):
+        """
+        Sets the selection in the view. The passed value
+        should be a list of indexes.
+        """
         if self._mode == "list":
             super(GlyphCollectionView, self).setSelection(selection)
         else:
             self._glyphCellView.setSelection_(selection)
 
     def scrollToSelection(self):
+        """
+        Scroll the view so that the current selection is visible.
+        """
         super(GlyphCollectionView, self).scrollToSelection()
         selection = self.getSelection()
         if selection:
@@ -267,6 +283,8 @@ class GlyphCollectionView(vanilla.List):
 
     def _glyphChanged(self, notification):
         glyph = notification.object
+        if glyph not in self._wrappedListItems:
+            return
         d = self._wrappedListItems[glyph]
         for key, attr in self._keyToAttribute.items():
             d[key] = getattr(glyph, attr)
@@ -425,7 +443,7 @@ class GlyphCollectionView(vanilla.List):
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def index(self, glyph):
-        item = self._wrappedListItems(glyph)
+        item = self._wrappedListItems[glyph]
         return super(GlyphCollectionView, self).index(item)
 
     def insert(self, index, glyph):
@@ -443,6 +461,9 @@ class GlyphCollectionView(vanilla.List):
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def set(self, glyphs):
+        """
+        Set the glyphs in the view.
+        """
         # remove removed wrapped items
         removedGlyphs = set(self._wrappedListItems) - set(glyphs)
         for glyph in removedGlyphs:
@@ -450,12 +471,15 @@ class GlyphCollectionView(vanilla.List):
             self._unsubscribeFromGlyph(glyph)
         # wrap the glyphs for the list
         wrappedGlyphs = [self._wrapGlyphForList(glyph) for glyph in glyphs]
-        # set the cell view
-        self._glyphCellView.setGlyphs_(glyphs)
         # set the list
         super(GlyphCollectionView, self).set(wrappedGlyphs)
+        # set the cell view
+        self._glyphCellView.setGlyphs_(glyphs)
 
     def get(self):
+        """
+        Get the glyphs in the view.
+        """
         return self._unwrapListItems()
 
     # ------------------
@@ -463,17 +487,35 @@ class GlyphCollectionView(vanilla.List):
     # ------------------
 
     def getGlyphCellView(self):
+        """
+        Get the cell NSView.
+        """
         return self._glyphCellView
 
     def setCellSize(self, (width, height)):
+        """
+        Set the size of the cells.
+        """
         self._glyphCellView.setCellSize_((width, height))
 
     def setCellRepresentationArguments(self, **kwargs):
+        """
+        Set the arguments that should be passed to the cell representation factory.
+        """
         self._glyphCellView.setCellRepresentationArguments_(**kwargs)
 
     def getCellRepresentationArguments(self):
+        """
+        Get the arguments passed to the cell representation factory.
+        """
         return self._glyphCellView.getCellRepresentationArguments()
 
+    def preloadGlyphCellImages(self):
+        """
+        Preload the images to be used in the cells. This is useful
+        when lots of cellsneed to be displayed.
+        """
+        self._glyphCellView.preloadGlyphCellImages()
 
 # -------------
 # placard icons
