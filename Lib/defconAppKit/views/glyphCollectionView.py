@@ -148,7 +148,6 @@ class GlyphCollectionView(vanilla.List):
             if d is not None:
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
-        self._placard = None
         ## set up the placard
         if showModePlacard:
             placardW = 34
@@ -158,6 +157,8 @@ class GlyphCollectionView(vanilla.List):
                 [dict(imageObject=placardCellImage, width=16), dict(imageObject=placardListImage, width=18)],
                 callback=self._placardSelection, sizeStyle="mini")
             self._nsObject.setPlacard_(self._placard.getNSView())
+        else:
+            self._placard = None
         ## tweak the scroll view
         self._nsObject.setBackgroundColor_(gridColor)
         ## table view tweak
