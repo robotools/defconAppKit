@@ -508,6 +508,12 @@ class GlyphCollectionView(vanilla.List):
         """
         self._glyphCellView.setCellSize_((width, height))
 
+    def getCellSize(self):
+        """
+        Get the size of the cells.
+        """
+        return self._glyphCellView.getCellSize()
+
     def setCellRepresentationArguments(self, **kwargs):
         """
         Set the arguments that should be passed to the cell representation factory.

@@ -147,6 +147,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellHeight = height
         self.recalculateFrame()
 
+    def getCellSize(self):
+        return self._cellWidth, self._cellHeight
+
     def setCellRepresentationArguments_(self, **kwargs):
         self._cellRepresentationArguments = kwargs
         self.setNeedsDisplay_(True)
