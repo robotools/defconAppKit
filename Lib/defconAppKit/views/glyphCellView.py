@@ -113,6 +113,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphDetailOnMouseDragged = True
         self._glyphDetailOnMouseMoved = False
 
+        self._windowIsClosed = False
+
         return self
 
     # --------------
@@ -121,6 +123,14 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def setAllowsDrag_(self, value):
         self._allowDrag = value
+
+    def preloadGlyphCellImages(self):
+        representationName = self._cellRepresentationName
+        representationArguments = self._cellRepresentationArguments
+        cellWidth = self._cellWidth
+        cellHeight = self._cellHeight
+        for glyph in self._glyphs:
+            glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
 
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
@@ -220,6 +230,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._handleDetailWindow(None, None)
 
     def windowCloseNotification_(self, notification):
+        self._windowIsClosed = True
         if self._glyphDetailWindow is not None:
             if self._glyphDetailWindow.getNSWindow() is not None:
                 self._glyphDetailWindow.close()
@@ -271,6 +282,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
 
+        visibleRect = self.visibleRect()
+
         NSColor.whiteColor().set()
         for index, glyph in enumerate(self._glyphs):
             t = top - cellHeight
@@ -281,16 +294,17 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._clickRectsToIndex[rect] = index
             self._indexToClickRects[index] = rect
 
-            image = glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
-            image.drawAtPoint_fromRect_operation_fraction_(
-                (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
-                )
+            if NSIntersectsRect(visibleRect, rect):
+                image = glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
+                image.drawAtPoint_fromRect_operation_fraction_(
+                    (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
+                    )
 
-            if index in self._selection:
-                selectionColor.set()
-                r = ((left+1, t+1), (cellWidth-3, cellHeight-3))
-                NSRectFillUsingOperation(r, NSCompositePlusDarker)
-                NSColor.whiteColor().set()
+                if index in self._selection:
+                    selectionColor.set()
+                    r = ((left+1, t+1), (cellWidth-3, cellHeight-3))
+                    NSRectFillUsingOperation(r, NSCompositePlusDarker)
+                    NSColor.whiteColor().set()
 
             left += cellWidth
             if left + cellWidth > width:
@@ -298,11 +312,11 @@ class DefconAppKitGlyphCellNSView(NSView):
                 top += cellHeight
 
         path = NSBezierPath.bezierPath()
-        for i in xrange(1, self._rowCount):
+        for i in xrange(1, self._rowCount+1):
             top = (i * cellHeight) - .5
             path.moveToPoint_((0, top))
             path.lineToPoint_((width, top))
-        for i in xrange(1, self._columnCount):
+        for i in xrange(1, self._columnCount+1):
             left = (i * cellWidth) - .5
             path.moveToPoint_((left, 0))
             path.lineToPoint_((left, height))
@@ -382,6 +396,8 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def _handleDetailWindow(self, event, found, mouseDown=False, mouseMoved=False, mouseDragged=False, mouseUp=False, inDragAndDrop=False):
         # no window
+        if self._windowIsClosed:
+            return
         if self._glyphDetailWindow is None:
             return
         # determine show/hide
