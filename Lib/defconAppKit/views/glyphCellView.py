@@ -411,6 +411,11 @@ class DefconAppKitGlyphCellNSView(NSView):
         ## window is not key
         elif NSApp().keyWindow() != self.window():
             shouldBeVisible = False
+        ## XXX work around an issue that causes mouseDragged
+        ## to be called after a drop from the view has occurred
+        ## outside of the view.
+        elif mouseDragged and not self._glyphDetailWindow.isVisible():
+            shouldBeVisible = False
         ## event requirements
         else:
             eventLocation = event.locationInWindow()
