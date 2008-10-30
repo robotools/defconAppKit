@@ -172,19 +172,20 @@ class InteractivePopUpWindow(vanilla.Window):
 
     nsWindowClass = DefconAppKitInteractivePopUpNSWindow
     nsWindowStyleMask = NSBorderlessWindowMask
+    contentViewClass = DefconAppKitInteractivePopUpWindowContentView
 
     def __init__(self, posSize):
-        super(GlyphSelectionPopUp, self).__init__(posSize)
+        super(InteractivePopUpWindow, self).__init__(posSize)
         self._window.setMovableByWindowBackground_(True)
 
         # set the background
-        contentView = DefconAppKitInteractivePopUpWindowContentView.alloc().init()
+        contentView = self.contentViewClass.alloc().init()
         self._window.setContentView_(contentView)
         self._window.setOpaque_(False)
         self._window.setBackgroundColor_(NSColor.clearColor())
 
         # set up the window to close when it loses focus
-        self.w.bind("resigned key", self.windowDeselectCallback)
+        self.bind("resigned key", self.windowDeselectCallback)
         self._closing = False
 
         # open and fade in
