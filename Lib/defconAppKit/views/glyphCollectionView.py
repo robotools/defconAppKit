@@ -481,10 +481,10 @@ class GlyphCollectionView(vanilla.List):
             self._unsubscribeFromGlyph(glyph)
         # wrap the glyphs for the list
         wrappedGlyphs = [self._wrapGlyphForList(glyph) for glyph in glyphs]
-        # set the list
-        super(GlyphCollectionView, self).set(wrappedGlyphs)
         # set the cell view
         self._glyphCellView.setGlyphs_(glyphs)
+        # set the list
+        super(GlyphCollectionView, self).set(wrappedGlyphs)
 
     def get(self):
         """
