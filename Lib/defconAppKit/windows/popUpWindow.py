@@ -31,10 +31,10 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
     nsWindowStyleMask = NSBorderlessWindowMask
     nsWindowLevel = NSTornOffMenuWindowLevel
 
-    def __init__(self, posSize):
+    def __init__(self, posSize, screen=None):
         super(InformationPopUpWindow, self).__init__(posSize, "", minSize=None,
                 maxSize=None, textured=False, autosaveName=None,
-                closable=False, initiallyVisible=False)
+                closable=False, initiallyVisible=False, screen=screen)
         contentView = DefconAppKitInformationPopUpWindowContentView.alloc().init()
         self._window.setContentView_(contentView)
         self._window.setBackgroundColor_(NSColor.clearColor())
@@ -174,8 +174,8 @@ class InteractivePopUpWindow(vanilla.Window):
     nsWindowStyleMask = NSBorderlessWindowMask
     contentViewClass = DefconAppKitInteractivePopUpWindowContentView
 
-    def __init__(self, posSize):
-        super(InteractivePopUpWindow, self).__init__(posSize)
+    def __init__(self, posSize, screen=None):
+        super(InteractivePopUpWindow, self).__init__(posSize, screen=screen)
         self._window.setMovableByWindowBackground_(True)
 
         # set the background

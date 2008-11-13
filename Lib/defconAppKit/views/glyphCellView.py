@@ -199,7 +199,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphDetailOnMouseMoved = mouseMoved
 
     def glyphDetailWindow(self):
+        if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None:
+            self._setupGlyphDetailWindow()
         return self._glyphDetailWindow
+
+    def _setupGlyphDetailWindow(self):
+        if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None:
+            screen = self.window().screen()
+            self._glyphDetailWindow = self._glyphDetailWindowClass(screen=screen)
 
     # selection
 
@@ -256,8 +263,6 @@ class DefconAppKitGlyphCellNSView(NSView):
     def viewDidMoveToWindow(self):
         # if window() returns an object, open the detail window
         if self.window() is not None:
-            if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None:
-                self._glyphDetailWindow = self._glyphDetailWindowClass()
             self.subscribeToWindow()
             self.subscribeToScrollViewFrameChange()
             self.recalculateFrame()
@@ -401,7 +406,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         # no window
         if self._windowIsClosed:
             return
-        if self._glyphDetailWindow is None:
+        glyphDetailWindow = self.glyphDetailWindow()
+        if glyphDetailWindow is None:
             return
         # determine show/hide
         shouldBeVisible = True
@@ -414,7 +420,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         ## XXX work around an issue that causes mouseDragged
         ## to be called after a drop from the view has occurred
         ## outside of the view.
-        elif mouseDragged and not self._glyphDetailWindow.isVisible():
+        elif mouseDragged and not glyphDetailWindow.isVisible():
             shouldBeVisible = False
         ## event requirements
         else:
@@ -453,17 +459,14 @@ class DefconAppKitGlyphCellNSView(NSView):
                 shouldBeVisible = False
         # set the position
         if shouldBeVisible:
-            x, y = eventLocation
-            windowX, windowY = event.window().frame().origin
-            detailX = windowX + x
-            detailY = windowY + y
+            detailX, detailY = self.window().convertBaseToScreen_(eventLocation)
             glyph = self._glyphs[found]
-            self._glyphDetailWindow.setPositionNearCursor((detailX, detailY))
-            self._glyphDetailWindow.set(glyph)
-            if not self._glyphDetailWindow.isVisible():
-                self._glyphDetailWindow.show()
+            glyphDetailWindow.setPositionNearCursor((detailX, detailY))
+            glyphDetailWindow.set(glyph)
+            if not glyphDetailWindow.isVisible():
+                glyphDetailWindow.show()
         else:
-            self._glyphDetailWindow.hide()
+            glyphDetailWindow.hide()
 
     def _mouseSelection(self, event, found, mouseDown=False, mouseDragged=False, mouseUp=False, mouseMoved=False):
         if mouseDown:
@@ -815,9 +818,9 @@ class DefconAppKitGlyphCellNSView(NSView):
 
 class GlyphInformationPopUpWindow(InformationPopUpWindow):
 
-    def __init__(self):
+    def __init__(self, screen=None):
         posSize = (200, 280)
-        super(GlyphInformationPopUpWindow, self).__init__(posSize)
+        super(GlyphInformationPopUpWindow, self).__init__(posSize, screen=screen)
         self.glyphView = GlyphInformationGlyphView((5, 5, -5, 145))
 
         self.line = HUDHorizontalLine((0, 160, -0, 1))
