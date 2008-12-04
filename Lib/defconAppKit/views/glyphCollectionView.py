@@ -195,6 +195,8 @@ class GlyphCollectionView(vanilla.List):
             documentView = self._tableView
             if placard is not None:
                 placard.button.set(1)
+            # the cell view needs to be told to stop paying attention to the window
+            self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
             if placard is not None:

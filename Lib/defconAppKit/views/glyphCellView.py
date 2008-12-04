@@ -204,7 +204,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         return self._glyphDetailWindow
 
     def _setupGlyphDetailWindow(self):
-        if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None:
+        if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None and self.window() is not None:
             screen = self.window().screen()
             self._glyphDetailWindow = self._glyphDetailWindowClass(screen=screen)
 
@@ -255,6 +255,11 @@ class DefconAppKitGlyphCellNSView(NSView):
         notificationCenter.addObserver_selector_name_object_(
             self, "windowCloseNotification:", NSWindowWillCloseNotification, self.window()
         )
+
+    def unsubscribeFromWindow(self):
+        notificationCenter = NSNotificationCenter.defaultCenter()
+        notificationCenter.removeObserver_name_object_(self, NSWindowDidResignKeyNotification, self.window())
+        notificationCenter.removeObserver_name_object_(self, NSWindowWillCloseNotification, self.window())
 
     # --------------
     # NSView methods
