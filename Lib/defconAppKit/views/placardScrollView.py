@@ -1,6 +1,8 @@
 from AppKit import *
 import vanilla
+import platform
 
+inOS104 = platform.mac_ver()[0].startswith("10.4.")
 
 placardBorderColor = NSColor.colorWithCalibratedWhite_alpha_(.5, .7)
 
@@ -139,6 +141,10 @@ class DefconAppKitPlacardNSPopUpButtonCell(NSPopUpButtonCell):
         NSColor.colorWithCalibratedWhite_alpha_(.5, .7).set()
         path.stroke()
         # let the super do the rest
+        w -= 1
+        if inOS104:
+            w -= 4
+        frame = ((x, y), (w, h))
         super(DefconAppKitPlacardNSPopUpButtonCell, self).drawBorderAndBackgroundWithFrame_inView_(frame, view)
 
 
