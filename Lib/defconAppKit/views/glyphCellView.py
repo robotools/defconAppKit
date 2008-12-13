@@ -113,6 +113,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphDetailOnMouseDragged = True
         self._glyphDetailOnMouseMoved = False
 
+        self._havePreviousMouseDown = False
         self._windowIsClosed = False
 
         return self
@@ -368,6 +369,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     # mouse
 
     def mouseDown_(self, event):
+        self._havePreviousMouseDown = True
         found = self._findGlyphForEvent(event)
         self._mouseSelection(event, found, mouseDown=True)
         self._handleDetailWindow(event, found, mouseDown=True)
@@ -382,20 +384,25 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._mouseSelection(event, found, mouseDragged=True)
         self._handleDetailWindow(event, found, mouseDragged=True)
         self.autoscroll_(event)
+        # mouseUp is not called if a drag has begun.
+        # so, kill the flag now.
+        self._havePreviousMouseDown = False
 
     def mouseMoved_(self, event):
         found = self._findGlyphForEvent(event)
         self._handleDetailWindow(event, found, mouseMoved=True)
 
     def mouseUp_(self, event):
-        found = self._findGlyphForEvent(event)
-        self._mouseSelection(event, found, mouseUp=True)
-        self._handleDetailWindow(event, found, mouseUp=True)
-        if self._selection != self._oldSelection:
-            vanillaWrapper = self.vanillaWrapper()
-            if vanillaWrapper._selectionCallback is not None:
-                vanillaWrapper._selectionCallback(vanillaWrapper)
-        del self._oldSelection
+        if self._havePreviousMouseDown:
+            found = self._findGlyphForEvent(event)
+            self._mouseSelection(event, found, mouseUp=True)
+            self._handleDetailWindow(event, found, mouseUp=True)
+            if self._selection != self._oldSelection:
+                vanillaWrapper = self.vanillaWrapper()
+                if vanillaWrapper._selectionCallback is not None:
+                    vanillaWrapper._selectionCallback(vanillaWrapper)
+            del self._oldSelection
+            self._havePreviousMouseDown = False
 
     def _findGlyphForEvent(self, event):
         eventLocation = event.locationInWindow()
@@ -486,12 +493,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         controlDown = modifiers & NSControlKeyMask
 
         # dragging
-        if mouseDragged and self._allowDrag and found in self._selection and not commandDown and not shiftDown and not controlDown:
+        if self._havePreviousMouseDown and (mouseDragged and self._allowDrag) and (found in self._selection) and (not commandDown and not shiftDown and not controlDown):
             if found is None:
                 return
             else:
                 self._beginDrag(event)
                 return
+        if mouseDragged and not self._havePreviousMouseDown:
+            return
         # selecting
         newSelection = None
         if commandDown:
