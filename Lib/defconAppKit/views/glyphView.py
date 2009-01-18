@@ -431,12 +431,12 @@ class DefconAppKitGlyphNSView(NSView):
         # outlines
         path = self._glyph.getRepresentation("NoComponentsNSBezierPath")
         self._strokeColor.set()
-        path.setLineWidth_(1.0)
+        path.setLineWidth_(1.0 * self._inverseScale)
         path.stroke()
         # components
         path = self._glyph.getRepresentation("OnlyComponentsNSBezierPath")
         self._componentStrokeColor.set()
-        path.setLineWidth_(1.0)
+        path.setLineWidth_(1.0 * self._inverseScale)
         path.stroke()
 
     def drawPoints(self):
