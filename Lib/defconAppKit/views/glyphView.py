@@ -681,60 +681,70 @@ class GlyphView(PlacardScrollView):
         self._glyphView.setGlyph_(glyph)
 
     def setShowFill(self, value):
+        self._populatePlacard()
         self._glyphView.setShowFill_(value)
 
     def getShowFill(self):
         return self._glyphView.getShowFill()
 
     def setShowStroke(self, value):
+        self._populatePlacard()
         self._glyphView.setShowStroke_(value)
 
     def getShowStroke(self):
         return self._glyphView.getShowStroke()
 
     def setShowMetrics(self, value):
+        self._populatePlacard()
         self._glyphView.setShowMetrics_(value)
 
     def getShowMetrics(self):
         return self._glyphView.getShowMetrics()
 
     def setShowMetricsTitles(self, value):
+        self._populatePlacard()
         self._glyphView.setShowMetricsTitles_(value)
 
     def getShowMetricsTitles(self):
         return self._glyphView.getShowMetricsTitles()
 
     def setShowOnCurvePoints(self, value):
+        self._populatePlacard()
         self._glyphView.setShowOnCurvePoints_(value)
 
     def getShowOnCurvePoints(self):
         return self._glyphView.getShowOnCurvePoints()
 
     def setShowOffCurvePoints(self, value):
+        self._populatePlacard()
         self._glyphView.setShowOffCurvePoints_(value)
 
     def getShowOffCurvePoints(self):
         return self._glyphView.getShowOffCurvePoints()
 
     def setShowPointCoordinates(self, value):
+        self._populatePlacard()
         self._glyphView.setShowPointCoordinates_(value)
 
     def getShowPointCoordinates(self):
         return self._glyphView.getShowPointCoordinates()
 
     def setShowAnchors(self, value):
+        self._populatePlacard()
         self._glyphView.setShowAnchors_(value)
 
     def getShowAnchors(self):
         return self._glyphView.getShowAnchors()
 
     def setShowBlues(self, value):
+        self._populatePlacard()
         self._glyphView.setShowBlues_(value)
 
     def getShowBlues(self):
         return self._glyphView.getShowBlues()
 
     def setShowFamilyBlues(self, value):
+        self._populatePlacard()
         self._glyphView.setShowFamilyBlues_(value)
 
     def getShowFamilyBlues(self):
