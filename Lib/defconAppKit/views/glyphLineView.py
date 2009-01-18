@@ -4,6 +4,7 @@ from Foundation import *
 from AppKit import *
 import vanilla
 from defconAppKit.notificationObserver import NSObjectNotificationObserver
+from defconAppKit.views.placardScrollView import PlacardScrollView, PlacardPopUpButton
 
 
 class DefconAppKitGlyphLineNSView(NSView):
@@ -261,9 +262,13 @@ class DefconAppKitGlyphLineNSView(NSView):
         return self.vanillaWrapper()._proposeDrop(glyphs, testing=False)
 
 
-class GlyphLineView(vanilla.ScrollView):
+pointSizes = [50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
 
-    def __init__(self, posSize, pointSize=100, applyKerning=True, glyphColor=None, backgroundColor=None, dropCallback=None, autohideScrollers=True):
+
+class GlyphLineView(PlacardScrollView):
+
+    def __init__(self, posSize, pointSize=100, applyKerning=True, glyphColor=None,
+        backgroundColor=None, dropCallback=None, autohideScrollers=True, showPointSizePlacard=False):
         if glyphColor is None:
             glyphColor = NSColor.blackColor()
         if backgroundColor is None:
@@ -276,7 +281,24 @@ class GlyphLineView(vanilla.ScrollView):
         self._glyphLineView.setAllowsDrop_(dropCallback is not None)
         self._dropCallback = dropCallback
         self._glyphLineView.vanillaWrapper = weakref.ref(self)
+
+        if showPointSizePlacard:
+            autohideScrollers = False
+
         super(GlyphLineView, self).__init__(posSize, self._glyphLineView, autohidesScrollers=autohideScrollers, backgroundColor=backgroundColor)
+
+        if showPointSizePlacard:
+            self._pointSizes = ["Auto"] + [str(i) for i in pointSizes]
+            placardW = 55
+            placardH = 16
+            self._placard = vanilla.Group((0, 0, placardW, placardH))
+            self._placard.button = PlacardPopUpButton((0, 0, placardW, placardH),
+                self._pointSizes, callback=self._placardSelection, sizeStyle="mini")
+            self.setPlacard(self._placard)
+            pointSize = str(pointSize)
+            if pointSize in self._pointSizes:
+                index = self._pointSizes.index(pointSize)
+                self._placard.button.set(index)
 
     def _breakCycles(self):
         if hasattr(self, "_glyphLineView"):
@@ -288,6 +310,15 @@ class GlyphLineView(vanilla.ScrollView):
         if self._dropCallback is not None:
             return self._dropCallback(self, glyphs, testing)
         return False
+
+    def _placardSelection(self, sender):
+        value = self._pointSizes[sender.get()]
+        if value == "Auto":
+            value = None
+        else:
+            value = int(value)
+        print value, sender.get()
+        self.setPointSize(value)
 
     def set(self, glyphs):
         self._glyphLineView.setGlyphs_(glyphs)
