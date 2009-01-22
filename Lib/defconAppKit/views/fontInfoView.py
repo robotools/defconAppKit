@@ -83,6 +83,558 @@ class PostscriptBluesFormatter(NSFormatter):
 # These are vanilla subclasses that have special behavior.
 # --------------------------------------------------------
 
+panoseFamilyKindOptions = """Any
+No Fit
+Latin Text
+Latin Hand Written
+Latin Decorative
+Latin Symbol""".splitlines()
+
+panoseLatinTextOptions = """
+Serif Style
+Weight
+Proportion
+Contrast
+Stroke Variation
+Arm Style
+Letterform
+Midline
+X-height
+---
+Any
+No Fit
+Cove
+Obtuse Cove
+Square Cove
+Obtuse Square Cove
+Square
+Thin
+Oval
+Exaggerated
+Triangle
+Normal Sans
+Obtuse Sans
+Perpendicular Sans
+Flared
+Rounded
+---
+Any
+No Fit
+Very Light
+Light
+Thin
+Book
+Medium
+Demi
+Bold
+Heavy
+Black
+Extra Black
+---
+Any
+No fit
+Old Style
+Modern
+Even Width
+Extended
+Condensed
+Very Extended
+Very Condensed
+Monospaced
+---
+Any
+No Fit
+None
+Very Low
+Low
+Medium Low
+Medium
+Medium High
+High
+Very High
+---
+Any
+No Fit
+No Variation
+Gradual/Diagonal
+Gradual/Transitional
+Gradual/Vertical
+Gradual/Horizontal
+Rapid/Vertical
+Rapid/Horizontal
+Instant/Vertical
+Instant/Horizontal
+---
+Any
+No Fit
+Straight Arms/Horizontal
+Straight Arms/Wedge
+Straight Arms/Vertical
+Straight Arms/Single Serif
+Straight Arms/Double Serif
+Non-Straight/Horizontal
+Non-Straight/Wedge
+Non-Straight/Vertical
+Non-Straight/Single Serif
+Non-Straight/Double Serif
+---
+Any
+No Fit
+Normal/Contact
+Normal/Weighted
+Normal/Boxed
+Normal/Flattened
+Normal/Rounded
+Normal/Off Center
+Normal/Square
+Oblique/Contact
+Oblique/Weighted
+Oblique/Boxed
+Oblique/Flattened
+Oblique/Rounded
+Oblique/Off Center
+Oblique/Square
+---
+Any
+No Fit
+Standard/Trimmed
+Standard/Pointed
+Standard/Serifed
+High/Trimmed
+High/Pointed
+High/Serifed
+Constant/Trimmed
+Constant/Pointed
+Constant/Serifed
+Low/Trimmed
+Low/Pointed
+Low/Serifed
+---
+Any
+No Fit
+Constant/Small
+Constant/Standard
+Constant/Large
+Ducking/Small
+Ducking/Standard
+Ducking/Large
+"""
+
+panoseLatinHandWrittenOptions = """
+Tool Kind
+Weight
+Spacing
+Aspect Ratio
+Contrast
+Topology
+Form
+Finials
+X-ascent
+---
+Any
+No Fit
+Flat Nib
+Pressure Point
+Engraved
+Ball (Round Cap)
+Brush
+Rough
+Felt Pen/Brush Tip
+Wild Brush - Drips a lot
+---
+Any
+No Fit
+Very Light
+Light
+Thin
+Book
+Medium
+Demi
+Bold
+Heavy
+Black
+Extra Black (Nord)
+---
+Any
+No fit
+Proportional Spaced
+Monospaced
+---
+Any
+No Fit
+Very Condensed
+Condensed
+Normal
+Expanded
+Very Expanded
+---
+Any
+No Fit
+None
+Very Low
+Low
+Medium Low
+Medium
+Medium High
+High
+Very High
+---
+Any
+No Fit
+Roman Disconnected
+Roman Trailing
+Roman Connected
+Cursive Disconnected
+Cursive Trailing
+Cursive Connected
+Blackletter Disconnected
+Blackletter Trailing
+Blackletter Connected
+---
+Any
+No Fit
+Upright / No Wrapping
+Upright / Some Wrapping
+Upright / More Wrapping
+Upright / Extreme Wrapping
+Oblique / No Wrapping
+Oblique / Some Wrapping
+Oblique / More Wrapping
+Oblique / Extreme Wrapping
+Exaggerated / No Wrapping
+Exaggerated / Some Wrapping
+Exaggerated / More Wrapping
+Exaggerated / Extreme Wrapping
+---
+Any
+No Fit
+None / No loops
+None / Closed loops
+None / Open loops
+Sharp / No loops
+Sharp / Closed loops
+Sharp / Open loops
+Tapered / No loops
+Tapered / Closed loops
+Tapered / Open loops
+Round / No loops
+Round / Closed loops
+Round / Open loops
+---
+Any
+No Fit
+Very Low
+Low
+Medium
+High
+Very High
+"""
+
+panoseLatinDecorativesOptions = """
+Class
+Weight
+Aspect
+Contrast
+Serif Variant
+Treatment
+Lining
+Topology
+Range of Characters
+---
+Any
+No Fit
+Derivative
+Non-standard Topology
+Non-standard Elements
+Non-standard Aspect
+Initials
+Cartoon
+Picture Stems
+Ornamented
+Text and Background
+Collage
+Montage
+---
+Any
+No Fit
+Very Light
+Light
+Thin
+Book
+Medium
+Demi
+Bold
+Heavy
+Black
+Extra Black
+---
+Any
+No fit
+Super Condensed
+Very Condensed
+Condensed
+Normal
+Extended
+Very Extended
+Super Extended
+Monospaced
+---
+Any
+No Fit
+None
+Very Low
+Low
+Medium Low
+Medium
+Medium High
+High
+Very High
+Horizontal Low
+Horizontal Medium
+Horizontal High
+Broken
+---
+Any
+No Fit
+Cove
+Obtuse Cove
+Square Cove
+Obtuse Square Cove
+Square
+Thin
+Oval
+Exaggerated
+Triangle
+Normal Sans
+Obtuse Sans
+Perpendicular Sans
+Flared
+Rounded
+Script
+---
+Any
+No Fit
+None - Standard Solid Fill
+White / No Fill
+Patterned Fill
+Complex Fill
+Shaped Fill
+Drawn / Distressed
+---
+Any
+No Fit
+None
+Inline
+Outline
+Engraved (Multiple Lines)
+Shadow
+Relief
+Backdrop
+---
+Any
+No Fit
+Standard
+Square
+Multiple Segment
+Deco (E,M,S) Waco midlines
+Uneven Weighting
+Diverse Arms
+Diverse Forms
+Lombardic Forms
+Upper Case in Lower Case
+Implied Topology
+Horseshoe E and A
+Cursive
+Blackletter
+Swash Variance
+---
+Any
+No Fit
+Extended Collection
+Litterals
+No Lower Case
+Small Caps
+"""
+
+panoseLatinPictorialOptions = """
+Kind
+Weight
+Spacing
+Aspect Ratio & Contrast
+Aspect Ratio of Char. 94
+Aspect Ratio of Char. 119
+Aspect Ratio of Char. 157
+Aspect Ratio of Char. 163
+Aspect Ratio of Char. 211
+---
+Any
+No Fit
+Montages
+Pictures
+Shapes
+Scientific
+Music
+Expert
+Patterns
+Boarders
+Icons
+Logos
+Industry specific
+---
+Any
+No Fit
+---
+Any
+No fit
+Proportional Spaced
+Monospaced
+---
+Any
+No Fit
+---
+Any
+No Fit
+No Width
+Exceptionally Wide
+Super Wide
+Very Wide
+Wide
+Normal
+Narrow
+Very Narrow
+---
+Any
+No Fit
+No Width
+Exceptionally Wide
+Super Wide
+Very Wide
+Wide
+Normal
+Narrow
+Very Narrow
+---
+Any
+No Fit
+No Width
+Exceptionally Wide
+Super Wide
+Very Wide
+Wide
+Normal
+Narrow
+Very Narrow
+---
+Any
+No Fit
+No Width
+Exceptionally Wide
+Super Wide
+Very Wide
+Wide
+Normal
+Narrow
+Very Narrow
+---
+Any
+No Fit
+No Width
+Exceptionally Wide
+Super Wide
+Very Wide
+Wide
+Normal
+Narrow
+Very Narrow
+"""
+
+def makePanoseOptions(text):
+    text = text.strip()
+    groups = text.split("---")
+    groups = [i.strip() for i in groups]
+    assert len(groups) == 10
+    groups = [group.splitlines() for group in groups]
+    titles = groups[0]
+    options = groups[1:]
+    return titles, options
+
+panoseControlOptionTree = [
+    ("Any", [[] for i in range(9)]),
+    ("No Fit", [[] for i in range(9)]),
+    makePanoseOptions(panoseLatinTextOptions),
+    makePanoseOptions(panoseLatinHandWrittenOptions),
+    makePanoseOptions(panoseLatinDecorativesOptions),
+    makePanoseOptions(panoseLatinPictorialOptions)
+]
+
+
+class PanoseControl(vanilla.Group):
+
+    def __init__(self, posSize, titlePosition, titleWidth, buttonPosition, buttonWidth, callback):
+        super(PanoseControl, self).__init__(posSize)
+        self._callback = callback
+        self.title = vanilla.TextBox((titlePosition, 0, -0, 17), "Panose")
+        self.titleLine = vanilla.HorizontalLine((titlePosition, 22, -titlePosition, 1))
+        self.familyKindTitle = vanilla.TextBox((titlePosition, 42, titleWidth, 17), "Family Kind:", alignment="right")
+        self.familyKindPopUp = vanilla.PopUpButton((buttonPosition, 40, buttonWidth, 20), panoseFamilyKindOptions, self._familyKindCallback)
+        currentTop = 70
+        for i in range(9):
+            attribute = "title%d" % i
+            control = vanilla.TextBox((titlePosition, currentTop+2, titleWidth, 17), "", alignment="right")
+            setattr(self, attribute, control)
+            attribute = "popup%d" % i
+            control = vanilla.PopUpButton((buttonPosition, currentTop, buttonWidth, 20), [], callback=self._subdigitCallback)
+            setattr(self, attribute, control)
+            currentTop += 30
+        self._currentFamilyKind = 0
+
+    def _breakCycles(self):
+        self._callback = None
+        super(PanoseControl, self)._breakCycles()
+
+    def _familyKindCallback(self, sender):
+        value = sender.get()
+        if value == self._currentFamilyKind:
+            return
+        self.set([value, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self._callback(self)
+
+    def _subdigitCallback(self, sender):
+        self._callback(self)
+
+    def set(self, value):
+        # get the family kind data
+        familyKind = self._currentFamilyKind = value[0]
+        familyTitles, familyOptions = panoseControlOptionTree[familyKind]
+        if familyKind in (0, 1):
+            familyTitles = "        ".split(" ")
+        # set the family
+        self.familyKindPopUp.set(familyKind)
+        # update the titles
+        for index, title in enumerate(familyTitles):
+            if title:
+                title += ":"
+            attribute = "title%d" % index
+            control = getattr(self, attribute)
+            control.set(title)
+        # update the buttons
+        for index, options in enumerate(familyOptions):
+            attribute = "popup%d" % index
+            control = getattr(self, attribute)
+            control.setItems(options)
+            control.set(value[index+1])
+
+    def get(self):
+        familyKind = self.familyKindPopUp.get()
+        if familyKind in (0, 1):
+            values = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        else:
+            values = []
+            for index in range(9):
+                attribute = "popup%d" % index
+                control = getattr(self, attribute)
+                values.append(control.get())
+        return [familyKind] + values
 
 
 class CheckList(vanilla.List):
@@ -123,7 +675,7 @@ class CheckList(vanilla.List):
         items = super(CheckList, self).get()
         bits = []
         for index, item in enumerate(items):
-            if not item[value]:
+            if not item["value"]:
                 continue
             bit = self._indexToBit[index]
             bits.append(bit)
@@ -456,8 +1008,9 @@ openTypeOS2VendorIDItem = inputItemDict(
     hasDefault=False,
 )
 openTypeOS2PanoseItem = inputItemDict(
-    title="Panose",
+    title="",
     hasDefault=False,
+    controlClass=PanoseControl,
     controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
 )
 
@@ -1046,7 +1599,6 @@ controlOrganization=[
                 "openTypeOS2WeightClass",
                 "openTypeOS2Selection",
                 "openTypeOS2VendorID",
-                "openTypeOS2Panose",
                 "openTypeOS2UnicodeRanges",
                 "openTypeOS2CodePageRanges",
                 "openTypeOS2TypoAscender",
@@ -1064,7 +1616,8 @@ controlOrganization=[
                 "openTypeOS2SuperscriptXOffset",
                 "openTypeOS2SuperscriptYOffset",
                 "openTypeOS2StrikeoutSize",
-                "openTypeOS2StrikeoutPosition"
+                "openTypeOS2StrikeoutPosition",
+                "openTypeOS2Panose"
             )
         ]
     ),
@@ -1249,6 +1802,7 @@ class FontInfoSection(vanilla.Group):
             CheckList : itemInputStringWidth,
             vanilla.DatePicker : itemInputStringWidth,
             vanilla.CheckBox : 22,
+            PanoseControl : controlViewWidth
         }
         # run through the groups
         currentTop = -10
@@ -1348,6 +1902,13 @@ class FontInfoSection(vanilla.Group):
                     currentTop -= itemHeight
                     itemAttribute = "inputDatePicker_%s" % fontAttribute
                     itemControl = itemClass((itemInputLeft, currentTop+5, itemWidth, itemHeight), date=now, minDate=minDate, callback=self._controlEditCallback)
+                    setattr(controlView, itemAttribute, itemControl)
+                ## Panose
+                elif itemClass == PanoseControl:
+                    itemHeight = 335
+                    currentTop -= itemHeight
+                    itemAttribute = "inputDatePicker_%s" % fontAttribute
+                    itemControl = itemClass((10, currentTop, itemWidth, itemHeight), 0, itemTitleWidth, itemInputLeft-10, itemInputStringWidth, self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
                     print itemClass
