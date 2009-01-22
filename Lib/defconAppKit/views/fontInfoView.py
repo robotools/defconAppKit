@@ -637,6 +637,63 @@ class PanoseControl(vanilla.Group):
         return [familyKind] + values
 
 
+embeddingPopUpOptions = """
+No embedding restrictions.
+No embedding allowed.
+Only preview and print embedding allowed.
+Editable embedding allowed.
+""".strip().splitlines()
+
+
+class EmbeddingControl(vanilla.Group):
+
+    def __init__(self, posSize, callback):
+        super(EmbeddingControl, self).__init__(posSize)
+        self._callback = callback
+        self.basicsPopUp = vanilla.PopUpButton((0, 0, -0, 20), embeddingPopUpOptions, callback=self._controlCallback)
+        self.subsettingCheckBox = vanilla.CheckBox((0, 30, -0, 20), "Allow Subsetting", callback=self._controlCallback)
+        self.bitmapCheckBox = vanilla.CheckBox((0, 55, -10, 20), "Allow Only Bitmap Embedding", callback=self._controlCallback)
+        self.subsettingCheckBox.enable(False)
+        self.bitmapCheckBox.enable(False)
+
+    def _breakCycles(self):
+        self._callback = None
+        super(EmbeddingControl, self)._breakCycles()
+
+    def _controlCallback(self, sender):
+        self._handleEnable()
+        self._callback(self)
+
+    def _handleEnable(self):
+        enable = self.basicsPopUp.get() != 0
+        self.subsettingCheckBox.enable(enable)
+        self.bitmapCheckBox.enable(enable)
+
+    def set(self, values):
+        if 1 in values:
+            self.basicsPopUp.set(1)
+        elif 2 in values:
+            self.basicsPopUp.set(2)
+        elif 3 in values:
+            self.basicsPopUp.set(3)
+        else:
+            self.basicsPopUp.set(0)
+        self.subsettingCheckBox.set(not 8 in values)
+        self.bitmapCheckBox.set(9 in values)
+        self._handleEnable()
+
+    def get(self):
+        values = []
+        basicValue = self.basicsPopUp.get()
+        if basicValue != 0:
+            return values
+        if not self.subsettingCheckBox.get():
+            values.append(8)
+        if self.bitmapCheckBox.get():
+            values.append(9)
+        return values
+
+
 class CheckList(vanilla.List):
 
     def __init__(self, posSize, template, callback):
@@ -1211,21 +1268,11 @@ openTypeOS2WinDescentItem = inputItemDict(
     title="usWinDescent",
     controlOptions=dict(style="number", formatter=integerPositiveFormatter)
 )
-
-openTypeOS2TypeOptions = [
-    "1 Restricted License embedding",
-    "2 Preview & Print embedding",
-    "3 Editable embedding",
-    "8 No subsetting",
-    "9 Bitmap embedding only",
-]
-
 openTypeOS2TypeItem = inputItemDict(
     title="fsType",
-    controlClass=CheckList,
-    controlOptions=dict(items=openTypeOS2TypeOptions),
+    controlClass=EmbeddingControl,
+    hasDefault=False
 )
-
 openTypeOS2SubscriptXSizeItem = inputItemDict(
     title="ySubscriptXSize",
     controlOptions=dict(style="number", formatter=integerFormatter)
@@ -1599,6 +1646,7 @@ controlOrganization=[
                 "openTypeOS2WeightClass",
                 "openTypeOS2Selection",
                 "openTypeOS2VendorID",
+                "openTypeOS2Type",
                 "openTypeOS2UnicodeRanges",
                 "openTypeOS2CodePageRanges",
                 "openTypeOS2TypoAscender",
@@ -1606,7 +1654,6 @@ controlOrganization=[
                 "openTypeOS2TypoLineGap",
                 "openTypeOS2WinAscent",
                 "openTypeOS2WinDescent",
-                "openTypeOS2Type",
                 "openTypeOS2SubscriptXSize",
                 "openTypeOS2SubscriptYSize",
                 "openTypeOS2SubscriptXOffset",
@@ -1802,7 +1849,8 @@ class FontInfoSection(vanilla.Group):
             CheckList : itemInputStringWidth,
             vanilla.DatePicker : itemInputStringWidth,
             vanilla.CheckBox : 22,
-            PanoseControl : controlViewWidth
+            PanoseControl : controlViewWidth,
+            EmbeddingControl : itemInputStringWidth,
         }
         # run through the groups
         currentTop = -10
@@ -1907,8 +1955,15 @@ class FontInfoSection(vanilla.Group):
                 elif itemClass == PanoseControl:
                     itemHeight = 335
                     currentTop -= itemHeight
-                    itemAttribute = "inputDatePicker_%s" % fontAttribute
+                    itemAttribute = "inputPanoseControl_%s" % fontAttribute
                     itemControl = itemClass((10, currentTop, itemWidth, itemHeight), 0, itemTitleWidth, itemInputLeft-10, itemInputStringWidth, self._controlEditCallback)
+                    setattr(controlView, itemAttribute, itemControl)
+                ## Embedding
+                elif itemClass == EmbeddingControl:
+                    itemHeight = 75
+                    currentTop -= itemHeight
+                    itemAttribute = "inputEmbeddingControl_%s" % fontAttribute
+                    itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
                     print itemClass
