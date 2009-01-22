@@ -1,3 +1,4 @@
+import math
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.cocoaPen import CocoaPen
@@ -51,10 +52,10 @@ class OnlyComponentsCocoaPen(BasePen):
         try:
             glyph = self.glyphSet[glyphName]
         except KeyError:
-            pass
+            return
         else:
             tPen = TransformPen(self.pen, transformation)
-            glyph.draw(self.pen)
+            glyph.draw(tPen)
 
 
 # ----------
@@ -66,9 +67,10 @@ class OutlineInformationPen(AbstractPointPen):
     def __init__(self):
         self._rawPointData = []
         self._rawComponentData = []
+        self._bezierHandleData = []
 
     def getData(self):
-        data = dict(onCurvePoints=[], offCurvePoints=[], anchors=[], components=self._rawComponentData)
+        data = dict(startPoints=[], onCurvePoints=[], offCurvePoints=[], bezierHandles=[], anchors=[], components=self._rawComponentData)
         for contour in self._rawPointData:
             # anchor
             if len(contour) == 1:
@@ -76,11 +78,44 @@ class OutlineInformationPen(AbstractPointPen):
                 data["anchors"].append(anchor)
             # points
             else:
-                for point in contour:
+                haveFirst = False
+                for pointIndex, point in enumerate(contour):
                     if point["segmentType"] is None:
                         data["offCurvePoints"].append(point)
+                        # look for handles
+                        back = contour[pointIndex - 1]
+                        forward = contour[(pointIndex + 1) % len(contour)]
+                        if back["segmentType"] in ("curve", "line"):
+                            p1 = back["point"]
+                            p2 = point["point"]
+                            if p1 != p2:
+                                data["bezierHandles"].append((p1, p2))
+                        elif forward["segmentType"] in ("curve", "line"):
+                            p1 = forward["point"]
+                            p2 = point["point"]
+                            if p1 != p2:
+                                data["bezierHandles"].append((p1, p2))
                     else:
                         data["onCurvePoints"].append(point)
+                        # catch first point
+                        if not haveFirst:
+                            haveFirst = True
+                            nextOn = None
+                            for nextPoint in contour[pointIndex:] + contour[:pointIndex]:
+                                #if nextPoint["segmentType"] is None:
+                                #    continue
+                                if nextPoint["point"] == point["point"]:
+                                    continue
+                                nextOn = nextPoint
+                                break
+                            angle = None
+                            if nextOn:
+                                x1, y1 = point["point"]
+                                x2, y2 = nextOn["point"]
+                                xDiff = x2 - x1
+                                yDiff = y2 - y1
+                                angle = round(math.atan2(yDiff, xDiff) * 180 / math.pi, 3)
+                            data["startPoints"].append((point["point"], angle))
         return data
 
     def beginPath(self):
