@@ -32,6 +32,8 @@ integerNegativeFormatter.setGeneratesDecimalNumbers_(False)
 integerNegativeFormatter.setMaximum_(0)
 
 floatFormatter = NSNumberFormatter.alloc().init()
+floatFormatter.setNumberStyle_(NSNumberFormatterDecimalStyle)
+floatFormatter.setFormat_("#.00;0.00;-#.00")
 floatFormatter.setAllowsFloats_(True)
 floatFormatter.setGeneratesDecimalNumbers_(False)
 
@@ -49,6 +51,8 @@ class PostscriptStemSnapFormatter(NSFormatter):
         return " ".join([str(i) for i in obj])
 
     def getObjectValue_forString_errorDescription_(self, string):
+        if not string.strip():
+            return True, [], ""
         try:
             values = [int(i) for i in string.strip().split(" ")]
         except ValueError:
@@ -66,6 +70,8 @@ class PostscriptBluesFormatter(NSFormatter):
         return " ".join([str(i) for i in obj])
 
     def getObjectValue_forString_errorDescription_(self, string):
+        if not string.strip():
+            return True, [], ""
         try:
             values = [int(i) for i in string.strip().split(" ")]
             values = sorted(values)
@@ -2054,6 +2060,10 @@ class FontInfoSection(vanilla.Group):
         # get the value
         value = sender.get()
         # convert
+        if isinstance(value, NSArray):
+            value = list(value)
+        elif isinstance(value, long):
+            value = int(value)
         if conversionFunction is not None:
             value = conversionFunction(value)
         # set
