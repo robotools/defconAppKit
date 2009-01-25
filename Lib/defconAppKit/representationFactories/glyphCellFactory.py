@@ -20,6 +20,28 @@ def GlyphCellFactory(glyph, font, width, height, drawHeader=False, drawMetrics=F
 
 class GlyphCellFactoryDrawingController(object):
 
+    """
+    This draws the cell with the layers stacked in this order:
+    ------------------
+    header text
+    ------------------
+    header background
+    ------------------
+    foreground
+    ------------------
+    glyph
+    ------------------
+    vertical metrics
+    ------------------
+    horizontal metrics
+    ------------------
+    background
+    ------------------
+
+    Subclasses may override the layer drawing methods to customize
+    the appearance of cells.
+    """
+
     def __init__(self, glyph, font, width, height, drawHeader=False, drawMetrics=False):
         self.glyph = glyph
         self.font = font
@@ -47,10 +69,10 @@ class GlyphCellFactoryDrawingController(object):
         headerRect = ((0, -self.height+self.headerHeight), (self.width, self.headerHeight))
         # background
         context.saveGraphicsState()
-        transform = NSAffineTransform.transform()
-        transform.translateXBy_yBy_(0, self.height-self.headerHeight)
-        transform.scaleXBy_yBy_(1.0, -1.0)
-        transform.concat()
+        bodyTransform = NSAffineTransform.transform()
+        bodyTransform.translateXBy_yBy_(0, self.height-self.headerHeight)
+        bodyTransform.scaleXBy_yBy_(1.0, -1.0)
+        bodyTransform.concat()
         self.drawCellBackground(bodyRect)
         context.restoreGraphicsState()
         # glyph
@@ -59,19 +81,24 @@ class GlyphCellFactoryDrawingController(object):
             self.drawCellVerticalMetrics(bodyRect)
         context.saveGraphicsState()
         NSBezierPath.clipRect_(((0, 0), (self.width, self.height-self.headerHeight)))
-        transform = NSAffineTransform.transform()
-        transform.translateXBy_yBy_(self.xOffset, self.yOffset)
-        transform.scaleBy_(self.scale)
-        transform.concat()
+        glyphTransform = NSAffineTransform.transform()
+        glyphTransform.translateXBy_yBy_(self.xOffset, self.yOffset)
+        glyphTransform.scaleBy_(self.scale)
+        glyphTransform.concat()
         self.drawCellGlyph()
+        context.restoreGraphicsState()
+        # foreground
+        context.saveGraphicsState()
+        bodyTransform.concat()
+        self.drawCellForeground(bodyRect)
         context.restoreGraphicsState()
         # header
         if self.shouldDrawHeader:
             context.saveGraphicsState()
-            transform = NSAffineTransform.transform()
-            transform.translateXBy_yBy_(0, self.headerHeight)
-            transform.scaleXBy_yBy_(1.0, -1.0)
-            transform.concat()
+            headerTransform = NSAffineTransform.transform()
+            headerTransform.translateXBy_yBy_(0, self.headerHeight)
+            headerTransform.scaleXBy_yBy_(1.0, -1.0)
+            headerTransform.concat()
             self.drawCellHeaderBackground(headerRect)
             self.drawCellHeaderText(headerRect)
             context.restoreGraphicsState()
@@ -114,8 +141,11 @@ class GlyphCellFactoryDrawingController(object):
 
     def drawCellGlyph(self):
         NSColor.blackColor().set()
-        path = self.glyph.getRepresentation("NSBezierPath")
+        path = self.glyph.getRepresentation("defconAppKit.NSBezierPath")
         path.fill()
+
+    def drawCellForeground(self, rect):
+        pass
 
     def drawCellHeaderBackground(self, rect):
         (xMin, yMin), (width, height) = rect

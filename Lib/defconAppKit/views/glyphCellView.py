@@ -18,7 +18,7 @@ def _makeGlyphCellDragIcon(glyphs):
     glyphRepresentation = None
     glyphWidth = None
     for glyph in glyphs:
-        rep = glyph.getRepresentation("NSBezierPath")
+        rep = glyph.getRepresentation("defconAppKit.NSBezierPath")
         if not rep.isEmpty():
             font = glyph.getParent()
             glyphRepresentation = rep
@@ -923,7 +923,7 @@ class DefconAppKitGlyphInformationNSView(NSView):
         transform.translateXBy_yBy_(0, -descender)
         transform.concat()
         NSColor.whiteColor().set()
-        path = glyph.getRepresentation("NSBezierPath")
+        path = glyph.getRepresentation("defconAppKit.NSBezierPath")
         path.fill()
 
 

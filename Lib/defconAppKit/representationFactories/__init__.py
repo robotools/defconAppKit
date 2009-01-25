@@ -3,14 +3,16 @@ from defconAppKit.representationFactories.nsBezierPathFactory import NSBezierPat
 from defconAppKit.representationFactories.glyphCellFactory import GlyphCellFactory
 from defconAppKit.representationFactories.glyphCellDetailFactory import GlyphCellDetailFactory
 from defconAppKit.representationFactories.glyphViewFactories import NoComponentsNSBezierPathFactory, OnlyComponentsNSBezierPathFactory, OutlineInformationFactory
+from defconAppKit.representationFactories.menuImageFactory import MenuImageRepresentationFactory
 
 _factories = {
-    "NSBezierPath" : NSBezierPathFactory,
-    "NoComponentsNSBezierPath" : NoComponentsNSBezierPathFactory,
-    "OnlyComponentsNSBezierPath" : OnlyComponentsNSBezierPathFactory,
-    "defconAppKitGlyphCell" : GlyphCellFactory,
-    "defconAppKitGlyphCellDetail" : GlyphCellDetailFactory,
-    "defconAppKitOutlineInformation" : OutlineInformationFactory
+    "defconAppKit.NSBezierPath" : NSBezierPathFactory,
+    "defconAppKit.NoComponentsNSBezierPath" : NoComponentsNSBezierPathFactory,
+    "defconAppKit.OnlyComponentsNSBezierPath" : OnlyComponentsNSBezierPathFactory,
+    "defconAppKit.GlyphCell" : GlyphCellFactory,
+    "defconAppKit.GlyphCellDetail" : GlyphCellDetailFactory,
+    "defconAppKit.OutlineInformation" : OutlineInformationFactory,
+    "defconAppKit.MenuImage" : MenuImageRepresentationFactory,
 }
 
 # used by the glyph multiline view

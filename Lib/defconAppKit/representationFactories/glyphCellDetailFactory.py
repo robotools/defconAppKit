@@ -11,7 +11,7 @@ def GlyphCellDetailFactory(glyph, font):
     basePath = roundedRectBezierPath(((.5, .5), (imageWidth - 1, imageHeight - 1)), 7)
     basePath.setLineWidth_(1.0)
 
-    glyphPath = glyph.getRepresentation("NSBezierPath")
+    glyphPath = glyph.getRepresentation("defconAppKit.NSBezierPath")
 
     line1Path = NSBezierPath.bezierPath()
     line1Path.moveToPoint_((1, 120.5))

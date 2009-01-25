@@ -416,25 +416,25 @@ class DefconAppKitGlyphNSView(NSView):
 
     def drawFill(self):
         # outlines
-        path = self._glyph.getRepresentation("NoComponentsNSBezierPath")
+        path = self._glyph.getRepresentation("defconAppKit.NoComponentsNSBezierPath")
         if self._showStroke:
             self._fillColor.set()
         else:
             self._fillAndStrokFillColor.set()
         path.fill()
         # components
-        path = self._glyph.getRepresentation("OnlyComponentsNSBezierPath")
+        path = self._glyph.getRepresentation("defconAppKit.OnlyComponentsNSBezierPath")
         self._componentFillColor.set()
         path.fill()
 
     def drawStroke(self):
         # outlines
-        path = self._glyph.getRepresentation("NoComponentsNSBezierPath")
+        path = self._glyph.getRepresentation("defconAppKit.NoComponentsNSBezierPath")
         self._strokeColor.set()
         path.setLineWidth_(1.0 * self._inverseScale)
         path.stroke()
         # components
-        path = self._glyph.getRepresentation("OnlyComponentsNSBezierPath")
+        path = self._glyph.getRepresentation("defconAppKit.OnlyComponentsNSBezierPath")
         self._componentStrokeColor.set()
         path.setLineWidth_(1.0 * self._inverseScale)
         path.stroke()
@@ -465,7 +465,7 @@ class DefconAppKitGlyphNSView(NSView):
         else:
             coordinateSize = 0
         # use the data from the outline representation
-        outlineData = self._glyph.getRepresentation("defconAppKitOutlineInformation")
+        outlineData = self._glyph.getRepresentation("defconAppKit.OutlineInformation")
         points = []
         # start point
         if self._showOnCurvePoints and outlineData["startPoints"]:

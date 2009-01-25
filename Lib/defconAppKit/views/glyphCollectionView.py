@@ -79,7 +79,7 @@ class GlyphCollectionView(vanilla.List):
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
         showModePlacard=True,
-        cellRepresentationName="defconAppKitGlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
+        cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
         selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
