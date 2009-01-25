@@ -574,39 +574,42 @@ class DefconAppKitGlyphNSView(NSView):
             NSFontAttributeName : font,
             NSForegroundColorAttributeName : self._anchorColor
         }
-        shadow = NSShadow.shadow()
-        shadow.setShadowColor_(self._pointStrokeColor)
-        shadow.setShadowBlurRadius_(5)
-        shadow.setShadowOffset_((0, 0))
-        glowAttributes = {
-            NSFontAttributeName : font,
-            NSForegroundColorAttributeName : self._anchorColor,
-            NSStrokeColorAttributeName : self._pointStrokeColor,
-            NSStrokeWidthAttributeName : 10,
-            NSShadowAttributeName : shadow
-        }
         path = NSBezierPath.bezierPath()
         for anchor in self._glyph.anchors:
             x, y = anchor.x, anchor.y
             name = anchor.name
             path.appendBezierPathWithOvalInRect_(((x - anchorHalf, y - anchorHalf), (anchorSize, anchorSize)))
             if pointSize > 100:
-                self._drawTextAtPoint(name, glowAttributes, (x, y), fontSize * self._scale * .75)
-                self._drawTextAtPoint(name, attributes, (x, y), fontSize * self._scale * .75)
+                self._drawTextAtPoint(name, attributes, (x, y - 2), fontSize * self._scale * .85, drawBackground=True)
         self._pointStrokeColor.set()
         path.setLineWidth_(3.0 * self._inverseScale)
         path.stroke()
         self._anchorColor.set()
         path.fill()
 
-    def _drawTextAtPoint(self, text, attributes, (posX, posY), yOffset):
+    def _drawTextAtPoint(self, text, attributes, (posX, posY), yOffset, drawBackground=False):
         text = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
+        width, height = text.size()
         fontSize = attributes[NSFontAttributeName].pointSize()
-        w = text.size()[0]
-        posX -= w / 2
+        posX -= width / 2
         posY -= fontSize + (yOffset * self._inverseScale)
         posX = self.roundPosition(posX)
         posY = self.roundPosition(posY)
+        if drawBackground:
+            shadow = NSShadow.alloc().init()
+            shadow.setShadowColor_(self._backgroundColor)
+            shadow.setShadowOffset_((0, 0))
+            shadow.setShadowBlurRadius_(3)
+            width += 4 * self._inverseScale
+            height += 2 * self._inverseScale
+            x = posX - (2 * self._inverseScale)
+            y = posY - (1 * self._inverseScale)
+            context = NSGraphicsContext.currentContext()
+            context.saveGraphicsState()
+            shadow.set()
+            self._backgroundColor.set()
+            NSRectFill(((x, y), (width, height)))
+            context.restoreGraphicsState()
         text.drawAtPoint_((posX, posY))
 
 
