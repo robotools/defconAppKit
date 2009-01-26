@@ -463,8 +463,12 @@ class GlyphLineView(PlacardScrollView):
     # -------------
 
     def _subscribeToGlyphs(self, glyphRecords):
+        handledGlyphs = set()
         for glyphRecord in glyphRecords:
             glyph = glyphRecord.glyph
+            if glyph in handledGlyphs:
+                continue
+            handledGlyphs.add(glyph)
             glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
             if self._applyKerning:
                 font = glyph.getParent()
@@ -472,9 +476,13 @@ class GlyphLineView(PlacardScrollView):
                     font.kerning.addObserver(self, "_kerningChanged", "Kerning.Changed")
 
     def _unsubscribeFromGlyphs(self):
+        handledGlyphs = set()
         glyphRecords = self._glyphLineView.getGlyphRecords()
         for glyphRecord in glyphRecords:
             glyph = glyphRecord.glyph
+            if glyph in handledGlyphs:
+                continue
+            handledGlyphs.add(glyph)
             glyph.removeObserver(self, "Glyph.Changed")
             if self._applyKerning:
                 font = glyph.getParent()
