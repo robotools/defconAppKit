@@ -175,14 +175,14 @@ class FeatureTextEditor(vanilla.TextEditor):
     delegateClass = DefconAppKitFeatureTextEditorDelegate
 
     def __init__(self, posSize, text, callback=None):
+        # don't wrap lines
+        self._wrapLines = None
         # there must be a callback as it triggers the creation of the delegate
         if callback is None:
             callback = self._fallbackCallback
         super(FeatureTextEditor, self).__init__(posSize, "", callback=callback)
         font = NSFont.fontWithName_size_("Monaco", 10)
         self._textView.setFont_(font)
-        # don't wrap lines
-        self._wrapLines = None
         # colors
         self._mainColor = NSColor.blackColor()
         self._commentColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1)
