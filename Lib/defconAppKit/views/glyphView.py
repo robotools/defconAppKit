@@ -155,6 +155,9 @@ class DefconAppKitGlyphNSView(NSView):
             self.recalculateFrame()
         self.setNeedsDisplay_(True)
 
+    def getGlyph(self):
+        return self._glyph
+
     # ---------------
     # Display Control
     # ---------------
@@ -664,6 +667,7 @@ class GlyphView(PlacardScrollView):
         button.setTitle_("Display...")
 
     def _breakCycles(self):
+        self._unsubscribeFromGlyph()
         self._glyphView = None
         super(GlyphView, self)._breakCycles()
 
@@ -676,11 +680,30 @@ class GlyphView(PlacardScrollView):
         getattr(self._glyphView, method)(not state)
         self._populatePlacard()
 
+    # -------------
+    # Notifications
+    # -------------
+
+    def _subscribeToGlyph(self, glyph):
+        if glyph is not None:
+            glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
+
+    def _unsubscribeFromGlyph(self):
+        if self._glyphView is not None:
+            glyph = self._glyphView.getGlyph()
+            if glyph is not None:
+                glyph.removeObserver(self, "Glyph.Changed")
+
+    def _glyphChanged(self, notification):
+        self._glyphView.setNeedsDisplay_(True)
+
     # --------------
     # Public Methods
     # --------------
 
     def set(self, glyph):
+        self._unsubscribeFromGlyph()
+        self._subscribeToGlyph(glyph)
         self._glyphView.setGlyph_(glyph)
 
     def setShowFill(self, value):
