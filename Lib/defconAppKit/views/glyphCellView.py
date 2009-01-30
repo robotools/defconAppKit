@@ -385,8 +385,15 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._handleDetailWindow(event, found, mouseDragged=True)
         self.autoscroll_(event)
         # mouseUp is not called if a drag has begun.
-        # so, kill the flag now.
-        self._havePreviousMouseDown = False
+        # so, kill the flag now if the conditions
+        # for drag and drop are right
+        if self._allowDrag:
+            modifiers = event.modifierFlags()
+            shiftDown = modifiers & NSShiftKeyMask
+            commandDown = modifiers & NSCommandKeyMask
+            controlDown = modifiers & NSControlKeyMask
+            if not commandDown and not shiftDown and not controlDown:
+                self._havePreviousMouseDown = False
 
     def mouseMoved_(self, event):
         found = self._findGlyphForEvent(event)
