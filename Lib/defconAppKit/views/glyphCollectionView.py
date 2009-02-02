@@ -154,7 +154,7 @@ class GlyphCollectionView(vanilla.List):
             placardH = 16
             self._placard = vanilla.Group((0, 0, placardW, placardH))
             self._placard.button = PlacardSegmentedButton((0, 0, placardW, placardH),
-                [dict(imageObject=placardCellImage, width=16), dict(imageObject=placardListImage, width=18)],
+                [dict(imageNamed="defconAppKitPlacardCellImage", width=16), dict(imageNamed="defconAppKitPlacardListImage", width=18)],
                 callback=self._placardSelection, sizeStyle="mini")
             self._nsObject.setPlacard_(self._placard.getNSView())
         else:
@@ -535,32 +535,3 @@ class GlyphCollectionView(vanilla.List):
         """
         self._glyphCellView.preloadGlyphCellImages()
 
-# -------------
-# placard icons
-# -------------
-
-placardIconColor = NSColor.colorWithCalibratedWhite_alpha_(0, .5)
-
-placardListImage = NSImage.alloc().initWithSize_((16, 16))
-placardListImage.lockFocus()
-placardIconColor.set()
-path = NSBezierPath.bezierPath()
-for i in xrange(3):
-    y = 5.5 + (i * 3)
-    path.moveToPoint_((3, y))
-    path.lineToPoint_((13, y))
-path.setLineWidth_(1)
-path.stroke()
-placardListImage.unlockFocus()
-
-placardCellImage = NSImage.alloc().initWithSize_((16, 16))
-placardCellImage.lockFocus()
-placardIconColor.set()
-rects = [
-    ((4, 4), (3, 3)),
-    ((4, 9), (3, 3)),
-    ((9, 4), (3, 3)),
-    ((9, 9), (3, 3)),
-]
-NSRectFillListUsingOperation(rects, len(rects), NSCompositeSourceOver)
-placardCellImage.unlockFocus()
