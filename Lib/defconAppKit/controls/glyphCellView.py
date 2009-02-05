@@ -4,7 +4,6 @@ import objc
 from Foundation import *
 from AppKit import *
 import vanilla
-from defconAppKit.notificationObserver import NSObjectNotificationObserver
 from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox, HUDHorizontalLine
 
@@ -88,8 +87,6 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellWidth = 50
         self._cellHeight = 50
         self._glyphs = []
-
-        self._notificationObserver = NSObjectNotificationObserver()
 
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
