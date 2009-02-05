@@ -50,7 +50,7 @@ class PostscriptStemSnapFormatter(NSFormatter):
             return ""
         return " ".join([str(i) for i in obj])
 
-    def getObjectValue_forString_errorDescription_(self, string):
+    def getObjectValue_forString_errorDescription_(self, value, string, error):
         if not string.strip():
             return True, [], ""
         try:
@@ -69,7 +69,7 @@ class PostscriptBluesFormatter(NSFormatter):
             return ""
         return " ".join([str(i) for i in obj])
 
-    def getObjectValue_forString_errorDescription_(self, string):
+    def getObjectValue_forString_errorDescription_(self, value, string, error):
         if not string.strip():
             return True, [], ""
         try:
