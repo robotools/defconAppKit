@@ -205,6 +205,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         if self._glyphDetailWindow is None and self._glyphDetailWindowClass is not None and self.window() is not None:
             screen = self.window().screen()
             self._glyphDetailWindow = self._glyphDetailWindowClass(screen=screen)
+            window = self.window()
+            # try to add it to the document so that
+            # it can be released when the document is closed.
+            windowController = window.windowController()
+            if windowController is not None:
+                document = windowController.document()
+                if document is not None:
+                    document.addWindowController_(self._glyphDetailWindow.getNSWindowController())
 
     # selection
 
@@ -241,7 +249,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._windowIsClosed = True
         if self._glyphDetailWindow is not None:
             if self._glyphDetailWindow.getNSWindow() is not None:
-                self._glyphDetailWindow.close()
+                self._glyphDetailWindow.hide()
+                self._glyphDetailWindow.getNSWindow().orderOut_(None)
         notificationCenter = NSNotificationCenter.defaultCenter()
         notificationCenter.removeObserver_(self)
 
