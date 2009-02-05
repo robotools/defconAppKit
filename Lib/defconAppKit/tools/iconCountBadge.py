@@ -14,7 +14,7 @@ def addCountBadgeToIcon(count, iconImage=None):
     # badge text
     textShadow = NSShadow.alloc().init()
     textShadow.setShadowOffset_((2, -2))
-    textShadow.setShadowColor_(NSColor.colorWithCalibratedRed_green_blue_alpha_(.3, 0, 0, 1.0))
+    textShadow.setShadowColor_(NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1.0))
     textShadow.setShadowBlurRadius_(2.0)
 
     paragraph = NSMutableParagraphStyle.alloc().init()
