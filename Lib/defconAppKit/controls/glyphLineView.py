@@ -472,7 +472,7 @@ class GlyphLineView(PlacardScrollView):
             glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
             if self._applyKerning:
                 font = glyph.getParent()
-                if font is not None:
+                if font is not None and not font.kerning.hasObserver(self, "Kerning.Changed"):
                     font.kerning.addObserver(self, "_kerningChanged", "Kerning.Changed")
 
     def _unsubscribeFromGlyphs(self):
@@ -486,7 +486,7 @@ class GlyphLineView(PlacardScrollView):
             glyph.removeObserver(self, "Glyph.Changed")
             if self._applyKerning:
                 font = glyph.getParent()
-                if font is not None:
+                if font is not None and font.kerning.hasObserver(self, "Kerning.Changed"):
                     font.kerning.removeObserver(self, "Kerning.Changed")
 
     def _glyphChanged(self, notification):
