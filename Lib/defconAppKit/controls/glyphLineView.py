@@ -504,13 +504,14 @@ class GlyphLineView(PlacardScrollView):
     def _setKerningInGlyphRecords(self, glyphRecords):
         previousGlyph = None
         previousFont = None
-        for glyphRecord in glyphRecords:
-            glyphRecord.xPlacement = 0
+        for index, glyphRecord in enumerate(glyphRecords):
             glyph = glyphRecord.glyph
             font = glyph.getParent()
             if previousGlyph is not None and font is not None and (previousFont == font):
                 kern = font.kerning.get((previousGlyph.name, glyph.name))
-                glyphRecord.xPlacement = kern
+                if kern is None:
+                    kern = 0
+                glyphRecords[index - 1].xAdvance = kern
             previousGlyph = glyph
             previousFont = font
 
@@ -527,6 +528,7 @@ class GlyphLineView(PlacardScrollView):
             for attr in ("glyph", "xPlacement", "yPlacement", "xAdvance", "yAdvance", "alternates"):
                 if not hasattr(glyphs[0], attr):
                     needToWrap = True
+                    break
         # wrap into glyph records if necessary
         if needToWrap:
             glyphRecords = []
