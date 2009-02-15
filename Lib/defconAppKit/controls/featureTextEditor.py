@@ -11,16 +11,18 @@ from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollV
 # ---------------------------------------
 
 _keywords = """anchor
+anchorDef
 anonymous
 anon
 by
-caret
+contour
 cursive
 device
 enumerate
 enum
 exclude_dflt
 feature
+featureNames
 from
 ignore
 IgnoreBaseGlyphs
@@ -33,22 +35,64 @@ languagesystem
 lookup
 lookupflag
 mark
+MarkAttachmentType
+markClass
+name
 nameid
+NULL
 parameters
 position
 pos
 required
+reversesub
+rsub
 RightToLeft
 script
 substitute
 sub
 subtable
 table
-useExtension"""
+useExtension
+UseMarkFilteringSet
+valueRecordDef
+HorizAxis.BaseTagList
+HorizAxis.BaseScriptList
+HorizAxis.MinMax
+VertAxis.BaseTagList
+VertAxis.BaseScriptList
+VertAxis.MinMax
+GlyphClassDef
+Attach
+LigatureCaretByDev
+LigatureCaretByIndex
+LigatureCaretByPos
+MarkAttachClass
+FontRevision
+CaretOffset
+Ascender
+Descender
+LineGap
+Panose
+TypoAscender
+TypoDescender
+TypoLineGap
+winAscent
+winDescent
+UnicodeRange
+CodePageRange
+XHeight
+CapHeight
+Vendor
+sizemenuname
+VertTypoAscender
+VertTypoDescender
+VertTypoLineGap
+VertOriginY
+VertAdvanceY"""
 
 _keywordREs = []
 for keyword in _keywords.splitlines():
-    pattern = re.compile("(^|[\s;]+)(" + keyword +")($|[\s;(]+)")
+    pattern = re.compile("(^|[<\s;]+)(" + keyword +")($|[>\s;(]+)")
     _keywordREs.append(pattern)
 
 _tokens = """;
@@ -57,7 +101,6 @@ _tokens = """;
 -
 =
 '
-"
 {
 }
 [
@@ -84,6 +127,10 @@ _includeRE = re.compile(
     "(include\s*\()"
     "([^)]+)"
     "(\)\s*;)"
+)
+
+_stringRE = re.compile(
+    "()(\".*\")()"
 )
 
 # ------------------------------------------
@@ -190,6 +237,7 @@ class FeatureTextEditor(vanilla.TextEditor):
         self._tokenColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.8, .4, 0, 1)
         self._classColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, .8, 1)
         self._includeColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.8, 0, .8, 1)
+        self._stringColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, .8, 0, 1)
         # build the placard
         placardW = 65
         placardH = 16
@@ -255,6 +303,9 @@ class FeatureTextEditor(vanilla.TextEditor):
             self._patternRecurse(strippedLine, _classNameRE, characterCounter, self._classColor)
             # include
             self._patternRecurse(strippedLine, _includeRE, characterCounter, self._includeColor)
+            # strings
+            if "\"" in line:
+                self._patternRecurse(strippedLine, _stringRE, characterCounter, self._stringColor)
             characterCounter += lineLength + 1
         # update the pop up
         self._updatePopUp()
