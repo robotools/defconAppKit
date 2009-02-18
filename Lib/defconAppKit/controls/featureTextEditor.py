@@ -4,153 +4,9 @@ from AppKit import *
 import vanilla
 from vanilla.vanillaTextEditor import VanillaTextEditorDelegate
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton
+from defconAppKit.windows.popUpWindow import InteractivePopUpWindow
+from defconAppKit.tools.featureTextTools import breakFeatureTextIntoRuns, findBlockOpenLineStarts
 
-
-# ---------------------------------------
-# Syntax Highlighting Regular Expressions
-# ---------------------------------------
-
-_keywords = """anchor
-anchorDef
-anonymous
-anon
-by
-contour
-cursive
-device
-enumerate
-enum
-exclude_dflt
-feature
-featureNames
-from
-ignore
-IgnoreBaseGlyphs
-IgnoreLigatures
-IgnoreMarks
-include
-include_dflt
-language
-languagesystem
-lookup
-lookupflag
-mark
-MarkAttachmentType
-markClass
-name
-nameid
-NULL
-parameters
-position
-pos
-required
-reversesub
-rsub
-RightToLeft
-script
-substitute
-sub
-subtable
-table
-useExtension
-UseMarkFilteringSet
-valueRecordDef
-HorizAxis.BaseTagList
-HorizAxis.BaseScriptList
-HorizAxis.MinMax
-VertAxis.BaseTagList
-VertAxis.BaseScriptList
-VertAxis.MinMax
-GlyphClassDef
-Attach
-LigatureCaretByDev
-LigatureCaretByIndex
-LigatureCaretByPos
-MarkAttachClass
-FontRevision
-CaretOffset
-Ascender
-Descender
-LineGap
-Panose
-TypoAscender
-TypoDescender
-TypoLineGap
-winAscent
-winDescent
-UnicodeRange
-CodePageRange
-XHeight
-CapHeight
-Vendor
-sizemenuname
-VertTypoAscender
-VertTypoDescender
-VertTypoLineGap
-VertOriginY
-VertAdvanceY"""
-
-_keywordREs = []
-for keyword in _keywords.splitlines():
-    pattern = re.compile("(^|[<\s;]+)(" + keyword +")($|[>\s;(]+)")
-    _keywordREs.append(pattern)
-
-_tokens = """;
-,
-\
--
-=
-'
-{
-}
-[
-]
-<
->
-(
-)"""
-
-_tokenREs = []
-for token in _tokens.splitlines():
-    pattern = re.compile("()(" + re.escape(token) +")()")
-    _tokenREs.append(pattern)
-
-_commentSubRE = re.compile("#.*$", re.MULTILINE)
-
-_classNameRE = re.compile(
-    "()"
-    "(@[a-zA-Z0-9_.]*)"
-    "()"
-    )
-
-_includeRE = re.compile(
-    "(include\s*\()"
-    "([^)]+)"
-    "(\)\s*;)"
-)
-
-_stringRE = re.compile(
-    "()(\".*\")()"
-)
-
-# ------------------------------------------
-# Line Number Extraction Regular Expressions
-# ------------------------------------------
-
-_lineNumberScanOpen = re.compile(
-    "(^|[\s;]+)"
-    "feature"
-    "\s+"
-    "([A-Za-z0-9]+)"
-    "\s*"
-    "\{"
-)
-
-_lineNumberScanClose = re.compile(
-    "}"
-    "\s*"
-    "([A-Za-z0-9]+)"
-)
 
 # -------------------
 # Whitespace Guessing
@@ -197,9 +53,79 @@ class DefconAppKitFeatureTextView(NSTextView):
             self.insertText_(vanillaWrapper._whitespace)
 
     def viewDidMoveToWindow(self):
-        vanillaWrapper = self.vanillaWrapper()
-        if vanillaWrapper._wrapLines is None:
-            vanillaWrapper.setWrapLines(False)
+        self._setWrapLines(False)
+        ruler = self.enclosingScrollView().verticalRulerView()
+        if ruler is not None:
+            ruler.clientViewSelectionChanged_(None)
+
+    # -------------------
+    # menu item callbacks
+    # -------------------
+
+    def validateMenuItem_(self, item):
+        if item.action() in "toggleWrapLines:":
+            if self.getWrapLines():
+                state = NSOnState
+            else:
+                state = NSOffState
+            item.setState_(state)
+        return super(DefconAppKitFeatureTextView, self).validateMenuItem_(item)
+
+    def showJumpToLineInterface_(self, sender):
+        frame = self.enclosingScrollView().frame()
+        superview = self.enclosingScrollView()
+        while True:
+            s = superview.superview()
+            if s is None:
+                break
+            else:
+                frame = s.convertRect_fromView_(frame, superview)
+                superview = s
+        (x, y), (w, h) = frame
+        (x, y) = self.window().convertBaseToScreen_((x, y))
+        JumpToLinePopUpWindow(((x, y), (w, h)), self.window().screen(), self._jumpToLineInterfaceCallback_)
+
+    def _jumpToLineInterfaceCallback_(self, lineNumber):
+        self.jumpToLine_(lineNumber)
+
+    def jumpToLine_(self, lineNumber):
+        lineNumber -= 1
+        text = self.string()
+        lines = text.splitlines()
+        if lineNumber > len(lines):
+            lineStart = len(text)
+        else:
+            precedingLines = lines[:lineNumber]
+            lineStart = len(u"\n".join(precedingLines)) + 1
+        self.setSelectedRange_((lineStart, 0))
+        self.scrollRangeToVisible_((lineStart, 0))
+
+    # -------------
+    # line wrapping
+    # -------------
+
+    def toggleWrapLines_(self, sender):
+        self.setWrapLines_(not self.getWrapLines())
+
+    def getWrapLines(self):
+        return not self.isHorizontallyResizable()
+
+    def setWrapLines_(self, value):
+        if value == self.getWrapLines():
+            return
+        self._setWrapLines(value)
+
+    def _setWrapLines(self, value):
+        scrollView = self.enclosingScrollView()
+        height = height = self.maxSize()[1]
+        if value:
+            width = scrollView.contentView().bounds().size[0]
+        else:
+            width = height
+        self.setMaxSize_((width, height))
+        self.setHorizontallyResizable_(not value)
+        self.textContainer().setWidthTracksTextView_(value)
+        self.textContainer().setContainerSize_((width, height))
 
 
 class DefconAppKitFeatureTextEditorDelegate(VanillaTextEditorDelegate):
@@ -209,6 +135,149 @@ class DefconAppKitFeatureTextEditorDelegate(VanillaTextEditorDelegate):
 
     def textViewDidChangeSelection_(self, notification):
         self.vanillaWrapper()._selectionChangedCallback()
+
+
+# ----------------------
+# Jump To Line Interface
+# ----------------------
+
+
+class JumpToLinePopUpWindow(object):
+
+    def __init__(self, frameToCenterInside, screen, callback):
+        self._callback = callback
+        width = 180
+        height = 97
+        (frameXMin, frameYMin), (frameWidth, frameHeight) = frameToCenterInside
+        screenTop = screen.frame()[0][1]
+        frameTop = screenTop - (frameYMin + frameHeight)
+
+        x = frameXMin + ((frameWidth - width) / 2)
+        y = frameTop + ((frameHeight - height) / 2)
+
+        formatter = NSNumberFormatter.alloc().init()
+        formatter.setFormat_("#;0;-#")
+        formatter.setAllowsFloats_(False)
+        formatter.setGeneratesDecimalNumbers_(False)
+        formatter.setMinimum_(1)
+
+        self.w = InteractivePopUpWindow((x, y, width, height))
+        self.w.title = vanilla.TextBox((15, 18, 88, 17), "Jump to line:")
+        self.w.lineInput = vanilla.EditText((103, 15, -15, 22), formatter=formatter)
+        self.w.lineInput.getNSTextField().setFocusRingType_(NSFocusRingTypeNone)
+        self.w.line = vanilla.HorizontalLine((15, -50, -15, 1))
+        self.w.cancelButton = vanilla.Button((15, -35, 70, 20), "Cancel", callback=self.cancelCallback)
+        self.w.okButton = vanilla.Button((95, -35, 70, 20), "OK", callback=self.okCallback)
+
+        self.w.setDefaultButton(self.w.okButton)
+        self.w.cancelButton.bind(".", ["command"])
+        self.w.getNSWindow().makeFirstResponder_(self.w.lineInput.getNSTextField())
+
+        self.w.open()
+
+    def cancelCallback(self, sender):
+        self._callback = None
+        self.w.close()
+
+    def okCallback(self, sender):
+        self.w.close()
+        value = self.w.lineInput.get()
+        if value is not None:
+            self._callback(value)
+        self._callback = None
+
+
+# -----------------
+# Line Number Ruler
+# -----------------
+
+rulerFont = NSFont.labelFontOfSize_(NSFont.systemFontSizeForControlSize_(NSMiniControlSize))
+
+
+class DefconAppKitLineNumberView(NSRulerView):
+
+    def init(self):
+        self = super(DefconAppKitLineNumberView, self).init()
+        self._existingText = None
+        self._existingClientViewWidth = None
+        self._lineRects = []
+        return self
+
+    def dealloc(self):
+        notificationCenter = NSNotificationCenter.defaultCenter()
+        notificationCenter.removeObserver_(self)
+        super(DefconAppKitLineNumberView, self).dealloc()
+
+    def requiredThickness(self):
+        count = len(self._lineRects)
+        count = NSString.stringWithString_(str(count))
+        width, height = count.sizeWithAttributes_({NSFontNameAttribute : rulerFont})
+        return width + 10
+
+    def _updateRects(self):
+        clientView = self.clientView()
+        clientFrame = clientView.frame()
+        if clientFrame[1][0] == 0 or clientFrame[1][1] == 0:
+            return
+        text = clientView.string()
+        attributedString = clientView.attributedString()
+        font = clientView.font()
+        pointSize = font.pointSize()
+        layoutManager = clientView.layoutManager()
+        textContainer = clientView.textContainer()
+        previousLineBottom = 0
+        lineStart = 0
+        lineRects = []
+        for index, line in enumerate(text.splitlines()):
+            index += 1
+            lineLength = len(line)
+            rectArray, rectCount = layoutManager.rectArrayForCharacterRange_withinSelectedCharacterRange_inTextContainer_rectCount_(
+                (lineStart, lineLength), (NSNotFound, 0), textContainer, None
+            )
+            # make sure that the first rect has a width
+            if rectArray[0].size[0] == 0:
+                (x, y), (w, h) = rectArray[0]
+                w = 1
+                rectArray = [((x, y), (w, h))] + list(rectArray[1:])
+            # merge the rects
+            rect = rectArray[0]
+            for otherRect in rectArray[1:]:
+                rect = NSUnionRect(rect, otherRect)
+            # store
+            lineRects.append((index, rect))
+            # offset for next line
+            lineStart += lineLength + 1
+            previousLineBottom = rect[0][1] + rect[1][1]
+        self._lineRects = lineRects
+        self._existingText = text
+        self._existingClientViewWidth = clientFrame.size[0]
+
+    def drawHashMarksAndLabelsInRect_(self, rect):
+        clientView = self.clientView()
+        visibleRect = clientView.visibleRect()
+        visibleYMin = visibleRect[0][1]
+        rulerWidth = self.frame().size[0]
+        attributes = {NSFontAttributeName : rulerFont}
+        for index, lineRect in self._lineRects:
+            if not NSIntersectsRect(visibleRect, lineRect):
+                continue
+            text = NSString.stringWithString_(str(index))
+            textWidth, textHeight = text.sizeWithAttributes_(attributes)
+            (xMin, yMin), (w, h) = lineRect
+            y = yMin - visibleYMin
+            x = rulerWidth - textWidth - 5
+            text.drawAtPoint_withAttributes_((x, y), attributes)
+
+    def clientViewSelectionChanged_(self, notification):
+        clientView = self.clientView()
+        # look to see if the rects need to be recalculated
+        text = clientView.string()
+        if text != self._existingText or clientView.frame().size[0] != self._existingClientViewWidth:
+            self._updateRects()
+            requiredThickness = self.requiredThickness()
+            if requiredThickness != self.ruleThickness():
+                self.setRuleThickness_(requiredThickness)
+        self.setNeedsDisplay_(True)
 
 
 # -------------
@@ -222,22 +291,33 @@ class FeatureTextEditor(vanilla.TextEditor):
     delegateClass = DefconAppKitFeatureTextEditorDelegate
 
     def __init__(self, posSize, text, callback=None):
-        # don't wrap lines
-        self._wrapLines = None
         # there must be a callback as it triggers the creation of the delegate
         if callback is None:
             callback = self._fallbackCallback
         super(FeatureTextEditor, self).__init__(posSize, "", callback=callback)
+        self._nsObject.setHasHorizontalScroller_(True)
         font = NSFont.fontWithName_size_("Monaco", 10)
         self._textView.setFont_(font)
+        self._textView.setUsesFindPanel_(True)
+        ## line numbers
+        #ruler = DefconAppKitLineNumberView.alloc().init()
+        #ruler.setClientView_(self._textView)
+        #self._nsObject.setVerticalRulerView_(ruler)
+        #self._nsObject.setHasHorizontalRuler_(False)
+        #self._nsObject.setHasVerticalRuler_(True)
+        #self._nsObject.setRulersVisible_(True)
+        #notificationCenter = NSNotificationCenter.defaultCenter()
+        #notificationCenter.addObserver_selector_name_object_(
+        #    ruler, "clientViewSelectionChanged:", NSTextViewDidChangeSelectionNotification, self._textView
+        #)
         # colors
         self._mainColor = NSColor.blackColor()
         self._commentColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1)
         self._keywordColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.8, 0, 0, 1)
         self._tokenColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.8, .4, 0, 1)
-        self._classColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, .8, 1)
+        self._classNameColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, .8, 1)
         self._includeColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.8, 0, .8, 1)
-        self._stringColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, .8, 0, 1)
+        self._stringColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, .6, 0, 1)
         # build the placard
         placardW = 65
         placardH = 16
@@ -277,93 +357,28 @@ class FeatureTextEditor(vanilla.TextEditor):
     def _highlightSyntax(self, location, text):
         # convert all text to black
         self._textView.setTextColor_range_(self._mainColor, (location, len(text)))
-        # find all patterns that appaear in the text
-        textWithoutComments = re.sub(_commentSubRE, "", text)
-        knownKeywords = self._findMatchingPatterns(textWithoutComments, _keywordREs)
-        knownTokens = self._findMatchingPatterns(textWithoutComments, _tokenREs)
-        # run through all lines
-        characterCounter = location
-        for line in text.splitlines():
-            lineLength = len(line)
-            # comments
-            if "#" in line:
-                before, after = line.split("#", 1)
-                after = "#" + after
-                location = characterCounter + len(before)
-                length = len(after)
-                self._textView.setTextColor_range_(self._commentColor, (location, length))
-            # keywords
-            strippedLine = line.split("#", 1)[0].rstrip()
-            for keyword in knownKeywords:
-                self._patternRecurse(strippedLine, keyword, characterCounter, self._keywordColor)
-            # tokens
-            for token in knownTokens:
-                self._patternRecurse(strippedLine, token, characterCounter, self._tokenColor)
-            # classes
-            self._patternRecurse(strippedLine, _classNameRE, characterCounter, self._classColor)
-            # include
-            self._patternRecurse(strippedLine, _includeRE, characterCounter, self._includeColor)
-            # strings
-            if "\"" in line:
-                self._patternRecurse(strippedLine, _stringRE, characterCounter, self._stringColor)
-            characterCounter += lineLength + 1
+        runs = breakFeatureTextIntoRuns(text)
+        colors = dict(
+            comment=self._commentColor,
+            string=self._stringColor,
+            token=self._tokenColor,
+            keyword=self._keywordColor,
+            include=self._includeColor,
+            className=self._classNameColor,
+        )
+        for start, end, typ in runs:
+            length = end - start
+            start = location + start
+            color = colors[typ]
+            self._textView.setTextColor_range_(color, (start, length))
         # update the pop up
         self._updatePopUp()
-
-    def _findMatchingPatterns(self, text, patterns):
-        found = []
-        for pattern in patterns:
-            if pattern.findall(text):
-                found.append(pattern)
-        return found
-
-    def _patternRecurse(self, line, pattern, lineStart, color):
-        m = pattern.search(line)
-        if m is None:
-            return
-        # get the span
-        matchStart, matchEnd = m.span()
-        # strip the match from the line
-        leftOverLine = line[matchEnd:]
-        # work out the relevant match location
-        junk1, matchedText, junk2 = m.groups()
-        location = lineStart + len(junk1) + matchStart
-        length = len(matchedText)
-        # colorize
-        self._textView.setTextColor_range_(color, (location, length))
-        # if there is any text left, go again
-        if leftOverLine.strip():
-            self._patternRecurse(leftOverLine, pattern, lineStart+matchEnd, color)
 
     # placard support
 
     def _updatePopUp(self):
-        ranges = []
-        openFeature = None
-        openFeatureStart = 0
-        characterCounter = 0
-        for lineIndex, line in enumerate(self.get().splitlines()):
-            lineLength = len(line)
-            line = line.split("#", 1)[0]
-            if openFeature:
-                closures = _lineNumberScanClose.findall(line)
-                if openFeature in closures:
-                    ranges.append((openFeature, openFeatureStart))
-                    openFeature = None
-                    # this could inadvertantly skip a feature that is defined
-                    # on the same line as another feature is being closed.
-                    # this probably isn't that big of a deal as long as
-                    # the failure will be handled gracefully.
-            else:
-                m = _lineNumberScanOpen.search(line)
-                if m is not None:
-                    openFeature = m.group(2)
-                    openFeatureStart = characterCounter
-            characterCounter += lineLength + 1
-        # if a feature is left open, politely close it
-        if openFeature:
-            ranges.append((openFeature, openFeatureStart))
-        # set the pop up
+        text = self.get()
+        ranges = findBlockOpenLineStarts(text)
         self._placardJumps = ranges
         titles = [i[0] for i in ranges]
         self._placard.featureJumpButton.setItems(titles)
@@ -406,25 +421,13 @@ class FeatureTextEditor(vanilla.TextEditor):
         """
         Boolean representing if lines should be soft wrapped or not.
         """
-        if self._wrapLines == value:
-            return
-        self._wrapLines = value
-        self._nsObject.setHasHorizontalScroller_(True)
-        self._textView.setHorizontallyResizable_(not value)
-        height = height = self._textView.maxSize()[1]
-        if value:
-            width = self._nsObject.contentView().bounds().size[0]
-        else:
-            width = height
-        self._textView.setMaxSize_((width, height))
-        self._textView.textContainer().setWidthTracksTextView_(value)
-        self._textView.textContainer().setContainerSize_((width, height))
+        self._textView.setWrapLines_(value)
 
     def getWrapLines(self):
         """
         Boolean representing if the lines are soft wrapped or not.
         """
-        return self._wrapLines
+        return self._textView.getWrapLines()
 
     def setMainColor(self, value):
         self._mainColor = value
@@ -455,11 +458,11 @@ class FeatureTextEditor(vanilla.TextEditor):
         return self._tokenColor
 
     def setClassColor(self, value):
-        self._classColor = value
+        self._classNameColor = value
         self._highlightSyntax(0, self.get())
 
     def getClassColor(self):
-        return self._classColor
+        return self._classNameColor
 
     def setIncludeColor(self, value):
         self._includeColor = value
