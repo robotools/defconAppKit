@@ -244,7 +244,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             bottom += yP
             glyphHeight = height + yA
             glyphLeft = left + (xP * scale)
-            glyphWidth = (w + xA) * scale
+            glyphWidth = xA * scale
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
@@ -267,12 +267,11 @@ class DefconAppKitGlyphLineNSView(NSView):
                 self._glyphColor.set()
             else:
                 path.fill()
-            # remove the y placement that was applied
-            # and shift horizontally for the next glyph
+            # shift for the next glyph
             aT = NSAffineTransform.transform()
-            aT.translateXBy_yBy_(xA + w -xP, -yP)
+            aT.translateXBy_yBy_(xA - xP, yA - yP)
             aT.concat()
-            left += (xA + w) * scale
+            left += xA * scale
         ctx.restoreGraphicsState()
 
     def drawRectRightToLeft_(self, rect):
@@ -309,6 +308,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         left = scrollWidth - self._buffer
         bottom = self._buffer
         height = upm * scale
+        previousXA = 0
         for recordIndex, glyphRecord in enumerate(self._glyphRecords):
             glyph = glyphRecord.glyph
             w = glyph.width
@@ -320,8 +320,8 @@ class DefconAppKitGlyphLineNSView(NSView):
             # handle offsets from the record
             bottom += yP
             glyphHeight = height + yA
-            glyphLeft = left + ((-xP - xA -w) * scale)
-            glyphWidth = (w + xA) * scale
+            glyphLeft = left + ((-xP - xA) * scale)
+            glyphWidth = -xA * scale
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
@@ -333,7 +333,9 @@ class DefconAppKitGlyphLineNSView(NSView):
                 self._glyphColor.set()
             # shift into place and draw the glyph
             aT = NSAffineTransform.transform()
-            aT.translateXBy_yBy_(-xP - xA - w, yP)
+            if xP:
+                xP += previousXA
+            aT.translateXBy_yBy_(-xA + xP, yP)
             aT.concat()
             # fill the path, highlighting alternates
             # if necessary
@@ -346,9 +348,10 @@ class DefconAppKitGlyphLineNSView(NSView):
             # remove the y placement that was applied
             # and shift horizontally for the next glyph
             aT = NSAffineTransform.transform()
-            aT.translateXBy_yBy_(0, -yP)
+            aT.translateXBy_yBy_(-xP, yA - yP)
             aT.concat()
-            left += (-xP - xA - w) * scale
+            left += (-xP - xA) * scale
+            previousXA = xA
         ctx.restoreGraphicsState()
 
 #    # -------------
@@ -535,6 +538,7 @@ class GlyphLineView(PlacardScrollView):
             for glyph in glyphs:
                 glyphRecord = GlyphRecord()
                 glyphRecord.glyph = glyph
+                glyphRecord.xAdvance = glyph.width
                 glyphRecords.append(glyphRecord)
             # apply kerning as needed
             if self._applyKerning:
