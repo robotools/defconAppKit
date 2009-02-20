@@ -234,17 +234,18 @@ class DefconAppKitGlyphLineNSView(NSView):
         height = upm * scale
         for recordIndex, glyphRecord in enumerate(self._glyphRecords):
             glyph = glyphRecord.glyph
-            w = glyph.width
+            w = glyphRecord.advanceWidth
+            h = glyphRecord.advanceHeight
             xP = glyphRecord.xPlacement
             yP = glyphRecord.yPlacement
             xA = glyphRecord.xAdvance
             yA = glyphRecord.yAdvance
             path = glyph.getRepresentation("defconAppKit.NSBezierPath")
             # handle offsets from the record
-            bottom += yP
-            glyphHeight = height + yA
+            bottom += yP * scale
+            glyphHeight = height + ((h + yA) * scale)
             glyphLeft = left + (xP * scale)
-            glyphWidth = xA * scale
+            glyphWidth = (w + xA) * scale
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
@@ -269,9 +270,9 @@ class DefconAppKitGlyphLineNSView(NSView):
                 path.fill()
             # shift for the next glyph
             aT = NSAffineTransform.transform()
-            aT.translateXBy_yBy_(xA - xP, yA - yP)
+            aT.translateXBy_yBy_(w + xA - xP, h + yA - yP)
             aT.concat()
-            left += xA * scale
+            left += glyphWidth
         ctx.restoreGraphicsState()
 
     def drawRectRightToLeft_(self, rect):
@@ -311,17 +312,18 @@ class DefconAppKitGlyphLineNSView(NSView):
         previousXA = 0
         for recordIndex, glyphRecord in enumerate(self._glyphRecords):
             glyph = glyphRecord.glyph
-            w = glyph.width
+            w = glyphRecord.advanceWidth
+            h = glyphRecord.advanceHeight
             xP = glyphRecord.xPlacement
             yP = glyphRecord.yPlacement
             xA = glyphRecord.xAdvance
             yA = glyphRecord.yAdvance
             path = glyph.getRepresentation("defconAppKit.NSBezierPath")
             # handle offsets from the record
-            bottom += yP
-            glyphHeight = height + yA
-            glyphLeft = left + ((-xP - xA) * scale)
-            glyphWidth = -xA * scale
+            bottom += yP * scale
+            glyphHeight = height + ((h + yA) * scale)
+            glyphLeft = left + ((-w + xP - xA) * scale)
+            glyphWidth = (-w - xA) * scale
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
@@ -335,7 +337,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             aT = NSAffineTransform.transform()
             if xP:
                 xP += previousXA
-            aT.translateXBy_yBy_(-xA + xP, yP)
+            aT.translateXBy_yBy_(-w - xA + xP, yP)
             aT.concat()
             # fill the path, highlighting alternates
             # if necessary
@@ -345,12 +347,11 @@ class DefconAppKitGlyphLineNSView(NSView):
                 self._glyphColor.set()
             else:
                 path.fill()
-            # remove the y placement that was applied
-            # and shift horizontally for the next glyph
+            # shift for the next glyph
             aT = NSAffineTransform.transform()
-            aT.translateXBy_yBy_(-xP, yA - yP)
+            aT.translateXBy_yBy_(-xP, h + yA - yP)
             aT.concat()
-            left += (-xP - xA) * scale
+            left += (-w - xP - xA) * scale
             previousXA = xA
         ctx.restoreGraphicsState()
 
@@ -538,7 +539,7 @@ class GlyphLineView(PlacardScrollView):
             for glyph in glyphs:
                 glyphRecord = GlyphRecord()
                 glyphRecord.glyph = glyph
-                glyphRecord.xAdvance = glyph.width
+                glyphRecord.advanceWidth = glyph.width
                 glyphRecords.append(glyphRecord)
             # apply kerning as needed
             if self._applyKerning:
@@ -570,7 +571,7 @@ class GlyphLineView(PlacardScrollView):
 
 class GlyphRecord(object):
 
-    __slots__ = ["glyph", "xPlacement", "yPlacement", "xAdvance", "yAdvance", "alternates"]
+    __slots__ = ["glyph", "xPlacement", "yPlacement", "xAdvance", "yAdvance", "advanceWidth", "advanceHeight", "alternates"]
 
     def __init__(self):
         self.glyph = None
@@ -578,5 +579,7 @@ class GlyphRecord(object):
         self.yPlacement = 0
         self.xAdvance = 0
         self.yAdvance = 0
+        self.advanceWidth = 0
+        self.advanceHeight = 0
         self.alternates = []
 
