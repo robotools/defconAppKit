@@ -773,8 +773,7 @@ styleNameItem = inputItemDict(
     hasDefault=False
 )
 styleMapFamilyNameItem = inputItemDict(
-    title="Style Map Family Name",
-    hasDefault=False
+    title="Style Map Family Name"
 )
 
 styleMapStyleOptions = ["regular", "italic", "bold", "bold italic"]
@@ -787,7 +786,6 @@ def styleMapStyleNameToUFO(value):
 
 styleMapStyleNameItem = inputItemDict(
     title="Style Map Style",
-    hasDefault=False,
     controlClass=vanilla.RadioGroup,
     conversionFromUFO=styleMapStyleNameFromUFO,
     conversionToUFO=styleMapStyleNameToUFO,
