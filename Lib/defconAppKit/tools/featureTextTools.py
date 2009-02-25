@@ -129,61 +129,37 @@ _stringRE = re.compile(
     "(\".*\")"
 )
 
-def _findKnownPatterns(text):
-    knownPatterns = []
-    # comments
-    commentCount = len(_commentRE.findall(text))
-    if commentCount:
-        text = _commentRE.sub("", text)
-        knownPatterns.append(dict(pattern=_commentRE, count=commentCount, type="comment"))
-    # strings
-    stringCount = len(_stringRE.findall(text))
-    if stringCount:
-        text = _stringRE.sub("", text)
-        knownPatterns.append(dict(pattern=_stringRE, count=stringCount, type="string"))
-    # includes
-    includeCount = len(_includeRE.findall(text))
-    if includeCount:
-        text = _includeRE.sub("", text)
-        knownPatterns.append(dict(pattern=_includeRE, count=includeCount, type="include"))
-    # class names
-    classNameCount = len(_classNameRE.findall(text))
-    if classNameCount:
-        text = _classNameRE.sub("", text)
-        knownPatterns.append(dict(pattern=_classNameRE, count=classNameCount, type="className"))
-    # tokens
-    tokenCount = len(_tokenRE.findall(text))
-    if tokenCount:
-        knownPatterns.append(dict(pattern=_tokenRE, count=tokenCount, type="token"))
-    # keywords
-    keywordCount = len(_keywordRE.findall(text))
-    if keywordCount:
-        knownPatterns.append(dict(pattern=_keywordRE, count=keywordCount, type="keyword"))
-    return knownPatterns
-
 def breakFeatureTextIntoRuns(text):
-    patterns = _findKnownPatterns(text)
-    return _breakFeatureTextIntoRuns(text, patterns)
+    runs = []
+    # tokens
+    runs.append(("tokens", _findRuns(text, _tokenRE)))
+    # keywords
+    runs.append(("keywords", _findRuns(text, _keywordRE)))
+    # class names
+    runs.append(("classNames", _findRuns(text, _classNameRE)))
+    # includes
+    runs.append(("includes", _findRuns(text, _includeRE)))
+    # strings
+    runs.append(("strings", _findRuns(text, _stringRE)))
+    # comments
+    runs.append(("comments", _findRuns(text, _commentRE)))
+    return runs
 
-def _breakFeatureTextIntoRuns(text, patterns, offset=0):
-    if not text:
-        return []
-    result = []
-    for patternDict in patterns:
-        if patternDict["count"] == 0:
-            continue
-        pattern = patternDict["pattern"]
+def _findRuns(text, pattern):
+    runs = []
+    offset = 0
+    while 1:
         m = pattern.search(text)
-        if m is not None:
-            patternDict["count"] -= 1
-            start, end = m.span()
-            result.append((offset + start, offset + end, patternDict["type"]))
-            # go back
-            result = _breakFeatureTextIntoRuns(text[:start], patterns, offset=offset) + result
-            # go forward
-            result = result + _breakFeatureTextIntoRuns(text[end:], patterns, offset=offset+end)
+        if m is None:
             break
-    return result
+        else:
+            start, end = m.span()
+            runs.append((start + offset, end + offset))
+            offset = offset + end
+            text = text[end:]
+            if not text:
+                break
+    return runs
 
 # ---------------
 # Block Searching

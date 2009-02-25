@@ -357,20 +357,20 @@ class FeatureTextEditor(vanilla.TextEditor):
     def _highlightSyntax(self, location, text):
         # convert all text to black
         self._textView.setTextColor_range_(self._mainColor, (location, len(text)))
-        runs = breakFeatureTextIntoRuns(text)
         colors = dict(
-            comment=self._commentColor,
-            string=self._stringColor,
-            token=self._tokenColor,
-            keyword=self._keywordColor,
-            include=self._includeColor,
-            className=self._classNameColor,
+            comments=self._commentColor,
+            strings=self._stringColor,
+            tokens=self._tokenColor,
+            keywords=self._keywordColor,
+            includes=self._includeColor,
+            classNames=self._classNameColor,
         )
-        for start, end, typ in runs:
-            length = end - start
-            start = location + start
+        for typ, runs in breakFeatureTextIntoRuns(text):
             color = colors[typ]
-            self._textView.setTextColor_range_(color, (start, length))
+            for start, end in runs:
+                length = end - start
+                start = location + start
+                self._textView.setTextColor_range_(color, (start, length))
         # update the pop up
         self._updatePopUp()
 
