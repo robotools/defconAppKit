@@ -1,6 +1,7 @@
 from distutils.core import setup
 import py2app
 import os
+import sys
 
 plist = dict(
         CFBundleDocumentTypes = [
@@ -22,6 +23,9 @@ plist = dict(
 dataFiles = [
         "Resources/English.lproj",
         ]
+frameworks = []
+if "-A" not in sys.argv:
+    dataFiles += frameworks
 
 setup(
     data_files=dataFiles,

@@ -7,12 +7,12 @@ from defconAppKit.windows.baseWindow import BaseWindowController
 from defconAppKit.windows.progressWindow import ProgressWindow
 from defconAppKit.representationFactories import registerAllFactories
 from defconAppKit.representationFactories.glyphCellFactory import GlyphCellHeaderHeight, GlyphCellMinHeightForHeader
-from defconAppKit.views.glyphCollectionView import GlyphCollectionView
-from defconAppKit.views.glyphLineView import GlyphLineView
-from defconAppKit.views.glyphMultilineView import GlyphMultilineView
-from defconAppKit.views.glyphNameComboBox import GlyphNameComboBox
-from defconAppKit.tools.osFontBridgeManager import OSFontBridgeManager
-from fontAppTools import splitText
+from defconAppKit.controls.glyphCollectionView import GlyphCollectionView
+from defconAppKit.controls.glyphView import GlyphView
+from defconAppKit.controls.glyphLineView import GlyphLineView
+from defconAppKit.controls.glyphNameComboBox import GlyphNameComboBox
+from defconAppKit.controls.glyphSequenceEditText import GlyphSequenceEditText
+from defconAppKit.controls.featureTextEditor import FeatureTextEditor
 
 registerAllFactories()
 
@@ -25,13 +25,7 @@ NibClassBuilder.extractClasses("MainMenu")
 
 class DefconAppKitTestAppDelegate(NSObject):
 
-    def init(self):
-        self = super(DefconAppKitTestAppDelegate, self).init()
-        self._osFontBridgeManager = OSFontBridgeManager()
-        return self
-
-    def OSFontBridgeManager(self):
-        return self._osFontBridgeManager
+    pass
 
 
 class DefconAppKitTestDocument(NSDocument):
@@ -40,16 +34,11 @@ class DefconAppKitTestDocument(NSDocument):
         progress = ProgressWindow("Opening...")
         try:
             font = self.font = Font(path)
-            NSApp().delegate().OSFontBridgeManager().addFont(font)
             window = self.vanillaWindowController = DefconAppKitTestDocumentWindow(font)
             self.addWindowController_(window.w.getNSWindowController())
         finally:
             progress.close()
         return True
-
-    def dealloc(self):
-        NSApp().delegate().OSFontBridgeManager().removeFont(self.font)
-        super(DefconAppKitTestDocument, self).dealloc()
 
 
 glyphSortDescriptors = [
@@ -69,11 +58,11 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.glyphs = [font[k] for k in font.unicodeData.sortGlyphNames(font.keys(), glyphSortDescriptors)]
         self.w = vanilla.Window((700, 500), minSize=(400, 400))
 
-        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCollectionView", "GlyphLineView", "GlyphMultilineView", "Misc. Controls"])
+        self.w.tabs = vanilla.Tabs((10, 10, -10, -10), ["Window", "GlyphCollectionView", "GlyphView", "GlyphLineView", "Misc. Controls"])
         self.windowTab = self.w.tabs[0]
         self.collectionViewTab = self.w.tabs[1]
-        self.lineViewTab = self.w.tabs[2]
-        self.multilineViewTab = self.w.tabs[3]
+        self.glyphViewTab = self.w.tabs[2]
+        self.lineViewTab = self.w.tabs[3]
         self.controlsTab = self.w.tabs[4]
 
         # test various window methods
@@ -95,27 +84,22 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.collectionViewTab.collectionView.set(self.glyphs)
         self.collectionViewResize(self.collectionViewTab.collectionViewSizeSlider)
 
+        # test glyph view
+        self.glyphViewTab.collectionView = GlyphCollectionView((10, 10, 66, -10), allowDrag=False,
+            selectionCallback=self.glyphViewCollectionSelectionCallback, showModePlacard=False)
+        self.glyphViewTab.glyphView = GlyphView((76, 10, -10, -10))
+        self.glyphViewTab.collectionView.set(self.glyphs)
+        self.glyphViewTab.collectionView.setSelection([0])
+
         # test line view
         self.lineViewTab.lineViewSizeSlider = vanilla.Slider((-160, 11, 150, 20), minValue=10, maxValue=500, value=100,
             continuous=True, callback=self.lineViewResize)
-        self.lineViewTab.textInput = vanilla.EditText((10, 10, -170, 22), callback=self.lineViewTextInput)
-        self.lineViewTab.lineView = GlyphLineView((10, 40, -10, -10), dropCallback=self.lineViewDropCallback)
-
-        # test multiline view
-        self.multilineViewTab.multilineViewSizeSlider = vanilla.Slider((10, 10, 150, 20), minValue=10, maxValue=500, value=100,
-            continuous=True, callback=self.multilineViewResize)
-        self.multilineViewTab.multilineView = GlyphMultilineView((10, 40, -10, -10), callback=self.multilineViewTextInput)
-        self.multilineViewTab.multilineView.setFont(font)
-        lines = [[]]
-        for glyph in self.glyphs:
-            lines[-1].append(glyph.name)
-            if len(lines[-1]) == 10:
-                lines.append([])
-        self.multilineViewTab.multilineView.set(lines)
+        self.lineViewTab.textInput = GlyphSequenceEditText((10, 10, -170, 22), self.font, callback=self.lineViewTextInput)
+        self.lineViewTab.lineView = GlyphLineView((10, 40, -10, -10))
 
         # test controls
-
         self.controlsTab.glyphNameComboBox = GlyphNameComboBox((10, 10, -10, 22), self.font)
+        self.controlsTab.featureTextEditor = FeatureTextEditor((10, 45, -10, -10), self.font.features.text)
 
         self.setUpBaseWindowBehavior()
 
@@ -193,6 +177,16 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.collectionViewTab.collectionView.setCellSize((width, height))
         self.collectionViewTab.collectionView.setCellRepresentationArguments(drawHeader=drawHeader, drawMetrics=drawHeader)
 
+    # glyph view
+
+    def glyphViewCollectionSelectionCallback(self, sender):
+        selection = sender.getSelection()
+        if not selection:
+            glyph = None
+        else:
+            glyph = sender[selection[0]]
+        self.glyphViewTab.glyphView.set(glyph)
+
     # list view
 
     def listViewEdit(self, sender):
@@ -201,26 +195,11 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
     # line view
 
     def lineViewTextInput(self, sender):
-        glyphNames = splitText(sender.get(), self.font.cmap)
-        glyphs = [self.font[glyphName] for glyphName in glyphNames if glyphName in self.font]
+        glyphs = sender.get()
         self.lineViewTab.lineView.set(glyphs)
-
-    def lineViewDropCallback(self, sender, glyphs, testing):
-        if not testing:
-            self.lineViewTab.lineView.set(glyphs)
-        return True
 
     def lineViewResize(self, sender):
         self.lineViewTab.lineView.setPointSize(sender.get())
-
-    # multiline view
-
-    def multilineViewTextInput(self, sender):
-        lines = sender.get()
-        print "multiline input:", lines
-
-    def multilineViewResize(self, sender):
-        self.multilineViewTab.multilineView.setPointSize(sender.get())
 
 
 
