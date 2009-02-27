@@ -85,9 +85,13 @@ winAscent
 winDescent"""
 
 _keywordRE = re.compile(
-    "[<\s;]+"
-    "(" + "|".join(_keywords.splitlines()) + ")"
-    "[>\s;(]+"
+    "^"                                           # start of string
+    "(" + "|".join(_keywords.splitlines()) + ")"  # keywords
+    "[>\s;(]+"                                    # space, >, ;, (
+    "|"                                           # or...
+    "[<\s;]+"                                     # space, <, ;
+    "(" + "|".join(_keywords.splitlines()) + ")"  # keywords
+    "[>\s;(]+"                                    # space, >, ;, (
 )
 
 
