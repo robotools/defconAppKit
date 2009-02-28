@@ -3,7 +3,7 @@ import time
 from Foundation import *
 from AppKit import *
 import vanilla
-from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
+from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton, DefconAppKitPlacardNSScrollView
 
 
 defaultAlternateHighlightColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.45, 0.50, 0.55, 1.0)
@@ -391,10 +391,21 @@ class DefconAppKitGlyphLineNSView(NSView):
 #        return self.vanillaWrapper()._proposeDrop(glyphs, testing=False)
 
 
+class DefconAppKitGlyphLineViewNSScrollView(DefconAppKitPlacardNSScrollView):
+
+    def setFrame_(self, frame):
+        super(DefconAppKitGlyphLineViewNSScrollView, self).setFrame_(frame)
+        documentView = self.documentView()
+        if documentView is not None:
+            documentView.recalculateFrame()
+
+
 pointSizes = [50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
 
 
 class GlyphLineView(PlacardScrollView):
+
+    nsScrollViewClass = DefconAppKitGlyphLineViewNSScrollView
 
     def __init__(self, posSize, pointSize=100, rightToLeft=False, applyKerning=False,
         glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
