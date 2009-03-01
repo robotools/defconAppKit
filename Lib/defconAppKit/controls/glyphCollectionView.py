@@ -289,9 +289,26 @@ class GlyphCollectionView(vanilla.List):
 
     def _subscribeToGlyph(self, glyph):
         glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
+        font = glyph.getParent()
+        if font is not None and not font.info.hasObserver(self, "Info.Changed"):
+            font.info.addObserver(self, "_fontChanged", "Info.Changed")
 
     def _unsubscribeFromGlyph(self, glyph):
         glyph.removeObserver(self, "Glyph.Changed")
+        font = glyph.getParent()
+        if font is not None and font.info.hasObserver(self, "Info.Changed"):
+            font.info.removeObserver(self, "Info.Changed")
+
+    def _fontChanged(self, notification):
+        info = notification.object
+        font = info.getParent()
+        repWidth, repHeight = self.getCellSize()
+        repArgs = self.getCellRepresentationArguments()
+        repName = self._glyphCellView.getCellRepresentationName()
+        for glyph in self:
+            if glyph.getParent() == font:
+                glyph.destroyRepresentation(repName, width=repWidth, height=repHeight, **repArgs)
+        self._glyphCellView.setNeedsDisplay_(True)
 
     def _glyphChanged(self, notification):
         glyph = notification.object

@@ -158,6 +158,16 @@ class DefconAppKitGlyphNSView(NSView):
     def getGlyph(self):
         return self._glyph
 
+    # --------------------
+    # Notification Support
+    # --------------------
+
+    def glyphChanged(self):
+        self.setNeedsDisplay_(True)
+
+    def fontChanged(self):
+        self.setGlyph_(self._glyph)
+
     # ---------------
     # Display Control
     # ---------------
@@ -687,15 +697,24 @@ class GlyphView(PlacardScrollView):
     def _subscribeToGlyph(self, glyph):
         if glyph is not None:
             glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
+            font = glyph.getParent()
+            if font is not None:
+                font.info.addObserver(self, "_fontChanged", "Info.Changed")
 
     def _unsubscribeFromGlyph(self):
         if self._glyphView is not None:
             glyph = self._glyphView.getGlyph()
             if glyph is not None:
                 glyph.removeObserver(self, "Glyph.Changed")
+                font = glyph.getParent()
+                if font is not None:
+                    font.info.removeObserver(self, "Info.Changed")
 
     def _glyphChanged(self, notification):
-        self._glyphView.setNeedsDisplay_(True)
+        self._glyphView.glyphChanged()
+
+    def _fontChanged(self, notification):
+        self._glyphView.fontChanged()
 
     # --------------
     # Public Methods

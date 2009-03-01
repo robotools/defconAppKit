@@ -479,19 +479,26 @@ class GlyphLineView(PlacardScrollView):
 
     def _subscribeToGlyphs(self, glyphRecords):
         handledGlyphs = set()
+        handledFonts = set()
         for glyphRecord in glyphRecords:
             glyph = glyphRecord.glyph
             if glyph in handledGlyphs:
                 continue
             handledGlyphs.add(glyph)
             glyph.addObserver(self, "_glyphChanged", "Glyph.Changed")
+            font = glyph.getParent()
+            if font is None:
+                continue
+            if font in handledFonts:
+                continue
+            handledFonts.add(font)
+            font.info.addObserver(self, "_fontChanged", "Info.Changed")
             if self._applyKerning:
-                font = glyph.getParent()
-                if font is not None and not font.kerning.hasObserver(self, "Kerning.Changed"):
-                    font.kerning.addObserver(self, "_kerningChanged", "Kerning.Changed")
+                font.kerning.addObserver(self, "_kerningChanged", "Kerning.Changed")
 
     def _unsubscribeFromGlyphs(self):
         handledGlyphs = set()
+        handledFonts = set()
         glyphRecords = self._glyphLineView.getGlyphRecords()
         for glyphRecord in glyphRecords:
             glyph = glyphRecord.glyph
@@ -499,10 +506,15 @@ class GlyphLineView(PlacardScrollView):
                 continue
             handledGlyphs.add(glyph)
             glyph.removeObserver(self, "Glyph.Changed")
+            font = glyph.getParent()
+            if font is None:
+                continue
+            if font in handledFonts:
+                continue
+            handledFonts.add(font)
+            font.info.removeObserver(self, "Info.Changed")
             if self._applyKerning:
-                font = glyph.getParent()
-                if font is not None and font.kerning.hasObserver(self, "Kerning.Changed"):
-                    font.kerning.removeObserver(self, "Kerning.Changed")
+                font.kerning.removeObserver(self, "Kerning.Changed")
 
     def _glyphChanged(self, notification):
         self._glyphLineView.setNeedsDisplay_(True)
@@ -511,6 +523,10 @@ class GlyphLineView(PlacardScrollView):
         glyphRecords = self._glyphLineView.getGlyphRecords()
         self._setKerningInGlyphRecords(glyphRecords)
         self._glyphLineView.setNeedsDisplay_(True)
+
+    def _fontChanged(self, notification):
+        glyphRecords = self._glyphLineView.getGlyphRecords()
+        self._glyphLineView.setGlyphRecords_(glyphRecords)
 
     # ---------------
     # Kerning Support
