@@ -187,6 +187,9 @@ class DefconAppKitGlyphLineNSView(NSView):
         return super(GlyphLineView, self).menuForEvent_(event)
 
     def drawRect_(self, rect):
+        w, h = self.frame().size
+        if w == 0 or h == 0:
+            return
         needCalc = False
         if self.superview() and self._fitToFrame != self.superview().bounds():
             needCalc = True
