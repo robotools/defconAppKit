@@ -115,7 +115,7 @@ class OpenTypeControlsView(vanilla.ScrollView):
                 NSAttributedString.alloc().initWithString_attributes_("GSUB", titleControlAttributes), sizeStyle="small")
             top += 20
             for tag in gsubFeatureList:
-                state = font.getFeatureState(tag)
+                state = font.gsub.getFeatureState(tag)
                 attr = "gsubCheckBox_%s" % tag
                 obj = vanilla.CheckBox((10, top, -10, 22), tag, value=state, callback=self._controlEditCallback)
                 setattr(self._controlGroup, attr, obj)
@@ -137,7 +137,7 @@ class OpenTypeControlsView(vanilla.ScrollView):
                 NSAttributedString.alloc().initWithString_attributes_("GPOS", titleControlAttributes), sizeStyle="small")
             top += 20
             for tag in gposFeatureList:
-                state = font.getFeatureState(tag)
+                state = font.gpos.getFeatureState(tag)
                 attr = "gposCheckBox_%s" % tag
                 obj = vanilla.CheckBox((10, top, -10, 22), tag, value=state, callback=self._controlEditCallback)
                 setattr(self._controlGroup, attr, obj)
