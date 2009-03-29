@@ -1395,7 +1395,7 @@ postscriptUnderlineThicknessItem = inputItemDict(
     hasDefault=True
 )
 postscriptUnderlinePositionItem = inputItemDict(
-    title="UnderlineThickness",
+    title="UnderlinePosition",
     controlOptions=dict(style="number", formatter=integerFormatter),
     hasDefault=True
 )
