@@ -537,7 +537,7 @@ class GlyphCollectionView(vanilla.List):
         """
         Set the arguments that should be passed to the cell representation factory.
         """
-        self._glyphCellView.setCellRepresentationArguments_(**kwargs)
+        self._glyphCellView.setCellRepresentationArguments_(kwargs)
 
     def getCellRepresentationArguments(self):
         """

@@ -151,7 +151,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def getCellRepresentationName(self):
         return self._cellRepresentationName
 
-    def setCellRepresentationArguments_(self, **kwargs):
+    def setCellRepresentationArguments_(self, kwargs):
         self._cellRepresentationArguments = kwargs
         self.setNeedsDisplay_(True)
 
@@ -188,7 +188,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._rowCount = rowCount
         self.setNeedsDisplay_(True)
 
-    def setGlyphDetailConditions_(self, modifiers=[], mouseDown=False, mouseUp=False, mouseDragged=False, mouseMoved=False):
+    def setGlyphDetailModifiers_mouseDown_mouseUp_mouseDragged_mouseMoved_(self,
+        modifiers=[], mouseDown=False, mouseUp=False, mouseDragged=False, mouseMoved=False):
         """
         Set the conditions that will be used to determine the visibility of the detail window.
         This is subject to change, so use it at your own risk.
