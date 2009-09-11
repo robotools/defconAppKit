@@ -394,7 +394,7 @@ class GlyphCollectionView(vanilla.List):
             self._subscribeToGlyph(glyph)
         for key, attribute in self._keyToAttribute.items():
             value = getattr(glyph, attribute)
-            if d.get(key) != value:
+            if not key in d or d.get(key) != value:
                 d[key] = value
                 changed = True
         d["_glyph"] = weakref.ref(glyph)
