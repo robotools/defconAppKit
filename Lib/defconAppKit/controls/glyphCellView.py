@@ -385,8 +385,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
-            if vanillaWrapper._doubleClickCallback is not None:
-                vanillaWrapper._doubleClickCallback(vanillaWrapper)
+            if vanillaWrapper._doubleClickTarget is not None:
+                vanillaWrapper._doubleClickTarget.action_(self)
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):

@@ -86,7 +86,7 @@ class GlyphCollectionView(vanilla.List):
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
         # placeholder attributes
         self._selectionCallback = None
-        self._doubleClickCallback = None
+        self._doubleClickTarget = None
         self._deleteCallback = deleteCallback
         self._dragAndDropType = dragAndDropType
         ## set up the list
@@ -123,7 +123,7 @@ class GlyphCollectionView(vanilla.List):
         if listColumnDescriptions is None:
             listColumnDescriptions = [dict(title="Name", attribute="name")]
         super(GlyphCollectionView, self).__init__(posSize, [], columnDescriptions=listColumnDescriptions,
-            editCallback=editCallback, selectionCallback=selectionCallback,
+            editCallback=editCallback, selectionCallback=selectionCallback, doubleClickCallback=doubleClickCallback,
             showColumnTitles=listShowColumnTitles, enableTypingSensitivity=True, enableDelete=enableDelete,
             autohidesScrollers=False,
             selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,
