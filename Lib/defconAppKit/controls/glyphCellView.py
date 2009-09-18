@@ -571,7 +571,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             NSBackspaceCharacter,
             NSDeleteFunctionKey,
             NSDeleteCharacter,
-            unichr(NSDeleteCharacter),
+            unichr(0x007F),
         ]
         arrowCharacters = [
             NSUpArrowFunctionKey,
@@ -582,9 +582,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         nonCharacters = [
             NSPageUpFunctionKey,
             NSPageDownFunctionKey,
-            unichr(NSEnterCharacter),
-            unichr(NSCarriageReturnCharacter),
-            unichr(NSTabCharacter),
+            unichr(0x0003),
+            u"\r",
+            u"\t",
         ]
 
         modifiers = event.modifierFlags()
