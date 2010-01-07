@@ -25,12 +25,6 @@ integerPositiveFormatter.setAllowsFloats_(False)
 integerPositiveFormatter.setGeneratesDecimalNumbers_(False)
 integerPositiveFormatter.setMinimum_(0)
 
-integerNegativeFormatter = NSNumberFormatter.alloc().init()
-integerNegativeFormatter.setFormat_("#;0;-#")
-integerNegativeFormatter.setAllowsFloats_(False)
-integerNegativeFormatter.setGeneratesDecimalNumbers_(False)
-integerNegativeFormatter.setMaximum_(0)
-
 floatFormatter = NSNumberFormatter.alloc().init()
 floatFormatter.setNumberStyle_(NSNumberFormatterDecimalStyle)
 floatFormatter.setFormat_("#.00;0.00;-#.00")
@@ -41,6 +35,45 @@ positiveFloatFormatter = NSNumberFormatter.alloc().init()
 positiveFloatFormatter.setAllowsFloats_(True)
 positiveFloatFormatter.setGeneratesDecimalNumbers_(False)
 positiveFloatFormatter.setMinimum_(0)
+
+class NegativeIntegerEditText(vanilla.EditText):
+
+    def __init__(self, *args, **kwargs):
+        self._finalCallback = kwargs.get("callback")
+        kwargs["callback"] = self._textEditCallback
+        super(NegativeIntegerEditText, self).__init__(*args, **kwargs)
+
+    def _breakCycles(self):
+        self._finalCallback = None
+        super(NegativeIntegerEditText, self)._breakCycles()
+
+    def _get(self):
+        return self._nsObject.stringValue()
+
+    def get(self):
+        v = self._get()
+        if not v:
+            return None
+        v = int(v)
+        return v
+
+    def _textEditCallback(self, sender):
+        value = sender._get()
+        if value != "-":
+            try:
+                v = int(value)
+                if v > 0:
+                    sender.set("")
+                    return
+            except ValueError:
+                if value.startswith("-"):
+                    value = value = "-"
+                else:
+                    value = ""
+                sender.set(value)
+                return
+            if self._finalCallback is not None:
+                self._finalCallback(sender)
 
 
 class PostscriptStemSnapFormatter(NSFormatter):
@@ -762,6 +795,12 @@ def inputItemDict(**kwargs):
     default.update(kwargs)
     return default
 
+def noneToZero(value):
+    print value
+    if value is None:
+        return 0
+    return value
+
 ## Basic Naming
 
 familyNameItem = inputItemDict(
@@ -812,7 +851,9 @@ unitsPerEmItem = inputItemDict(
 descenderItem = inputItemDict(
     title="Descender",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerNegativeFormatter)
+    controlClass=NegativeIntegerEditText,
+    controlOptions=dict(style="number"),
+    conversionToUFO=noneToZero
 )
 xHeightItem = inputItemDict(
     title="x-height",
@@ -967,7 +1008,9 @@ openTypeHheaAscenderItem = inputItemDict(
 )
 openTypeHheaDescenderItem = inputItemDict(
     title="Descender",
-    controlOptions=dict(style="number", formatter=integerNegativeFormatter)
+    controlClass=NegativeIntegerEditText,
+    controlOptions=dict(style="number"),
+    conversionToUFO=noneToZero
 )
 openTypeHheaLineGapItem = inputItemDict(
     title="LineGap",
@@ -1258,7 +1301,9 @@ openTypeOS2TypoAscenderItem = inputItemDict(
 )
 openTypeOS2TypoDescenderItem = inputItemDict(
     title="sTypoDescender",
-    controlOptions=dict(style="number", formatter=integerNegativeFormatter)
+    controlClass=NegativeIntegerEditText,
+    controlOptions=dict(style="number"),
+    conversionToUFO=noneToZero
 )
 openTypeOS2TypoLineGapItem = inputItemDict(
     title="sTypoLineGap",
@@ -1893,7 +1938,7 @@ class FontInfoSection(vanilla.Group):
                     if itemOptions.get("lineCount", 1) != 1:
                         itemClass = vanilla.TextEditor
                 ## EditText
-                if itemClass == vanilla.EditText:
+                if itemClass == vanilla.EditText or itemClass==NegativeIntegerEditText:
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputEditText_%s" % fontAttribute
