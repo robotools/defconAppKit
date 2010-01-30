@@ -61,6 +61,8 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
         self._window.setAlphaValue_(1.0)
 
     def _fadeOut(self):
+        if self._window is None:
+            return
         stepValue = .2
         current = self._window.alphaValue()
         steps = int(current / stepValue)
