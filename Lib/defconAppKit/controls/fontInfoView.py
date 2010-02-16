@@ -76,47 +76,6 @@ class NegativeIntegerEditText(vanilla.EditText):
                 self._finalCallback(sender)
 
 
-class PostscriptStemSnapFormatter(NSFormatter):
-
-    def stringForObjectValue_(self, obj):
-        if obj is None or isinstance(obj, NSNull):
-            return ""
-        return " ".join([str(i) for i in obj])
-
-    def getObjectValue_forString_errorDescription_(self, value, string, error):
-        if not string.strip():
-            return True, [], ""
-        try:
-            values = [int(i) for i in string.strip().split(" ")]
-        except ValueError:
-            return False, string, "Could not convert entries to integers."
-        if len(values) >= 12:
-            return False, string, "Too many values."
-        return True, values, ""
-
-
-class PostscriptBluesFormatter(NSFormatter):
-
-    def stringForObjectValue_(self, obj):
-        if obj is None or isinstance(obj, NSNull):
-            return ""
-        return " ".join([str(i) for i in obj])
-
-    def getObjectValue_forString_errorDescription_(self, value, string, error):
-        if not string.strip():
-            return True, [], ""
-        try:
-            values = [int(i) for i in string.strip().split(" ")]
-            values = sorted(values)
-        except ValueError:
-            return False, string, "Could not convert entries to integers."
-        if len(values) % 2:
-            return False, string, "An even number of values is required."
-        if len(values) >= 14:
-            return False, string, "Too many values."
-        return True, values, ""
-
-
 # --------------------------------------------------------
 # Special Controls
 # These are vanilla subclasses that have special behavior.
@@ -796,7 +755,6 @@ def inputItemDict(**kwargs):
     return default
 
 def noneToZero(value):
-    print value
     if value is None:
         return 0
     return value
@@ -1114,8 +1072,7 @@ openTypeOS2VendorIDItem = inputItemDict(
 openTypeOS2PanoseItem = inputItemDict(
     title="",
     hasDefault=False,
-    controlClass=PanoseControl,
-    controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
+    controlClass=PanoseControl
 )
 
 openTypeOS2UnicodeRangesOptions = [
@@ -1381,35 +1338,72 @@ postscriptUniqueIDItem = inputItemDict(
 
 ## Postscript Hinting
 
+def postscriptBluesToUFO(string):
+    if not string:
+        return []
+    try:
+        values = [int(i) for i in string.split(" ") if i]
+    except ValueError:
+        values = []
+    values = sorted(values)
+    if len(values) % 2:
+        values.pop()
+    if len(values) >= 14:
+        value = value[:14]
+    return values
+
+def postscriptStemSnapToUFO(string):
+    if not string:
+        return []
+    try:
+        values = [int(i) for i in string.split(" ") if i]
+    except ValueError:
+        values = []
+    if len(values) >= 12:
+        value = value[:12]
+    return values
+
+def infoListFromUFO(value):
+    if value is None:
+        return ""
+    value = [str(i) for i in value]
+    return " ".join(value)
+
 postscriptBlueValuesItem = inputItemDict(
     title="BlueValues",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptBluesToUFO,
 )
 postscriptOtherBluesItem = inputItemDict(
     title="OtherBlues",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptBluesToUFO,
 )
 postscriptFamilyBluesItem = inputItemDict(
     title="FamilyBlues",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptBluesToUFO,
 )
 postscriptFamilyOtherBluesItem = inputItemDict(
     title="FamilyOtherBlues",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptBluesFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptBluesToUFO,
 )
 postscriptStemSnapHItem = inputItemDict(
     title="StemSnapH",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptStemSnapFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptStemSnapToUFO,
 )
 postscriptStemSnapVItem = inputItemDict(
     title="StemSnapV",
     hasDefault=False,
-    controlOptions=dict(formatter=PostscriptStemSnapFormatter.alloc().init())
+    conversionFromUFO=infoListFromUFO,
+    conversionToUFO=postscriptStemSnapToUFO,
 )
 postscriptBlueFuzzItem = inputItemDict(
     title="BlueFuzz",
