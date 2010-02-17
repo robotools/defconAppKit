@@ -76,6 +76,73 @@ class NegativeIntegerEditText(vanilla.EditText):
                 self._finalCallback(sender)
 
 
+class NumberSequenceFormatter(NSFormatter):
+
+    def initWithMaxValuesCount_requiresEvenCount_(self, maxValuesCount, requiresEvenCount):
+        self = super(NumberSequenceFormatter, self).init()
+        self.maxValuesCount = maxValuesCount
+        self.requiresEvenCount = requiresEvenCount
+        return self
+
+    def stringForObjectValue_(self, obj):
+        if obj is None or isinstance(obj, NSNull):
+            return ""
+        if isinstance(obj, basestring):
+            return obj
+        else:
+            return " ".join([str(i) for i in obj])
+
+    def isPartialStringValid_newEditingString_errorDescription_(self, oldString, newString, error):
+        valid, partiallyValid, value, error = self._parseString(oldString)
+        if partiallyValid:
+            error = None
+        return partiallyValid, oldString, error
+
+    #def attributedStringForObjectValue_withDefaultAttributes_(self, value, attrs):
+    #    value = self.stringForObjectValue_(value)
+    #    valid, partiallyValid, value, error = self._parseString(value)
+    #    if not valid:
+    #        attrs[NSForegroundColorAttributeName] = NSColor.redColor()
+    #    else:
+    #        attrs[NSForegroundColorAttributeName] = NSColor.blackColor()
+    #    string = NSAttributedString.alloc().initWithString_attributes_(value, attrs)
+    #    return string
+
+    def _parseString(self, string):
+        isValid = True
+        isPartiallyValid = True
+        errorString = None
+        if not string.strip():
+            pass
+        else:
+            values = []
+            try:
+                tempValues = []
+                for i in string.strip().split(" "):
+                    if not i:
+                        continue
+                    if i == "-":
+                        continue
+                    tempValues.append(int(i))
+                values = tempValues
+            except ValueError:
+                isValid = False
+                isPartiallyValid = False
+                errorString = "Could not convert entries to integers."
+            if isValid:
+                if self.requiresEvenCount and len(values) % 2:
+                    isValid = False
+                    errorString = "An even number of values is required."
+                if len(values) > self.maxValuesCount:
+                    isValid = False
+                    isPartiallyValid = False
+                    errorString = "Too many values."
+        return isValid, isPartiallyValid, string, errorString
+
+    def getObjectValue_forString_errorDescription_(self, value, string, error):
+        valid, partiallyValid, value, error = self._parseString(string)
+        return valid, value, error
+
 # --------------------------------------------------------
 # Special Controls
 # These are vanilla subclasses that have special behavior.
@@ -1338,7 +1405,7 @@ postscriptUniqueIDItem = inputItemDict(
 
 ## Postscript Hinting
 
-def postscriptBluesToUFO(string):
+def _postscriptBluesToUFO(string, maxCount):
     if not string:
         return []
     try:
@@ -1348,9 +1415,15 @@ def postscriptBluesToUFO(string):
     values = sorted(values)
     if len(values) % 2:
         values.pop()
-    if len(values) >= 14:
-        value = value[:14]
+    if len(values) > maxCount:
+        value = value[:maxCount]
     return values
+
+def postscriptBluesToUFO(string):
+    return _postscriptBluesToUFO(string, 14)
+
+def postscriptOtherBluesToUFO(string):
+    return _postscriptBluesToUFO(string, 10)
 
 def postscriptStemSnapToUFO(string):
     if not string:
@@ -1372,36 +1445,42 @@ def infoListFromUFO(value):
 postscriptBlueValuesItem = inputItemDict(
     title="BlueValues",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(14, True)),
     conversionFromUFO=infoListFromUFO,
     conversionToUFO=postscriptBluesToUFO,
 )
 postscriptOtherBluesItem = inputItemDict(
     title="OtherBlues",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(10, True)),
     conversionFromUFO=infoListFromUFO,
-    conversionToUFO=postscriptBluesToUFO,
+    conversionToUFO=postscriptOtherBluesToUFO,
 )
 postscriptFamilyBluesItem = inputItemDict(
     title="FamilyBlues",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(14, True)),
     conversionFromUFO=infoListFromUFO,
     conversionToUFO=postscriptBluesToUFO,
 )
 postscriptFamilyOtherBluesItem = inputItemDict(
     title="FamilyOtherBlues",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(10, True)),
     conversionFromUFO=infoListFromUFO,
-    conversionToUFO=postscriptBluesToUFO,
+    conversionToUFO=postscriptOtherBluesToUFO,
 )
 postscriptStemSnapHItem = inputItemDict(
     title="StemSnapH",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(12, False)),
     conversionFromUFO=infoListFromUFO,
     conversionToUFO=postscriptStemSnapToUFO,
 )
 postscriptStemSnapVItem = inputItemDict(
     title="StemSnapV",
     hasDefault=False,
+    controlOptions=dict(formatter=NumberSequenceFormatter.alloc().initWithMaxValuesCount_requiresEvenCount_(12, False)),
     conversionFromUFO=infoListFromUFO,
     conversionToUFO=postscriptStemSnapToUFO,
 )
@@ -1932,7 +2011,7 @@ class FontInfoSection(vanilla.Group):
                     if itemOptions.get("lineCount", 1) != 1:
                         itemClass = vanilla.TextEditor
                 ## EditText
-                if itemClass == vanilla.EditText or itemClass==NegativeIntegerEditText:
+                if itemClass == vanilla.EditText or itemClass == NegativeIntegerEditText:
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputEditText_%s" % fontAttribute
