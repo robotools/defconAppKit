@@ -252,7 +252,11 @@ class FontList(vanilla.List):
             return
         d = self._wrappedListItems[font]
         for key, attr in self._keyToAttribute.items():
-            d[key] = getattr(font, attr)
+            if attr == defaultFontIDAttribute:
+                value = makeDefaultIDString(font)
+            else:
+                value = getattr(font, attr)
+            d[key] = value
 
     # editing
 
