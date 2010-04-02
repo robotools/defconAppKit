@@ -74,13 +74,14 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.windowTab.getFileButton = vanilla.Button((10, 160, 200, 20), "Show Get File", callback=self.windowGetFile)
 
         # test cell view
-        dropSettings = dict(callback=self.collectionViewDropCallback)
+        selfDropSettings = dict(callback=self.collectionViewSelfDropCallback)
+        dropSettings = dict(callback=self.collectionViewOtherDropCallback, allowDropBetweenRows=False)
         self.collectionViewTab.collectionViewModifyButton = vanilla.Button((10, 10, 150, 20), "Modify Glyphs", callback=self.collectionViewModify)
         self.collectionViewTab.collectionViewSizeSlider = vanilla.Slider((170, 10, 150, 20), minValue=10, maxValue=100, value=50,
             continuous=False, callback=self.collectionViewResize)
         self.collectionViewTab.collectionView = GlyphCollectionView((10, 40, -10, -10), allowDrag=True,
             selectionCallback=self.collectionViewSelectionCallback, doubleClickCallback=self.collectionViewDoubleClickCallback,
-            deleteCallback=self.collectionViewDeleteCallback, selfApplicationDropSettings=dropSettings)
+            deleteCallback=self.collectionViewDeleteCallback, selfDropSettings=selfDropSettings, selfApplicationDropSettings=dropSettings)
         self.collectionViewTab.collectionView.set(self.glyphs)
         self.collectionViewResize(self.collectionViewTab.collectionViewSizeSlider)
 
@@ -151,7 +152,24 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
     def collectionViewDeleteCallback(self, sender):
         print "delete", sender.getSelection()
 
-    def collectionViewDropCallback(self, sender, dropInfo):
+    def collectionViewSelfDropCallback(self, sender, dropInfo):
+        isProposal = dropInfo["isProposal"]
+        if not isProposal:
+            glyphs = dropInfo["data"]
+            rowIndex = dropInfo["rowIndex"]
+            existingIndexes = list(range(len(sender)))
+            toMove = sorted([sender.index(glyph) for glyph in glyphs])
+            beforeInsertionPoint = existingIndexes[:rowIndex]
+            beforeInsertionPoint = [i for i in beforeInsertionPoint if i not in toMove]
+            afterInsertionPoint = existingIndexes[rowIndex:]
+            afterInsertionPoint = [i for i in afterInsertionPoint if i not in toMove]
+            newItems = [sender[i] for i in (beforeInsertionPoint + toMove + afterInsertionPoint)]
+            sender.set(newItems)
+            newSelection = sorted([sender.index(glyph) for glyph in glyphs])
+            sender.setSelection(newSelection)
+        return True
+
+    def collectionViewOtherDropCallback(self, sender, dropInfo):
         glyphs = dropInfo["data"]
         isProposal = dropInfo["isProposal"]
         if not isProposal:
