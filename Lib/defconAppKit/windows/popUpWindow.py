@@ -183,6 +183,7 @@ class InteractivePopUpWindow(vanilla.Window):
         # set the background
         contentView = self.contentViewClass.alloc().init()
         self._window.setContentView_(contentView)
+        self._window.setAlphaValue_(0.0)
         self._window.setOpaque_(False)
         self._window.setBackgroundColor_(NSColor.clearColor())
 
@@ -190,24 +191,67 @@ class InteractivePopUpWindow(vanilla.Window):
         self.bind("resigned key", self.windowDeselectCallback)
         self._closing = False
 
-        # open and fade in
-        self.open()
-        self._window.setAlphaValue_(0.0)
-        for i in xrange(5):
-            a = i * .2
-            self._window.setAlphaValue_(a)
-            time.sleep(.02)
-        self._window.setAlphaValue_(1.0)
-
     def windowDeselectCallback(self, sender):
         if self._closing:
             return
         self.close()
 
-    def close(self):
-        self._closing = True
-        for i in xrange(5):
-            a = 1.0 - (i * .2)
+    # -----------------------------
+    # methods requiring fade in/out
+    # -----------------------------
+
+    def _fadeIn(self):
+        stepValue = .2
+        current = self._window.alphaValue()
+        steps = int((1.0 - current) / stepValue)
+        for i in xrange(steps):
+            a = self._window.alphaValue() + stepValue
+            if a > 1.0:
+                a = 1.0
             self._window.setAlphaValue_(a)
-            time.sleep(.02)
+            if i != steps - 1:
+                time.sleep(.02)
+        self._window.setAlphaValue_(1.0)
+
+    def _fadeOut(self):
+        if self._window is None:
+            return
+        stepValue = .2
+        current = self._window.alphaValue()
+        steps = int(current / stepValue)
+        for i in xrange(steps):
+            a = self._window.alphaValue() - stepValue
+            if a < 0:
+                a = 0
+            self._window.setAlphaValue_(a)
+            if i != steps - 1:
+                time.sleep(.02)
+        self._window.setAlphaValue_(0.0)
+
+    # --------------------
+    # Open/Close/Show/Hide
+    # --------------------
+
+    def open(self):
+        self._closing = False
+        super(InteractivePopUpWindow, self).open()
+        self._fadeIn()
+
+    def close(self):
+        if self._closing:
+            return
+        self._closing = True
+        self._fadeOut()
         super(InteractivePopUpWindow, self).close()
+
+    def show(self):
+        self._closing = False
+        super(InteractivePopUpWindow, self).show()
+        self._fadeIn()
+
+    def hide(self):
+        if self._closing:
+            return
+        self._closing = True
+        self._fadeOut()
+        super(InteractivePopUpWindow, self).hide()
