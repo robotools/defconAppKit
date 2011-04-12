@@ -313,7 +313,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         bottom = self._buffer
         height = upm * scale
         previousXA = 0
-        for recordIndex, glyphRecord in enumerate(self._glyphRecords):
+        for recordIndex, glyphRecord in enumerate(reversed(self._glyphRecords)):
             glyph = glyphRecord.glyph
             w = glyphRecord.advanceWidth
             h = glyphRecord.advanceHeight
