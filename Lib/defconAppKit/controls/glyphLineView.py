@@ -409,6 +409,7 @@ pointSizes = [50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
 class GlyphLineView(PlacardScrollView):
 
     nsScrollViewClass = DefconAppKitGlyphLineViewNSScrollView
+    glyphLineViewClass = DefconAppKitGlyphLineNSView
 
     def __init__(self, posSize, pointSize=100, rightToLeft=False, applyKerning=False,
         glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
@@ -420,7 +421,7 @@ class GlyphLineView(PlacardScrollView):
         if alternateHighlightColor is None:
             alternateHighlightColor = defaultAlternateHighlightColor
         self._applyKerning = applyKerning
-        self._glyphLineView = DefconAppKitGlyphLineNSView.alloc().init()
+        self._glyphLineView = self.glyphLineViewClass.alloc().init()
         self._glyphLineView.setPointSize_(pointSize)
         self._glyphLineView.setRightToLeft_(rightToLeft)
         self._glyphLineView.setGlyphColor_(glyphColor)
