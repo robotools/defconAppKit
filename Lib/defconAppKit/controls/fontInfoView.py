@@ -1691,7 +1691,7 @@ allControlDescriptions = dict(
     macintoshFONDFamilyID=macintoshFONDFamilyIDItem,
 )
 
-controlOrganization=[
+controlOrganization = [
     dict(
         title="General",
         customView=None,
@@ -2218,25 +2218,29 @@ class FontInfoSection(vanilla.Group):
 
 class FontInfoView(vanilla.Tabs):
 
-    def __init__(self, posSize, font):
-        sectionNames = [section["title"] for section in controlOrganization]
+    def __init__(self, posSize, font, controlAdditions=None):
+        allControlOrganization = controlOrganization + controlAdditions
+        sectionNames = [section["title"] for section in allControlOrganization]
         super(FontInfoView, self).__init__(posSize, sectionNames)
         self._nsObject.setTabViewType_(NSNoTabsNoBorder)
         left, top, width, height = posSize
         assert width > 0
         # controls
-        buttonWidth = 340
+        buttonWidth = 85 * len(allControlOrganization)
         buttonLeft = (posSize[2] - buttonWidth) / 2
         segments = [dict(title=sectionName) for sectionName in sectionNames]
         self._segmentedButton = vanilla.SegmentedButton((buttonLeft, -26, buttonWidth, 24), segments, callback=self._tabSelectionCallback, sizeStyle="regular")
         self._segmentedButton.set(0)
         # sections
-        for index, sectionData in enumerate(controlOrganization):
-            viewClass = sectionData["customView"]
+        for index, sectionData in enumerate(allControlOrganization):
+            viewClass = sectionData.get("customView")
             if viewClass is not None:
                 self[index].section = viewClass((0, 0, width, 0), font)
             else:
-                self[index].section = FontInfoSection((0, 0, width, 0), sectionData["groups"], allControlDescriptions, font)
+                controlDescriptions = sectionData.get("controlDescriptions")
+                if controlDescriptions is None:
+                    controlDescriptions = allControlDescriptions
+                self[index].section = FontInfoSection((0, 0, width, 0), sectionData["groups"], controlDescriptions, font)
 
     def _tabSelectionCallback(self, sender):
         self.set(sender.get())
