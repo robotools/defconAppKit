@@ -184,7 +184,7 @@ class DefconAppKitGlyphLineNSView(NSView):
                 menu = self._makeMenuForGlyphRecord(recordIndex)
                 if menu is not None:
                     return menu
-        return super(GlyphLineView, self).menuForEvent_(event)
+        return super(DefconAppKitGlyphLineNSView, self).menuForEvent_(event)
 
     def drawRect_(self, rect):
         w, h = self.frame().size
