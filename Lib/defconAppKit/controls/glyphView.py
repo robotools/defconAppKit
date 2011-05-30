@@ -628,8 +628,10 @@ class DefconAppKitGlyphNSView(NSView):
 
 class GlyphView(PlacardScrollView):
 
+    glyphViewClass = DefconAppKitGlyphNSView
+
     def __init__(self, posSize):
-        self._glyphView = DefconAppKitGlyphNSView.alloc().init()
+        self._glyphView = self.glyphViewClass.alloc().init()
         super(GlyphView, self).__init__(posSize, self._glyphView, autohidesScrollers=False)
         self.buildPlacard()
         self.setPlacard(self.placard)
