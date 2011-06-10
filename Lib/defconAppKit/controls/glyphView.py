@@ -592,7 +592,7 @@ class DefconAppKitGlyphNSView(NSView):
             x, y = anchor.x, anchor.y
             name = anchor.name
             path.appendBezierPathWithOvalInRect_(((x - anchorHalf, y - anchorHalf), (anchorSize, anchorSize)))
-            if pointSize > 100:
+            if pointSize > 100 and name:
                 self._drawTextAtPoint(name, attributes, (x, y - 2), fontSize * self._scale * .85, drawBackground=True)
         self._pointStrokeColor.set()
         path.setLineWidth_(3.0 * self._inverseScale)
