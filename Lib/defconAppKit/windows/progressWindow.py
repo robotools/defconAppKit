@@ -31,12 +31,11 @@ class ProgressWindow(BaseWindowController):
         self.w.text._nsObject.display()
 
     def setTickCount(self, value):
+        bar = self.w.progress.getNSProgressIndicator()
         if value is None:
-            bar = self.w.progress.getNSProgressIndicator()
             bar.setIndeterminate_(True)
             self.w.progress.start()
         else:
             bar.setIndeterminate_(False)
+            bar.setDoubleValue_(0)
             bar.setMaxValue_(value)
-    
-    
