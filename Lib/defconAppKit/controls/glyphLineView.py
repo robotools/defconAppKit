@@ -465,7 +465,6 @@ class GlyphLineView(PlacardScrollView):
             value = None
         else:
             value = int(value)
-        print value, sender.get()
         self.setPointSize(value)
 
 #    # ----
