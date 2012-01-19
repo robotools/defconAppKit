@@ -1090,6 +1090,7 @@ openTypeOS2WeightClassItem = inputItemDict(
 )
 
 openTypeOS2WidthClassOptions = [
+    "None",
     "Ultra-condensed",
     "Extra-condensed",
     "Condensed",
@@ -1102,10 +1103,14 @@ openTypeOS2WidthClassOptions = [
 ]
 
 def openTypeOS2WidthClassFromUFO(value):
-    return value - 1
+    if value is None:
+        return 0
+    return value
 
 def openTypeOS2WidthClassToUFO(value):
-    return value + 1
+    if value == 0:
+        return None
+    return value
 
 openTypeOS2WidthClassItem = inputItemDict(
     title="usWidthClass",
