@@ -10,6 +10,9 @@ pillColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.75, .75, .8, 1.0)
 
 class DefconAppKitPillCell(NSActionCell):
 
+    def setColor_(self, color):
+        self._color = color
+
     def drawWithFrame_inView_(self, frame, view):
         row = view.selectedRow()
         columnCount = len(view.tableColumns())
@@ -21,11 +24,11 @@ class DefconAppKitPillCell(NSActionCell):
         h -= 2
 
         if selected:
-            pillTextAttributes[NSForegroundColorAttributeName] = pillColor
+            pillTextAttributes[NSForegroundColorAttributeName] = self._color
             foregroundColor = NSColor.whiteColor()
         else:
             pillTextAttributes[NSForegroundColorAttributeName] = NSColor.whiteColor()
-            foregroundColor = pillColor
+            foregroundColor = self._color
 
         text = self.title()
         text = NSAttributedString.alloc().initWithString_attributes_(text, pillTextAttributes)
@@ -42,6 +45,10 @@ class DefconAppKitPillCell(NSActionCell):
         text.drawInRect_(((x + radius, y), (textW, textH)))
 
 
-def PillListCell():
-    return DefconAppKitPillCell.alloc().init()
+def PillListCell(color=None):
+    cell = DefconAppKitPillCell.alloc().init()
+    if color is None:
+        color = pillColor
+    cell.setColor_(color)
+    return cell
 

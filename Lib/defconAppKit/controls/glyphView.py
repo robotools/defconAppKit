@@ -592,7 +592,7 @@ class DefconAppKitGlyphNSView(NSView):
             x, y = anchor.x, anchor.y
             name = anchor.name
             path.appendBezierPathWithOvalInRect_(((x - anchorHalf, y - anchorHalf), (anchorSize, anchorSize)))
-            if pointSize > 100:
+            if pointSize > 100 and name:
                 self._drawTextAtPoint(name, attributes, (x, y - 2), fontSize * self._scale * .85, drawBackground=True)
         self._pointStrokeColor.set()
         path.setLineWidth_(3.0 * self._inverseScale)
@@ -628,8 +628,10 @@ class DefconAppKitGlyphNSView(NSView):
 
 class GlyphView(PlacardScrollView):
 
+    glyphViewClass = DefconAppKitGlyphNSView
+
     def __init__(self, posSize):
-        self._glyphView = DefconAppKitGlyphNSView.alloc().init()
+        self._glyphView = self.glyphViewClass.alloc().init()
         super(GlyphView, self).__init__(posSize, self._glyphView, autohidesScrollers=False)
         self.buildPlacard()
         self.setPlacard(self.placard)

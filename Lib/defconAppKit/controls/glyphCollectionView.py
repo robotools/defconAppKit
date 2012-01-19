@@ -61,10 +61,7 @@ class GlyphCollectionView(vanilla.List):
     various drop settings:
     These follow the same format as vanilla.List. The biggest exception is that
     you do not provide a "type" key/value pair. That will be set by the
-    dragAndDropType argument. You can provide allowsDropOnRow settings, but dropping
-    on a row is not yet supported. There is currently no support for reordering
-    with the selfDropSettings as there is in vanilla.List. That will be supported
-    at some point in the future.
+    dragAndDropType argument.
 
     allowDrag:
     Unlike vanilla.List, you don't povide any data about dragging. All you do
@@ -82,7 +79,7 @@ class GlyphCollectionView(vanilla.List):
         cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
-        selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
+        selfDropSettings=None, selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
         # placeholder attributes
         self._selectionCallback = None
@@ -97,6 +94,8 @@ class GlyphCollectionView(vanilla.List):
             self._finalEditCallback = editCallback
             editCallback = self._listEditCallback
         # prep for drag and drop
+        if selfDropSettings is not None:
+            selfDropSettings = dict(selfDropSettings)
         if selfWindowDropSettings is not None:
             selfWindowDropSettings = dict(selfWindowDropSettings)
         if selfDocumentDropSettings is not None:
@@ -106,6 +105,7 @@ class GlyphCollectionView(vanilla.List):
         if otherApplicationDropSettings is not None:
             otherApplicationDropSettings = dict(otherApplicationDropSettings)
         dropSettings = [
+            (selfDropSettings, self._selfDropCallback),
             (selfWindowDropSettings, self._selfWindowDropCallback),
             (selfDocumentDropSettings, self._selfDocumentDropCallback),
             (selfApplicationDropSettings, self._selfApplicationDropCallback),
@@ -126,7 +126,7 @@ class GlyphCollectionView(vanilla.List):
             editCallback=editCallback, selectionCallback=selectionCallback, doubleClickCallback=doubleClickCallback,
             showColumnTitles=listShowColumnTitles, enableTypingSensitivity=True, enableDelete=enableDelete,
             autohidesScrollers=False,
-            selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,
+            selfDropSettings=selfDropSettings, selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,
             selfApplicationDropSettings=selfApplicationDropSettings, otherApplicationDropSettings=otherApplicationDropSettings,
             dragSettings=dragSettings)
         self._keyToAttribute = {}
@@ -144,7 +144,7 @@ class GlyphCollectionView(vanilla.List):
         self._glyphCellView.vanillaWrapper = weakref.ref(self)
         self._glyphCellView.setAllowsDrag_(allowDrag)
         dropTypes = []
-        for d in (selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
+        for d in (selfDropSettings, selfWindowDropSettings, selfDocumentDropSettings, selfApplicationDropSettings, otherApplicationDropSettings):
             if d is not None:
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
@@ -264,6 +264,10 @@ class GlyphCollectionView(vanilla.List):
             glyphs = source.getGlyphsAtIndexes_(indexes)
         dropInfo["data"] = glyphs
         return dropInfo
+
+    def _selfDropCallback(self, sender, dropInfo):
+        dropInfo = self._convertDropInfo(dropInfo)
+        return self._selfDropSettings["finalCallback"](self, dropInfo)
 
     def _selfWindowDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)

@@ -11,6 +11,11 @@ from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox,
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
+insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
+insertionLocationShadow = NSShadow.shadow()
+insertionLocationShadow.setShadowColor_(NSColor.whiteColor())
+insertionLocationShadow.setShadowBlurRadius_(10)
+insertionLocationShadow.setShadowOffset_((0, 0))
 
 def _makeGlyphCellDragIcon(glyphs):
     font = None
@@ -101,6 +106,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellRepresentationArguments = {}
 
         self._allowDrag = False
+        self._dropTargetBetween = None
+        self._dropTargetOn = None
+        self._dropTargetSelf = False
 
         self._glyphDetailWindowClass = detailWindowClass
         self._glyphDetailWindow = None
@@ -335,6 +343,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 left = 0
                 top += cellHeight
 
+        # lines
         path = NSBezierPath.bezierPath()
         for i in xrange(1, self._rowCount+1):
             top = (i * cellHeight) - .5
@@ -347,6 +356,54 @@ class DefconAppKitGlyphCellNSView(NSView):
         gridColor.set()
         path.setLineWidth_(1.0)
         path.stroke()
+
+        # drop insertion position
+        if self._dropTargetBetween is not None or self._dropTargetOn is not None or self._dropTargetSelf:
+            # drop on a cell
+            if self._dropTargetOn:
+                rect = self._indexToClickRects[self._dropTargetOn]
+                rect = NSInsetRect(rect, 1, 1)
+                path = NSBezierPath.bezierPathWithRect_(rect)
+                path.setLineWidth_(2)
+                insertionLocationColor.set()
+                path.stroke()
+            # drop between cells
+            elif self._dropTargetBetween:
+                location1, location2 = self._dropTargetBetween
+                location1 = self._indexToClickRects.get(location1)
+                location2 = self._indexToClickRects.get(location2)
+                if location1 is None:
+                    (x, y), (w, h) = location2
+                    barPositions = [(x, y, h)]
+                elif location2 is None:
+                    (x, y), (w, h) = location1
+                    barPositions = [(x, y, h)]
+                else:
+                    (x1, y1), (w1, h1) = location1
+                    (x2, y2), (w2, h2) = location2
+                    if y1 == y2:
+                        barPositions = [(x2, y2, h2)]
+                    else:
+                        barPositions = [(x1 + w1, y1, h1), (x2, y2, h2)]
+                for (x, y, h) in barPositions:
+                    path = NSBezierPath.bezierPath()
+                    path.appendBezierPathWithRect_(((x - 2, y), (3, h)))
+                    path.appendBezierPathWithOvalInRect_(((x - 5, y - 5), (9, 9)))
+                    path.appendBezierPathWithOvalInRect_(((x - 5, y + h - 5), (9, 9)))
+                    insertionLocationShadow.set()
+                    path.setLineWidth_(2)
+                    NSColor.whiteColor().set()
+                    path.stroke()
+                    insertionLocationColor.set()
+                    path.fill()
+            # drop on view
+            else:
+                rect = self.visibleRect()
+                path = NSBezierPath.bezierPathWithRect_(rect)
+                path.setLineWidth_(6)
+                insertionLocationColor.set()
+                insertionLocationShadow.set()
+                path.stroke()
 
     # ---------
     # Selection
@@ -424,9 +481,12 @@ class DefconAppKitGlyphCellNSView(NSView):
     def _findGlyphForEvent(self, event):
         eventLocation = event.locationInWindow()
         mouseLocation = self.convertPoint_fromView_(eventLocation, None)
+        return self._findGlyphForLocation(mouseLocation)
+
+    def _findGlyphForLocation(self, location):
         found = None
         for rect, index in self._clickRectsToIndex.items():
-            if NSPointInRect(mouseLocation, rect):
+            if NSPointInRect(location, rect):
                 found = index
                 break
         return found
@@ -765,20 +825,46 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     # drop
 
+    def _getMouseLocation(self):
+        window = self.window()
+        mouseLocation = NSEvent.mouseLocation()
+        mouseLocation = window.convertScreenToBase_(mouseLocation)
+        mouseLocation = self.convertPoint_fromView_(mouseLocation, None)
+        return mouseLocation
+
     def _handleDrop(self, draggingInfo, isProposal=False, callCallback=False):
         vanillaWrapper = self.vanillaWrapper()
+        # quickly determine if a drop is even possible
+        haveDropSettings = False
+        if vanillaWrapper._selfDropSettings is not None:
+            haveDropSettings = True
+        elif vanillaWrapper._selfWindowDropSettings is not None:
+            haveDropSettings = True
+        elif vanillaWrapper._selfDocumentDropSettings is not None:
+            haveDropSettings = True
+        elif vanillaWrapper._selfApplicationDropSettings is not None:
+            haveDropSettings = True
+        elif vanillaWrapper._otherApplicationDropSettings is not None:
+            haveDropSettings = True
+        if not haveDropSettings:
+            return
+        # grab the dragging source
         draggingSource = draggingInfo.draggingSource()
         sourceForCallback = draggingSource
         if hasattr(draggingSource, "vanillaWrapper") and getattr(draggingSource, "vanillaWrapper") is not None:
             sourceForCallback = getattr(draggingSource, "vanillaWrapper")()
+        # find the glyph that is being hovered over
+        mouseLocation = self._getMouseLocation()
+        rowIndex = self._findGlyphForLocation(mouseLocation)
         # make the info dict
-        dropOnRow = False # XXX support in future
-        rowIndex = len(self._glyphs)
+        dropOnRow = rowIndex is not None
         dropInformation = dict(isProposal=isProposal, dropOnRow=dropOnRow, rowIndex=rowIndex, data=None, source=sourceForCallback)
         # drag from self
-        if draggingSource == self:
-            # XXX not supported yet
-            return NSDragOperationNone
+        if draggingSource == self and vanillaWrapper._selfDropSettings is not None:
+            if vanillaWrapper._selfDropSettings is None:
+                return NSDragOperationNone
+            settings = vanillaWrapper._selfDropSettings
+            return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
         # drag from same window
         window = self.window()
         if window is not None and draggingSource is not None and window == draggingSource.window() and vanillaWrapper._selfWindowDropSettings is not None:
@@ -807,7 +893,36 @@ class DefconAppKitGlyphCellNSView(NSView):
         return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
 
     def _handleDropBasedOnSettings(self, settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback):
-        # XXX validate drop position in future
+        # rest the insertion positions
+        self._dropTargetBetween = None
+        self._dropTargetOn = None
+        self._dropTargetSelf = False
+        # get some settings
+        allowDropOnRow = settings.get("allowDropOnRow", False)
+        allowDropBetweenRows = settings.get("allowDropBetweenRows", True)
+        rowIndex = dropInformation["rowIndex"]
+        # drop on a specific cell
+        if allowDropOnRow and rowIndex is not None:
+            self._dropTargetOn = rowIndex
+        # drop between cells
+        elif allowDropBetweenRows and rowIndex is not None:
+            mouseLocation = self._getMouseLocation()
+            (x, y), (w, h) = self._indexToClickRects[rowIndex]
+            left = ((x, y), (w * .5, h))
+            if NSPointInRect(mouseLocation, left):
+                target = (rowIndex - 1, rowIndex)
+            else:
+                target = (rowIndex, rowIndex + 1)
+                dropInformation["rowIndex"] += 1
+            self._dropTargetBetween = target
+        # drop on the view
+        if not allowDropOnRow or not allowDropBetweenRows or rowIndex is None:
+            self._dropTargetSelf = True
+        # if no row index came in, and one is needed, set it to after all glyphs
+        if (allowDropOnRow or allowDropBetweenRows) and rowIndex is None:
+            dropInformation["rowIndex"] = len(self._glyphs)
+        # redraw
+        self.setNeedsDisplay_(True)
         # sometimes the callback will need to be called
         if callCallback:
             dropInformation["data"] = self._unpackPboard(settings, draggingInfo)
@@ -833,13 +948,22 @@ class DefconAppKitGlyphCellNSView(NSView):
         return self._handleDrop(sender, isProposal=True, callCallback=False)
 
     def draggingExited_(self, sender):
-        return None
+        self._dropTargetBetween = None
+        self._dropTargetOn = None
+        self._dropTargetSelf = False
+        self.setNeedsDisplay_(True)
 
     def prepareForDragOperation_(self, sender):
         return self._handleDrop(sender, isProposal=True, callCallback=True)
 
     def performDragOperation_(self, sender):
-        return self._handleDrop(sender, isProposal=False, callCallback=True)
+        result = self._handleDrop(sender, isProposal=False, callCallback=True)
+        # turn off the insertion location display
+        self._dropTargetBetween = None
+        self._dropTargetOn = None
+        self._dropTargetSelf = False
+        self.setNeedsDisplay_(True)
+        return result
 
 
 # -------------------------

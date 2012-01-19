@@ -73,7 +73,7 @@ class OutlineInformationPen(AbstractPointPen):
         data = dict(startPoints=[], onCurvePoints=[], offCurvePoints=[], bezierHandles=[], anchors=[], components=self._rawComponentData)
         for contour in self._rawPointData:
             # anchor
-            if len(contour) == 1:
+            if len(contour) == 1 and contour[0]["name"] is not None:
                 anchor = contour[0]
                 data["anchors"].append(anchor)
             # points

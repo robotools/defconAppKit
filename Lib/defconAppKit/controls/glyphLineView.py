@@ -184,7 +184,7 @@ class DefconAppKitGlyphLineNSView(NSView):
                 menu = self._makeMenuForGlyphRecord(recordIndex)
                 if menu is not None:
                     return menu
-        return super(GlyphLineView, self).menuForEvent_(event)
+        return super(DefconAppKitGlyphLineNSView, self).menuForEvent_(event)
 
     def drawRect_(self, rect):
         w, h = self.frame().size
@@ -313,7 +313,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         bottom = self._buffer
         height = upm * scale
         previousXA = 0
-        for recordIndex, glyphRecord in enumerate(self._glyphRecords):
+        for recordIndex, glyphRecord in enumerate(reversed(self._glyphRecords)):
             glyph = glyphRecord.glyph
             w = glyphRecord.advanceWidth
             h = glyphRecord.advanceHeight
@@ -409,6 +409,7 @@ pointSizes = [50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500]
 class GlyphLineView(PlacardScrollView):
 
     nsScrollViewClass = DefconAppKitGlyphLineViewNSScrollView
+    glyphLineViewClass = DefconAppKitGlyphLineNSView
 
     def __init__(self, posSize, pointSize=100, rightToLeft=False, applyKerning=False,
         glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
@@ -420,7 +421,7 @@ class GlyphLineView(PlacardScrollView):
         if alternateHighlightColor is None:
             alternateHighlightColor = defaultAlternateHighlightColor
         self._applyKerning = applyKerning
-        self._glyphLineView = DefconAppKitGlyphLineNSView.alloc().init()
+        self._glyphLineView = self.glyphLineViewClass.alloc().init()
         self._glyphLineView.setPointSize_(pointSize)
         self._glyphLineView.setRightToLeft_(rightToLeft)
         self._glyphLineView.setGlyphColor_(glyphColor)
@@ -464,7 +465,6 @@ class GlyphLineView(PlacardScrollView):
             value = None
         else:
             value = int(value)
-        print value, sender.get()
         self.setPointSize(value)
 
 #    # ----
