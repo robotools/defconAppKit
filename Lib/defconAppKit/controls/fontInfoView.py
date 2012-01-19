@@ -23,7 +23,7 @@ integerPositiveFormatter = NSNumberFormatter.alloc().init()
 integerPositiveFormatter.setFormat_("#;0;-#")
 integerPositiveFormatter.setAllowsFloats_(False)
 integerPositiveFormatter.setGeneratesDecimalNumbers_(False)
-integerPositiveFormatter.setMinimum_(0)
+integerPositiveFormatter.setMinimum_(NSNumber.numberWithInt_(0))
 
 floatFormatter = NSNumberFormatter.alloc().init()
 floatFormatter.setNumberStyle_(NSNumberFormatterDecimalStyle)
@@ -34,7 +34,7 @@ floatFormatter.setGeneratesDecimalNumbers_(False)
 positiveFloatFormatter = NSNumberFormatter.alloc().init()
 positiveFloatFormatter.setAllowsFloats_(True)
 positiveFloatFormatter.setGeneratesDecimalNumbers_(False)
-positiveFloatFormatter.setMinimum_(0)
+positiveFloatFormatter.setMinimum_(NSNumber.numberWithInt_(0))
 
 class NegativeIntegerEditText(vanilla.EditText):
 
