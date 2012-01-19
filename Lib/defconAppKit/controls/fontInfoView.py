@@ -1083,7 +1083,13 @@ openTypeVheaCaretOffsetItem = inputItemDict(
 
 ## OpenType OS/2 Table
 
-openTypeOS2WeightClassOptions = [
+openTypeOS2WeightClassItem = inputItemDict(
+    title="usWeightClass",
+    hasDefault=False,
+    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+)
+
+openTypeOS2WidthClassOptions = [
     "Ultra-condensed",
     "Extra-condensed",
     "Condensed",
@@ -1095,26 +1101,22 @@ openTypeOS2WeightClassOptions = [
     "Ultra-expanded"
 ]
 
-def openTypeOS2WeightClassFromUFO(value):
+def openTypeOS2WidthClassFromUFO(value):
     return value - 1
 
-def openTypeOS2WeightClassToUFO(value):
+def openTypeOS2WidthClassToUFO(value):
     return value + 1
 
 openTypeOS2WidthClassItem = inputItemDict(
     title="usWidthClass",
     hasDefault=False,
     controlClass=vanilla.PopUpButton,
-    controlOptions=dict(items=openTypeOS2WeightClassOptions),
-    conversionFromUFO=openTypeOS2WeightClassFromUFO,
-    conversionToUFO=openTypeOS2WeightClassToUFO
+    controlOptions=dict(items=openTypeOS2WidthClassOptions),
+    conversionFromUFO=openTypeOS2WidthClassFromUFO,
+    conversionToUFO=openTypeOS2WidthClassToUFO
 )
 
-openTypeOS2WeightClassItem = inputItemDict(
-    title="usWeightClass",
-    hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
-)
+
 
 openTypeOS2SelectionOptions = [
     "1 UNDERSCORE",
