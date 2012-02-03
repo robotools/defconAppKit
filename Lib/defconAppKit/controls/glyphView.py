@@ -1,6 +1,6 @@
 from Foundation import *
 from AppKit import *
-from robofab.pens.pointPen import AbstractPointPen
+from ufoLib.pointPen import AbstractPointPen
 import vanilla
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
 

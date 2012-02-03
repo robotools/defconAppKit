@@ -3,7 +3,8 @@ from AppKit import *
 MenuImageBackgroundColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.35, 0.37, 1.0)
 MenuImageGlyphColor = NSColor.whiteColor()
 
-def MenuImageRepresentationFactory(glyph, font):
+def MenuImageRepresentationFactory(glyph):
+    font = glyph.font
     cellHeight = 60.0
     cellWidth = 60.0
     imageSize = (cellWidth, cellHeight)

@@ -2,7 +2,7 @@ from AppKit import *
 from fontTools.pens.cocoaPen import CocoaPen
 
 
-def NSBezierPathFactory(glyph, font):
-    pen = CocoaPen(font)
+def NSBezierPathFactory(glyph):
+    pen = CocoaPen(glyph.font)
     glyph.draw(pen)
     return pen.path

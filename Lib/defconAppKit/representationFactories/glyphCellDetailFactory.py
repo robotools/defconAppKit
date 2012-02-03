@@ -1,7 +1,9 @@
 from AppKit import *
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
 
-def GlyphCellDetailFactory(glyph, font):
+def GlyphCellDetailFactory(glyph):
+    font = glyph.font
+
     imageWidth = 200
     imageHeight = 280
 

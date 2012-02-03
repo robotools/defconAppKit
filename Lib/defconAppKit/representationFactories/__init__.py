@@ -1,4 +1,4 @@
-from defcon.objects.glyph import addRepresentationFactory
+from defcon import Glyph, registerRepresentationFactory
 from defconAppKit.representationFactories.nsBezierPathFactory import NSBezierPathFactory
 from defconAppKit.representationFactories.glyphCellFactory import GlyphCellFactory
 from defconAppKit.representationFactories.glyphCellDetailFactory import GlyphCellDetailFactory
@@ -25,4 +25,4 @@ except ImportError:
 
 def registerAllFactories():
     for name, factory in _factories.items():
-        addRepresentationFactory(name, factory)
+        registerRepresentationFactory(Glyph, name, factory, destructiveNotifications=None)

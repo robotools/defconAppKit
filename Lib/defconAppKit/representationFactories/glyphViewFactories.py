@@ -2,15 +2,15 @@ import math
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.cocoaPen import CocoaPen
-from robofab.pens.pointPen import AbstractPointPen
+from ufoLib.pointPen import AbstractPointPen
 
 
 # -------------
 # no components
 # -------------
 
-def NoComponentsNSBezierPathFactory(glyph, font):
-    pen = NoComponentsCocoaPen(font)
+def NoComponentsNSBezierPathFactory(glyph):
+    pen = NoComponentsCocoaPen(glyph.font)
     glyph.draw(pen)
     return pen.path
 
@@ -24,8 +24,8 @@ class NoComponentsCocoaPen(CocoaPen):
 # only components
 # ---------------
 
-def OnlyComponentsNSBezierPathFactory(glyph, font):
-    pen = OnlyComponentsCocoaPen(font)
+def OnlyComponentsNSBezierPathFactory(glyph):
+    pen = OnlyComponentsCocoaPen(glyph.font)
     glyph.draw(pen)
     return pen.path
 
@@ -133,7 +133,7 @@ class OutlineInformationPen(AbstractPointPen):
         self._rawComponentData.append((baseGlyphName, transformation))
 
 
-def OutlineInformationFactory(glyph, font):
+def OutlineInformationFactory(glyph):
     pen = OutlineInformationPen()
     glyph.drawPoints(pen)
     return pen.getData()
