@@ -45,7 +45,7 @@ class DefconAppKitGlyphNSView(NSView):
         self._showAnchors = True
         self._showBlues = False
         self._showFamilyBlues = False
-        self._showImage = True
+        self._showImage = False
 
         self._pointSize = None
         self._centerVertically = True
