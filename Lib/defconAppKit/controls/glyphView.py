@@ -45,6 +45,7 @@ class DefconAppKitGlyphNSView(NSView):
         self._showAnchors = True
         self._showBlues = False
         self._showFamilyBlues = False
+        self._showImage = True
 
         self._pointSize = None
         self._centerVertically = True
@@ -197,6 +198,13 @@ class DefconAppKitGlyphNSView(NSView):
         self._showMetrics = value
         self.setNeedsDisplay_(True)
 
+    def getShowImage(self):
+        return self._showImage
+
+    def setShowImage_(self, value):
+        self._showImage = value
+        self.setNeedsDisplay_(True)
+
     def getShowMetrics(self):
         return self._showMetrics
 
@@ -289,12 +297,7 @@ class DefconAppKitGlyphNSView(NSView):
         transform.translateXBy_yBy_(0, -self._descender)
         transform.concat()
         yOffset = yOffset - self._descender
-        # draw the blues
-        if self._showBlues:
-            self.drawBlues()
-        if self._showFamilyBlues:
-            self.drawFamilyBlues()
-        # draw the margins
+        # calculate offsets
         if self._centerHorizontally:
             visibleWidth = self.bounds().size[0]
             width = self._glyph.width * self._scale
@@ -302,6 +305,21 @@ class DefconAppKitGlyphNSView(NSView):
             xOffset = round((diff / 2) * self._inverseScale)
         else:
             xOffset = self._xCanvasAddition
+        # draw the image
+        if self._showImage:
+            context = NSGraphicsContext.currentContext()
+            context.saveGraphicsState()
+            transform = NSAffineTransform.transform()
+            transform.translateXBy_yBy_(xOffset, 0)
+            transform.concat()
+            self.drawImage()
+            context.restoreGraphicsState()
+        # draw the blues
+        if self._showBlues:
+            self.drawBlues()
+        if self._showFamilyBlues:
+            self.drawFamilyBlues()
+        # draw the margins
         if self._showMetrics:
             self.drawMargins(xOffset, yOffset)
         # draw the horizontal metrics
@@ -329,6 +347,20 @@ class DefconAppKitGlyphNSView(NSView):
     def drawBackground(self):
         self._backgroundColor.set()
         NSRectFill(self.bounds())
+
+    def drawImage(self):
+        if self._glyph.image.fileName is None:
+            return
+        context = NSGraphicsContext.currentContext()
+        context.saveGraphicsState()
+        aT = NSAffineTransform.transform()
+        aT.setTransformStruct_(self._glyph.image.transformation)
+        aT.concat()
+        image = self._glyph.image.getRepresentation("defconAppKit.NSImage")
+        image.drawAtPoint_fromRect_operation_fraction_(
+            (0, 0), ((0, 0), image.size()), NSCompositeSourceOver, 1.0
+        )
+        context.restoreGraphicsState()
 
     def drawBlues(self):
         width = self.bounds().size[0] * self._inverseScale
@@ -649,6 +681,7 @@ class GlyphView(PlacardScrollView):
         options = [
             "Fill",
             "Stroke",
+            "Image",
             "Metrics",
             "On Curve Points",
             "Off Curve Points",
@@ -744,6 +777,13 @@ class GlyphView(PlacardScrollView):
     def setShowMetrics(self, value):
         self._populatePlacard()
         self._glyphView.setShowMetrics_(value)
+
+    def getShowImage(self):
+        return self._glyphView.getShowImage()
+
+    def setShowImage(self, value):
+        self._populatePlacard()
+        self._glyphView.setShowImage_(value)
 
     def getShowMetrics(self):
         return self._glyphView.getShowMetrics()

@@ -3,6 +3,7 @@ from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.cocoaPen import CocoaPen
 from ufoLib.pointPen import AbstractPointPen
+from Quartz import *
 
 
 # -------------
@@ -137,4 +138,45 @@ def OutlineInformationFactory(glyph):
     pen = OutlineInformationPen()
     glyph.drawPoints(pen)
     return pen.getData()
+
+# -----
+# image
+# -----
+
+def NSImageFactory(image):
+    font = image.font
+    images = font.images
+    if image.fileName not in images:
+        return None
+    data = images[image.fileName]
+    data = NSData.dataWithBytes_length_(data, len(data))
+    if image.color is None:
+        return NSImage.alloc().initWithData_(data)
+    # make the input image
+    inputImage = CIImage.imageWithData_(data)
+    # make a color filter
+    r, g, b, a = image.color
+    color0 = CIColor.colorWithRed_green_blue_(r, g, b)
+    color1 = CIColor.colorWithRed_green_blue_(1, 1, 1)
+    falseColorFilter = CIFilter.filterWithName_("CIFalseColor")
+    falseColorFilter.setValue_forKey_(inputImage, "inputImage")
+    falseColorFilter.setValue_forKey_(color0, "inputColor0")
+    falseColorFilter.setValue_forKey_(color1, "inputColor1")
+    # get the result
+    ciImage = falseColorFilter.valueForKey_("outputImage")
+    # make an NSImage
+    nsImage = NSImage.alloc().initWithSize_(ciImage.extent().size)
+    nsImage.lockFocus()
+    context = NSGraphicsContext.currentContext().CIContext()
+    context.drawImage_atPoint_fromRect_(ciImage, (0, 0), ciImage.extent())
+    nsImage.unlockFocus()
+    # apply the alpha
+    finalImage = NSImage.alloc().initWithSize_(nsImage.size())
+    finalImage.lockFocus()
+    nsImage.drawAtPoint_fromRect_operation_fraction_(
+        (0, 0), ((0, 0), nsImage.size()), NSCompositeSourceOver, a
+    )
+    finalImage.unlockFocus()
+    return finalImage
+
 

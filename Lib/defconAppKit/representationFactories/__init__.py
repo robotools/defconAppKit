@@ -1,11 +1,12 @@
-from defcon import Glyph, registerRepresentationFactory
+from defcon import Glyph, Image, registerRepresentationFactory
 from defconAppKit.representationFactories.nsBezierPathFactory import NSBezierPathFactory
 from defconAppKit.representationFactories.glyphCellFactory import GlyphCellFactory
 from defconAppKit.representationFactories.glyphCellDetailFactory import GlyphCellDetailFactory
-from defconAppKit.representationFactories.glyphViewFactories import NoComponentsNSBezierPathFactory, OnlyComponentsNSBezierPathFactory, OutlineInformationFactory
+from defconAppKit.representationFactories.glyphViewFactories import NoComponentsNSBezierPathFactory,\
+    OnlyComponentsNSBezierPathFactory, OutlineInformationFactory, NSImageFactory
 from defconAppKit.representationFactories.menuImageFactory import MenuImageRepresentationFactory
 
-_factories = {
+_glyphFactories = {
     "defconAppKit.NSBezierPath" : NSBezierPathFactory,
     "defconAppKit.NoComponentsNSBezierPath" : NoComponentsNSBezierPathFactory,
     "defconAppKit.OnlyComponentsNSBezierPath" : OnlyComponentsNSBezierPathFactory,
@@ -14,15 +15,13 @@ _factories = {
     "defconAppKit.OutlineInformation" : OutlineInformationFactory,
     "defconAppKit.MenuImage" : MenuImageRepresentationFactory,
 }
-
-# used by the glyph multiline view
-try:
-    from defconAppKit.representationFactories.t2CharStringFactory import T2CharStringRepresentationFactory
-    _factories["T2CharString"] = T2CharStringRepresentationFactory
-except ImportError:
-    pass
-
+_imageFactories = {
+    "defconAppKit.NSImage" : NSImageFactory
+}
 
 def registerAllFactories():
-    for name, factory in _factories.items():
+    for name, factory in _glyphFactories.items():
         registerRepresentationFactory(Glyph, name, factory, destructiveNotifications=None)
+    for name, factory in _imageFactories.items():
+        registerRepresentationFactory(Image, name, factory, destructiveNotifications=None)
+
