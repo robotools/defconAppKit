@@ -3,6 +3,7 @@ from AppKit import *
 from ufoLib.pointPen import AbstractPointPen
 import vanilla
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
+from defconAppKit.tools import drawing
 
 backgroundColor = NSColor.whiteColor()
 metricsColor = NSColor.colorWithCalibratedWhite_alpha_(.4, .5)
@@ -21,6 +22,15 @@ pointCoordinateColor = NSColor.colorWithCalibratedWhite_alpha_(.5, .75)
 anchorColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, .2, 0, 1)
 bluesColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.5, .7, 1, .3)
 familyBluesColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 1, .5, .3)
+
+
+"""
+setDrawingAttributes(attributes, layerName=None)
+attributes = {
+    showGlyphFill : True
+}
+
+"""
 
 
 class DefconAppKitGlyphNSView(NSView):
@@ -46,6 +56,8 @@ class DefconAppKitGlyphNSView(NSView):
         self._showBlues = False
         self._showFamilyBlues = False
         self._showImage = False
+
+        self._drawingRect = None
 
         self._pointSize = None
         self._centerVertically = True
@@ -276,44 +288,39 @@ class DefconAppKitGlyphNSView(NSView):
         self.drawBackground()
         if self._glyph is None:
             return
-        # apply vertical offset
-        transform = NSAffineTransform.transform()
-        if self._centerVertically:
-            yOffset = self._verticalCenterYBuffer
-        else:
-            canvasHeight = self._getGlyphWidthHeight()[1] + (self._yCanvasAddition * 2)
-            canvasHeight = canvasHeight * self._scale
-            frameHeight = self.frame().size[1]
-            yOffset = frameHeight - canvasHeight + (self._yCanvasAddition * self._scale)
-        transform.translateXBy_yBy_(0, yOffset)
-        transform.concat()
+
         # apply the overall scale
         transform = NSAffineTransform.transform()
         transform.scaleBy_(self._scale)
         transform.concat()
-        yOffset = yOffset * self._inverseScale
-        # shift to baseline
+
+        # move into position
+        visibleWidth = self.bounds().size[0]
+        width = self._glyph.width * self._scale
+        diff = visibleWidth - width
+        xOffset = round((diff / 2) * self._inverseScale)
+
+        yOffset = self._verticalCenterYBuffer * self._inverseScale
+        yOffset -= self._descender
+
         transform = NSAffineTransform.transform()
-        transform.translateXBy_yBy_(0, -self._descender)
+        transform.translateXBy_yBy_(xOffset, yOffset)
         transform.concat()
-        yOffset = yOffset - self._descender
-        # calculate offsets
-        if self._centerHorizontally:
-            visibleWidth = self.bounds().size[0]
-            width = self._glyph.width * self._scale
-            diff = visibleWidth - width
-            xOffset = round((diff / 2) * self._inverseScale)
-        else:
-            xOffset = self._xCanvasAddition
+
+        # store the current drawing rect
+        w, h = self.bounds().size
+        w *= self._inverseScale
+        h *= self._inverseScale
+        justInCaseBuffer = 1 * self._inverseScale
+        xOffset += justInCaseBuffer
+        yOffset += justInCaseBuffer
+        w += justInCaseBuffer * 2
+        h += justInCaseBuffer * 2
+        self._drawingRect = ((-xOffset, -yOffset), (w, h))
+
         # draw the image
         if self._showImage:
-            context = NSGraphicsContext.currentContext()
-            context.saveGraphicsState()
-            transform = NSAffineTransform.transform()
-            transform.translateXBy_yBy_(xOffset, 0)
-            transform.concat()
             self.drawImage()
-            context.restoreGraphicsState()
         # draw the blues
         if self._showBlues:
             self.drawBlues()
@@ -321,19 +328,13 @@ class DefconAppKitGlyphNSView(NSView):
             self.drawFamilyBlues()
         # draw the margins
         if self._showMetrics:
-            self.drawMargins(xOffset, yOffset)
-        # draw the horizontal metrics
+            self.drawMargins()
+        # draw the vertical metrics
         if self._showMetrics:
-            self.drawHorizontalMetrics()
-        # apply horizontal offset
-        transform = NSAffineTransform.transform()
-        transform.translateXBy_yBy_(xOffset, 0)
-        transform.concat()
+            self.drawVerticalMetrics()
         # draw the glyph
-        if self._showFill:
-            self.drawFill()
-        if self._showStroke:
-            self.drawStroke()
+        if self._showFill or self._showStroke:
+            self.drawFillAndStroke()
         self.drawPoints()
         if self._showAnchors:
             self.drawAnchors()
@@ -349,313 +350,36 @@ class DefconAppKitGlyphNSView(NSView):
         NSRectFill(self.bounds())
 
     def drawImage(self):
-        if self._glyph.image.fileName is None:
-            return
-        context = NSGraphicsContext.currentContext()
-        context.saveGraphicsState()
-        aT = NSAffineTransform.transform()
-        aT.setTransformStruct_(self._glyph.image.transformation)
-        aT.concat()
-        image = self._glyph.image.getRepresentation("defconAppKit.NSImage")
-        image.drawAtPoint_fromRect_operation_fraction_(
-            (0, 0), ((0, 0), image.size()), NSCompositeSourceOver, 1.0
-        )
-        context.restoreGraphicsState()
+        drawing.drawGlyphImage(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
     def drawBlues(self):
-        width = self.bounds().size[0] * self._inverseScale
-        self._bluesColor.set()
-        font = self._glyph.getParent()
-        if font is None:
-            return
-        attrs = ["postscriptBlueValues", "postscriptOtherBlues"]
-        for attr in attrs:
-            values = getattr(font.info, attr)
-            if not values:
-                continue
-            yMins = [i for index, i in enumerate(values) if not index % 2]
-            yMaxs = [i for index, i in enumerate(values) if index % 2]
-            for yMin, yMax in zip(yMins, yMaxs):
-                NSRectFillUsingOperation(((0, yMin), (width, yMax - yMin)), NSCompositeSourceOver)
+        drawing.drawFontPostscriptBlues(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
     def drawFamilyBlues(self):
-        width = self.bounds().size[0] * self._inverseScale
-        self._familyBluesColor.set()
-        font = self._glyph.getParent()
-        if font is None:
-            return
-        attrs = ["postscriptFamilyBlues", "postscriptFamilyOtherBlues"]
-        for attr in attrs:
-            values = getattr(font.info, attr)
-            if not values:
-                continue
-            yMins = [i for index, i in enumerate(values) if not index % 2]
-            yMaxs = [i for index, i in enumerate(values) if index % 2]
-            for yMin, yMax in zip(yMins, yMaxs):
-                NSRectFillUsingOperation(((0, yMin), (width, yMax - yMin)), NSCompositeSourceOver)
+        drawing.drawFontPostscriptFamilyBlues(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawHorizontalMetrics(self):
-        toDraw = [
-            ("Descender", self._descender),
-            ("Baseline", 0),
-            ("X Height", self._xHeight),
-            ("Cap Height", self._capHeight),
-            ("Ascender", self._ascender)
-        ]
-        positions = {}
-        for name, position in toDraw:
-            if position not in positions:
-                positions[position] = []
-            positions[position].append(name)
-        # lines
-        path = NSBezierPath.bezierPath()
-        x1 = 0
-        x2 = self.bounds().size[0] * self._inverseScale
-        for position, names in sorted(positions.items()):
-            y = self.roundPosition(position)
-            path.moveToPoint_((x1, y))
-            path.lineToPoint_((x2, y))
-        path.setLineWidth_(1.0 * self._inverseScale)
-        self._metricsColor.set()
-        path.stroke()
-        # text
-        if self._showMetricsTitles and self._impliedPointSize > 150:
-            fontSize = 9 * self._inverseScale
-            shadow = NSShadow.shadow()
-            shadow.setShadowColor_(self._backgroundColor)
-            shadow.setShadowBlurRadius_(5)
-            shadow.setShadowOffset_((0, 0))
-            attributes = {
-                NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-                NSForegroundColorAttributeName : self._metricsTitlesColor
-            }
-            glowAttributes = {
-                NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-                NSForegroundColorAttributeName : self._metricsColor,
-                NSStrokeColorAttributeName : self._backgroundColor,
-                NSStrokeWidthAttributeName : 25,
-                NSShadowAttributeName : shadow
-            }
-            for position, names in sorted(positions.items()):
-                y = position - (fontSize / 2)
-                text = ", ".join(names)
-                text = " %s " % text
-                t = NSAttributedString.alloc().initWithString_attributes_(text, glowAttributes)
-                t.drawAtPoint_((0, y))
-                t = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
-                t.drawAtPoint_((0, y))
+    def drawVerticalMetrics(self):
+        drawText = self._showMetricsTitles and self._impliedPointSize > 150
+        drawing.drawFontVerticalMetrics(self._glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
 
-    def drawMargins(self, xOffset, yOffset):
-        x1 = 0
-        w1 = xOffset
-        x2 = self._glyph.width + xOffset
-        w2 = (self.bounds().size[0] * self._inverseScale) - x2
-        h = self.bounds().size[1] * self._inverseScale
-        rects = [
-            ((x1, -yOffset), (w1, h)),
-            ((x2, -yOffset), (w2, h))
-        ]
-        self._marginColor.set()
-        for rect in rects:
-            NSRectFillUsingOperation(rect, NSCompositeSourceOver)
+    def drawMargins(self):
+        drawing.drawGlyphMargins(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawFill(self):
-        # outlines
-        path = self._glyph.getRepresentation("defconAppKit.NoComponentsNSBezierPath")
-        if self._showStroke:
-            self._fillColor.set()
-        else:
-            self._fillAndStrokFillColor.set()
-        path.fill()
-        # components
-        path = self._glyph.getRepresentation("defconAppKit.OnlyComponentsNSBezierPath")
-        self._componentFillColor.set()
-        path.fill()
-
-    def drawStroke(self):
-        # outlines
-        path = self._glyph.getRepresentation("defconAppKit.NoComponentsNSBezierPath")
-        self._strokeColor.set()
-        path.setLineWidth_(1.0 * self._inverseScale)
-        path.stroke()
-        # components
-        path = self._glyph.getRepresentation("defconAppKit.OnlyComponentsNSBezierPath")
-        self._componentStrokeColor.set()
-        path.setLineWidth_(1.0 * self._inverseScale)
-        path.stroke()
+    def drawFillAndStroke(self):
+        drawing.drawGlyphFillAndStroke(self._glyph, self._inverseScale, self._drawingRect, drawFill=self._showFill, drawStroke=self._showStroke, backgroundColor=self._backgroundColor)
 
     def drawPoints(self):
-        # work out appropriate sizes and
-        # skip if the glyph is too small
-        pointSize = self._impliedPointSize
-        if pointSize > 550:
-            startPointSize = 21
-            offCurvePointSize = 5
-            onCurvePointSize = 6
-            onCurveSmoothPointSize = 7
-        elif pointSize > 250:
-            startPointSize = 15
-            offCurvePointSize = 3
-            onCurvePointSize = 4
-            onCurveSmoothPointSize = 5
-        elif pointSize > 175:
-            startPointSize = 9
-            offCurvePointSize = 1
-            onCurvePointSize = 2
-            onCurveSmoothPointSize = 3
-        else:
-            return
-        if pointSize > 250:
-            coordinateSize = 9
-        else:
-            coordinateSize = 0
-        # use the data from the outline representation
-        outlineData = self._glyph.getRepresentation("defconAppKit.OutlineInformation")
-        points = []
-        # start point
-        if self._showOnCurvePoints and outlineData["startPoints"]:
-            startWidth = startHeight = self.roundPosition(startPointSize * self._inverseScale)
-            startHalf = startWidth / 2.0
-            path = NSBezierPath.bezierPath()
-            for point, angle in outlineData["startPoints"]:
-                x, y = point
-                if angle is not None:
-                    path.moveToPoint_((x, y))
-                    path.appendBezierPathWithArcWithCenter_radius_startAngle_endAngle_clockwise_(
-                        (x, y), startHalf, angle-90, angle+90, True)
-                    path.closePath()
-                else:
-                    path.appendBezierPathWithOvalInRect_(((x-startHalf, y-startHalf), (startWidth, startHeight)))
-            self._startPointColor.set()
-            path.fill()
-        # off curve
-        if self._showOffCurvePoints and outlineData["offCurvePoints"]:
-            # lines
-            path = NSBezierPath.bezierPath()
-            for point1, point2 in outlineData["bezierHandles"]:
-                path.moveToPoint_(point1)
-                path.lineToPoint_(point2)
-            self._bezierHandleColor.set()
-            path.setLineWidth_(1.0 * self._inverseScale)
-            path.stroke()
-            # points
-            offWidth = offHeight = self.roundPosition(offCurvePointSize * self._inverseScale)
-            offHalf = offWidth / 2.0
-            path = NSBezierPath.bezierPath()
-            for point in outlineData["offCurvePoints"]:
-                x, y = point["point"]
-                points.append((x, y))
-                x = self.roundPosition(x - offHalf)
-                y = self.roundPosition(y - offHalf)
-                path.appendBezierPathWithOvalInRect_(((x, y), (offWidth, offHeight)))
-            path.setLineWidth_(3.0 * self._inverseScale)
-            self._pointStrokeColor.set()
-            path.stroke()
-            self._backgroundColor.set()
-            path.fill()
-            self._pointColor.set()
-            path.setLineWidth_(1.0 * self._inverseScale)
-            path.stroke()
-        # on curve
-        if self._showOnCurvePoints and outlineData["onCurvePoints"]:
-            width = height = self.roundPosition(onCurvePointSize * self._inverseScale)
-            half = width / 2.0
-            smoothWidth = smoothHeight = self.roundPosition(onCurveSmoothPointSize * self._inverseScale)
-            smoothHalf = smoothWidth / 2.0
-            path = NSBezierPath.bezierPath()
-            for point in outlineData["onCurvePoints"]:
-                x, y = point["point"]
-                points.append((x, y))
-                if point["smooth"]:
-                    x = self.roundPosition(x - smoothHalf)
-                    y = self.roundPosition(y - smoothHalf)
-                    path.appendBezierPathWithOvalInRect_(((x, y), (smoothWidth, smoothHeight)))
-                else:
-                    x = self.roundPosition(x - half)
-                    y = self.roundPosition(y - half)
-                    path.appendBezierPathWithRect_(((x, y), (width, height)))
-            self._pointStrokeColor.set()
-            path.setLineWidth_(3.0 * self._inverseScale)
-            path.stroke()
-            self._pointColor.set()
-            path.fill()
-        # text
-        if self._showPointCoordinates and coordinateSize:
-            fontSize = 9 * self._inverseScale
-            attributes = {
-                NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-                NSForegroundColorAttributeName : self._pointCoordinateColor
-            }
-            for x, y in points:
-                posX = x
-                posY = y
-                x = round(x, 1)
-                if int(x) == x:
-                    x = int(x)
-                y = round(y, 1)
-                if int(y) == y:
-                    y = int(y)
-                text = "%d  %d" % (x, y)
-                self._drawTextAtPoint(text, attributes, (posX, posY), 3)
+        drawStartPoint = self._showOnCurvePoints and self._impliedPointSize > 175
+        drawOnCurves = self._showOnCurvePoints and self._impliedPointSize > 175
+        drawOffCurves = self._showOffCurvePoints and self._impliedPointSize > 175
+        drawCoordinates = self._showPointCoordinates and self._impliedPointSize > 250
+        drawing.drawGlyphPoints(self._glyph, self._inverseScale, self._drawingRect,
+            drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
+            backgroundColor=self._backgroundColor)
 
     def drawAnchors(self):
-        pointSize = self._impliedPointSize
-        anchorSize = 5
-        fontSize = 9
-        if pointSize > 500:
-            pass
-        elif pointSize > 250:
-            fontSize = 7
-        elif pointSize > 50:
-            anchorSize = 3
-            fontSize = 7
-        else:
-            return
-        anchorSize = self.roundPosition(anchorSize * self._inverseScale)
-        anchorHalf = anchorSize * .5
-        fontSize = fontSize * self._inverseScale
-        font = NSFont.boldSystemFontOfSize_(fontSize)
-        attributes = {
-            NSFontAttributeName : font,
-            NSForegroundColorAttributeName : self._anchorColor
-        }
-        path = NSBezierPath.bezierPath()
-        for anchor in self._glyph.anchors:
-            x, y = anchor.x, anchor.y
-            name = anchor.name
-            path.appendBezierPathWithOvalInRect_(((x - anchorHalf, y - anchorHalf), (anchorSize, anchorSize)))
-            if pointSize > 100 and name:
-                self._drawTextAtPoint(name, attributes, (x, y - 2), fontSize * self._scale * .85, drawBackground=True)
-        self._pointStrokeColor.set()
-        path.setLineWidth_(3.0 * self._inverseScale)
-        path.stroke()
-        self._anchorColor.set()
-        path.fill()
-
-    def _drawTextAtPoint(self, text, attributes, (posX, posY), yOffset, drawBackground=False):
-        text = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
-        width, height = text.size()
-        fontSize = attributes[NSFontAttributeName].pointSize()
-        posX -= width / 2
-        posY -= fontSize + (yOffset * self._inverseScale)
-        posX = self.roundPosition(posX)
-        posY = self.roundPosition(posY)
-        if drawBackground:
-            shadow = NSShadow.alloc().init()
-            shadow.setShadowColor_(self._backgroundColor)
-            shadow.setShadowOffset_((0, 0))
-            shadow.setShadowBlurRadius_(3)
-            width += 4 * self._inverseScale
-            height += 2 * self._inverseScale
-            x = posX - (2 * self._inverseScale)
-            y = posY - (1 * self._inverseScale)
-            context = NSGraphicsContext.currentContext()
-            context.saveGraphicsState()
-            shadow.set()
-            self._backgroundColor.set()
-            NSRectFill(((x, y), (width, height)))
-            context.restoreGraphicsState()
-        text.drawAtPoint_((posX, posY))
+        drawText = self._impliedPointSize > 50
+        drawing.drawGlyphAnchors(self._glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
 
 
 class GlyphView(PlacardScrollView):
