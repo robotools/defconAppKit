@@ -6,26 +6,6 @@ from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPo
 from defconAppKit.tools import drawing
 
 
-"""
-Fill
-Stroke
-Image
-Metrics
-On Curve Points
-Off Curve Points
-Point Coordinates
-Anchors
-Blues
-Family Blues
------------------
-Layers > Fill All
-         Stroke All
-         ----------
-         Layer Name Fill
-         Layer Name Stroke
-"""
-
-
 class DefconAppKitGlyphNSView(NSView):
 
     def init(self):
@@ -373,11 +353,12 @@ class GlyphView(PlacardScrollView):
 
     glyphViewClass = DefconAppKitGlyphNSView
 
-    def __init__(self, posSize):
+    def __init__(self, posSize, showPlacard=True):
         self._glyphView = self.glyphViewClass.alloc().init()
         super(GlyphView, self).__init__(posSize, self._glyphView, autohidesScrollers=False)
-        self.buildPlacard()
-        self.setPlacard(self.placard)
+        if showPlacard:
+            self.buildPlacard()
+            self.setPlacard(self.placard)
 
     def buildPlacard(self):
         placardW = 65
@@ -386,41 +367,71 @@ class GlyphView(PlacardScrollView):
         self.placard.optionsButton = PlacardPopUpButton((0, 0, placardW, placardH),
             [], callback=self._placardDisplayOptionsCallback, sizeStyle="mini")
         self._populatePlacard()
-        #button.menu().setAutoenablesItems_(False)
+        self.placard.optionsButton.getNSPopUpButton().menu().setAutoenablesItems_(False)
 
     def _populatePlacard(self):
-        options = [
-            "Fill",
-            "Stroke",
-            "Image",
-            "Metrics",
-            "On Curve Points",
-            "Off Curve Points",
-            "Point Coordinates",
-            "Anchors",
-            "Blues",
-            "Family Blues"
+        if not hasattr(self, "placard"):
+            return
+        options = self._placardOptions = [
+            (None, None, None), # Display...
+            ("Fill", "showGlyphFill", None),
+            ("Stroke", "showGlyphStroke", None),
+            ("Image", "showGlyphImage", None),
+            ("Metrics", "showGlyphMargins", None),
+            ("On Curve Points", "showGlyphOnCurvePoints", None),
+            ("Off Curve Points", "showGlyphOffCurvePoints", None),
+            ("Point Coordinates", "showGlyphPointCoordinates", None),
+            ("Anchors", "showGlyphAnchors", None),
+            ("Blues", "showFontPostscriptBlues", None),
+            ("Family Blues", "showFontPostscriptFamilyBlues", None),
+            (None, None, None), # layer divider
         ]
-        # make a default item
+        if not hasattr(self, "_placardLayerOptions"):
+            self._placardLayerOptions = {}
+        # title
         item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Display...", None, "")
-        ## 10.5+
-        try:
-            item.setHidden_(True)
-        ## ugh. in <= 10.4, make the item disabled
-        except AttributeError:
-            item.setEnabled_(False)
-            item.setState_(False)
+        item.setHidden_(True)
         items = [item]
-        for attr in options:
-            method = "getShow" + attr.replace(" ", "")
-            state = getattr(self._glyphView, method)()
-            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(attr, None, "")
+        # main layer
+        for title, drawingAttribute, layerName in options:
+            if title is None:
+                continue
+            state = self.getDrawingAttribute(drawingAttribute)
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, None, "")
             item.setState_(state)
             items.append(item)
-        ## set the items
+        # sub layers
+        glyph = self._glyphView.getGlyph()
+        if glyph is not None:
+            layerSet = glyph.layerSet
+            if layerSet is not None:
+                if len(layerSet.layerOrder) > 1:
+                    items.append(NSMenuItem.separatorItem())
+                    # prep the state dictionary
+                    for layerName in self._placardLayerOptions.keys():
+                        if layerName not in layerSet:
+                            del self._placardLayerOptions[layerName]
+                    for layerName in layerSet.layerOrder:
+                        if layerName not in self._placardLayerOptions:
+                            self._placardLayerOptions[layerName] = False
+                    for layerName in layerSet.layerOrder:
+                        state = self._placardLayerOptions[layerName]
+                        enabled = True
+                        if layerName == glyph.layer.name:
+                            state = True
+                            enabled = False
+                        self._placardOptions.append((None, None, layerName))
+                        title = "Layer: %s" % layerName
+                        item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, None, "")
+                        item.setState_(state)
+                        item.setEnabled_(enabled)
+                        items.append(item)
+        # set the items
         self.placard.optionsButton.setItems(items)
         button = self.placard.optionsButton.getNSPopUpButton()
         button.setTitle_("Display...")
+        # update the layer options
+        self._updateLayerDrawingAttributes()
 
     def _breakCycles(self):
         self._unsubscribeFromGlyph()
@@ -429,12 +440,38 @@ class GlyphView(PlacardScrollView):
 
     def _placardDisplayOptionsCallback(self, sender):
         index = sender.get()
-        attr = sender.getItems()[index]
-        method = "getShow" + attr.replace(" ", "")
-        state = getattr(self._glyphView, method)()
-        method = "setShow" + attr.replace(" ", "") + "_"
-        getattr(self._glyphView, method)(not state)
+        title, drawingAttribute, layerName = self._placardOptions[index]
+        if drawingAttribute is not None:
+            state = self.getDrawingAttribute(drawingAttribute)
+            self.setDrawingAttribute(drawingAttribute, not state)
+        else:
+            state = self._placardLayerOptions[layerName]
+            self._placardLayerOptions[layerName] = not state
         self._populatePlacard()
+
+    def _updateLayerDrawingAttributes(self):
+        showFill = self.getDrawingAttribute("showGlyphFill")
+        for layerName, state in self._placardLayerOptions.items():
+            # layer visible, fill
+            if state and showFill:
+                self.setDrawingAttribute("showGlyphFill", True, layerName)
+            # layer visible, no fill
+            elif state and not showFill:
+                self.setDrawingAttribute("showGlyphFill", False, layerName)
+            # layer invisible
+            elif not state:
+                self.setDrawingAttribute("showGlyphFill", False, layerName)
+        showStroke = self.getDrawingAttribute("showGlyphStroke")
+        for layerName, state in self._placardLayerOptions.items():
+            # layer visible, stroke
+            if state and showStroke:
+                self.setDrawingAttribute("showGlyphStroke", True, layerName)
+            # layer visible, no stroke
+            elif state and not showStroke:
+                self.setDrawingAttribute("showGlyphStroke", False, layerName)
+            # layer invisible
+            elif not state:
+                self.setDrawingAttribute("showGlyphStroke", False, layerName)
 
     # -------------
     # Notifications
@@ -461,6 +498,7 @@ class GlyphView(PlacardScrollView):
 
     def _fontChanged(self, notification):
         self._glyphView.fontChanged()
+        self._populatePlacard()
 
     # --------------
     # Public Methods
@@ -470,6 +508,7 @@ class GlyphView(PlacardScrollView):
         self._unsubscribeFromGlyph()
         self._subscribeToGlyph(glyph)
         self._glyphView.setGlyph_(glyph)
+        self._populatePlacard()
 
     def setDrawingAttribute(self, attr, value, layerName=None):
         self._glyphView.setDrawingAttribute_value_layerName_(attr, value, layerName)
@@ -508,13 +547,6 @@ class GlyphView(PlacardScrollView):
     def setShowImage(self, value):
         self._populatePlacard()
         self.setDrawingAttribute("showGlyphImage", value)
-
-#    def setShowMetricsTitles(self, value):
-#        self._populatePlacard()
-#        self.setDrawingAttribute("showFontVerticalMetricsTitles", value)
-#
-#    def getShowMetricsTitles(self):
-#        return self.getDrawingAttribute("showFontVerticalMetricsTitles")
 
     def getShowOnCurvePoints(self):
         return self.getDrawingAttribute("showGlyphOnCurvePoints")
