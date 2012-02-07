@@ -353,10 +353,10 @@ class GlyphView(PlacardScrollView):
 
     glyphViewClass = DefconAppKitGlyphNSView
 
-    def __init__(self, posSize, showPlacard=True):
+    def __init__(self, posSize, showDisplayPlacard=True):
         self._glyphView = self.glyphViewClass.alloc().init()
         super(GlyphView, self).__init__(posSize, self._glyphView, autohidesScrollers=False)
-        if showPlacard:
+        if showDisplayPlacard:
             self.buildPlacard()
             self.setPlacard(self.placard)
 
