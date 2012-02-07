@@ -51,6 +51,7 @@ defaultColors = dict(
 
     # margins
     glyphMarginsFill=NSColor.colorWithCalibratedWhite_alpha_(.5, .11),
+    glyphMarginsStroke=NSColor.colorWithCalibratedWhite_alpha_(.7, .5),
 
     # contour fill
     glyphContourFill=NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1),
@@ -263,15 +264,22 @@ def drawGlyphImage(glyph, scale, rect, backgroundColor=None):
 
 # Margins
 
-def drawGlyphMargins(glyph, scale, rect, fillColor=None, strokeColor=None, backgroundColor=None):
+def drawGlyphMargins(glyph, scale, rect, drawFill=True, drawStroke=True, fillColor=None, strokeColor=None, backgroundColor=None):
     if fillColor is None:
         fillColor = getDefaultColor("glyphMarginsFill")
+    if strokeColor is None:
+        strokeColor = getDefaultColor("glyphMarginsStroke")
     (x, y), (w, h) = rect
-    left = ((x, y), (-x, h))
-    right = ((glyph.width, y), (w - glyph.width, h))
-    fillColor.set()
-    for rect in (left, right):
-        drawFilledRect(rect)
+    if drawFill:
+        left = ((x, y), (-x, h))
+        right = ((glyph.width, y), (w - glyph.width, h))
+        fillColor.set()
+        for rect in (left, right):
+            drawFilledRect(rect)
+    if drawStroke:
+        strokeColor.set()
+        drawLine((0, y), (0, y + h))
+        drawLine((glyph.width, y), (glyph.width, y + h))
 
 # Fill and Stroke
 
