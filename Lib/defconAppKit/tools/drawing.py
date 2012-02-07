@@ -8,6 +8,24 @@ Common glyph drawing functions for all views. Notes:
 - the rect argument is the rect that the glyph is being drawn in
 """
 
+"""
+setLayer_drawingAttributes_(layerName, attributes)
+
+showGlyphFill
+showGlyphStroke
+showGlyphOnCurvePoints
+showGlyphStartPoints
+showGlyphOffCurvePoints
+showGlyphPointCoordinates
+showGlyphAnchors
+showGlyphImage
+showGlyphMargins
+showFontVerticalMetrics
+showFontVerticalMetricsTitles
+showFontPostscriptBlues
+showFontPostscriptFamilyBlues
+"""
+
 # ------
 # Colors
 # ------
@@ -35,23 +53,19 @@ defaultColors = dict(
     glyphMarginsFill=NSColor.colorWithCalibratedWhite_alpha_(.5, .11),
 
     # contour fill
-    glyphContourFill=NSColor.blackColor(),
-    glyphContourFillWithStroke=NSColor.colorWithCalibratedWhite_alpha_(0, 0.6),
+    glyphContourFill=NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1),
 
     # contour stroke
-    glyphContourStroke=NSColor.blackColor(),
-    glyphContourStrokeWithFill=NSColor.blackColor(),
+    glyphContourStroke=NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1),
 
     # component fill
-    glyphComponentFill=NSColor.blackColor(),
-    glyphComponentFillWithStroke=NSColor.colorWithCalibratedWhite_alpha_(0, 0.4),
+    glyphComponentFill=NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1),
 
     # component stroke
-    glyphComponentStroke=NSColor.blackColor(),
-    glyphComponentStrokeWithFill=NSColor.colorWithCalibratedWhite_alpha_(0.4, 1.0),
+    glyphComponentStroke=NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1),
 
     # points
-    glyphPoints=NSColor.colorWithCalibratedWhite_alpha_(.6, 1),
+    glyphPoints=NSColor.colorWithCalibratedRed_green_blue_alpha_(.6, .6, .6, 1),
 
     # anchors
     glyphAnchor=NSColor.colorWithCalibratedRed_green_blue_alpha_(1, .2, 0, 1),
@@ -231,7 +245,6 @@ def _drawBlues(blues, rect):
     for yMin, yMax in blues:
         drawFilledRect(((x, yMin), (w, yMax - yMin)))
 
-
 # Image
 
 def drawGlyphImage(glyph, scale, rect, backgroundColor=None):
@@ -268,7 +281,7 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
     # get the layer color
     layer = glyph.layer
     layerColor = None
-    if layer is not None:
+    if layer is not None and layer.color is not None:
         layerColor = colorToNSColor(layer.color)
     # get the paths
     contourPath = glyph.getRepresentation("defconAppKit.NoComponentsNSBezierPath")
@@ -279,11 +292,11 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
         if contourFillColor is None and layerColor is not None:
             contourFillColor = layerColor
         elif contourFillColor is None and layerColor is None:
-            contourFillColor = getDefaultColor("glyphFillColor")
+            contourFillColor = getDefaultColor("glyphContourFill")
         if componentFillColor is None and layerColor is not None:
             componentFillColor = layerColor
         elif componentFillColor is None and layerColor is None:
-            componentFillColor = getDefaultColor("glyphFillColor")
+            componentFillColor = getDefaultColor("glyphComponentFill")
         # make the fill less opaque if stroking
         if drawStroke:
             contourFillColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(
@@ -310,7 +323,7 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
         if contourStrokeColor is None and layerColor is not None:
             contourStrokeColor = layerColor
         elif contourStrokeColor is None and layerColor is None:
-            contourStrokeColor = getDefaultColor("glyphStrokeColor")
+            contourStrokeColor = getDefaultColor("glyphContourStroke")
         # contours
         contourPath.setLineWidth_(1.0 * scale)
         contourStrokeColor.set()
