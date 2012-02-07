@@ -11,7 +11,7 @@ from Quartz import *
 # -------------
 
 def NoComponentsNSBezierPathFactory(glyph):
-    pen = NoComponentsCocoaPen(glyph.font)
+    pen = NoComponentsCocoaPen(glyph.layer)
     glyph.draw(pen)
     return pen.path
 
@@ -26,7 +26,7 @@ class NoComponentsCocoaPen(CocoaPen):
 # ---------------
 
 def OnlyComponentsNSBezierPathFactory(glyph):
-    pen = OnlyComponentsCocoaPen(glyph.font)
+    pen = OnlyComponentsCocoaPen(glyph.layer)
     glyph.draw(pen)
     return pen.path
 
@@ -145,17 +145,23 @@ def OutlineInformationFactory(glyph):
 
 def NSImageFactory(image):
     font = image.font
+    if font is None:
+        return
+    layer = image.layer
     images = font.images
     if image.fileName not in images:
         return None
+    imageColor = image.color
+    if imageColor is None:
+        imageColor = layer.color
     data = images[image.fileName]
     data = NSData.dataWithBytes_length_(data, len(data))
-    if image.color is None:
+    if imageColor is None:
         return NSImage.alloc().initWithData_(data)
     # make the input image
     inputImage = CIImage.imageWithData_(data)
     # make a color filter
-    r, g, b, a = image.color
+    r, g, b, a = imageColor
     color0 = CIColor.colorWithRed_green_blue_(r, g, b)
     color1 = CIColor.colorWithRed_green_blue_(1, 1, 1)
     falseColorFilter = CIFilter.filterWithName_("CIFalseColor")
