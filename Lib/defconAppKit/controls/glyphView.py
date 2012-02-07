@@ -6,6 +6,26 @@ from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPo
 from defconAppKit.tools import drawing
 
 
+"""
+Fill
+Stroke
+Image
+Metrics
+On Curve Points
+Off Curve Points
+Point Coordinates
+Anchors
+Blues
+Family Blues
+-----------------
+Layers > Fill All
+         Stroke All
+         ----------
+         Layer Name Fill
+         Layer Name Stroke
+"""
+
+
 class DefconAppKitGlyphNSView(NSView):
 
     def init(self):
@@ -271,96 +291,83 @@ class DefconAppKitGlyphNSView(NSView):
         h += justInCaseBuffer * 2
         self._drawingRect = ((-xOffset, -yOffset), (w, h))
 
-        # draw the image
-        if self.getDrawingAttribute_layerName_("showGlyphImage", None):
-            self.drawImage()
-        # draw the blues
-        if self.getDrawingAttribute_layerName_("showFontPostscriptBlues", None):
-            self.drawBlues()
-        if self.getDrawingAttribute_layerName_("showFontPostscriptFamilyBlues", None):
-            self.drawFamilyBlues()
-        # draw the margins
-        if self.getDrawingAttribute_layerName_("showFontPostscriptBlues", None):
-            self.drawMargins()
-        # draw the vertical metrics
-        if self.getDrawingAttribute_layerName_("showFontVerticalMetrics", None) or self.getDrawingAttribute_layerName_("showGlyphMargins", None):
-            self.drawVerticalMetrics()
-        # draw the glyph
-        if self.getDrawingAttribute_layerName_("showGlyphFill", None) or self.getDrawingAttribute_layerName_("showGlyphStroke", None):
-            self.drawFillAndStroke()
-        if self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", None) or self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", None):
-            self.drawPoints()
-        if self.getDrawingAttribute_layerName_("showGlyphAnchors", None):
-            self.drawAnchors()
+        # gather the layers
+        layerSet = self._glyph.layerSet
+        if layerSet is None:
+            layers = [(self._glyph, None)]
+        else:
+            glyphName = self._glyph.name
+            layers = []
+            for layerName in reversed(layerSet.layerOrder):
+                layer = layerSet[layerName]
+                if glyphName not in layer:
+                    continue
+                glyph = layer[glyphName]
+                if glyph == self._glyph:
+                    layerName = None
+                layers.append((glyph, layerName))
+
+        for glyph, layerName in layers:
+            # draw the image
+            if self.getDrawingAttribute_layerName_("showGlyphImage", layerName):
+                self.drawImage(glyph, layerName)
+            # draw the blues
+            if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptBlues", None):
+                self.drawBlues(glyph, layerName)
+            if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptFamilyBlues", None):
+                self.drawFamilyBlues(glyph, layerName)
+            # draw the margins
+            if self.getDrawingAttribute_layerName_("showGlyphMargins", layerName):
+                self.drawMargins(glyph, layerName)
+            # draw the vertical metrics
+            if layerName is None and self.getDrawingAttribute_layerName_("showFontVerticalMetrics", None):
+                self.drawVerticalMetrics(glyph, layerName)
+            # draw the glyph
+            if self.getDrawingAttribute_layerName_("showGlyphFill", layerName) or self.getDrawingAttribute_layerName_("showGlyphStroke", layerName):
+                self.drawFillAndStroke(glyph, layerName)
+            if self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) or self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName):
+                self.drawPoints(glyph, layerName)
+            if self.getDrawingAttribute_layerName_("showGlyphAnchors", layerName):
+                self.drawAnchors(glyph, layerName)
 
     def drawBackground(self):
         self._backgroundColor.set()
         NSRectFill(self.bounds())
 
-    def drawImage(self):
-        drawing.drawGlyphImage(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
+    def drawImage(self, glyph, layerName):
+        drawing.drawGlyphImage(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawBlues(self):
-        drawing.drawFontPostscriptBlues(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
+    def drawBlues(self, glyph, layerName):
+        drawing.drawFontPostscriptBlues(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawFamilyBlues(self):
-        drawing.drawFontPostscriptFamilyBlues(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
+    def drawFamilyBlues(self, glyph, layerName):
+        drawing.drawFontPostscriptFamilyBlues(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawVerticalMetrics(self):
-        drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", None) and self._impliedPointSize > 150
-        drawing.drawFontVerticalMetrics(self._glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
+    def drawVerticalMetrics(self, glyph, layerName):
+        drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > 150
+        drawing.drawFontVerticalMetrics(glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
 
-    def drawMargins(self):
-        drawing.drawGlyphMargins(self._glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
+    def drawMargins(self, glyph, layerName):
+        drawing.drawGlyphMargins(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
-    def drawFillAndStroke(self):
-        showFill = self.getDrawingAttribute_layerName_("showGlyphFill", None)
-        showStroke = self.getDrawingAttribute_layerName_("showGlyphFill", None)
-        drawing.drawGlyphFillAndStroke(self._glyph, self._inverseScale, self._drawingRect, drawFill=showFill, drawStroke=showStroke, backgroundColor=self._backgroundColor)
+    def drawFillAndStroke(self, glyph, layerName):
+        showFill = self.getDrawingAttribute_layerName_("showGlyphFill", layerName)
+        showStroke = self.getDrawingAttribute_layerName_("showGlyphStroke", layerName)
+        drawing.drawGlyphFillAndStroke(glyph, self._inverseScale, self._drawingRect, drawFill=showFill, drawStroke=showStroke, backgroundColor=self._backgroundColor)
 
-    def drawPoints(self):
-        drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", None) and self._impliedPointSize > 175
-        drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", None) and self._impliedPointSize > 175
-        drawOffCurves = self.getDrawingAttribute_layerName_("showGlyphStartPoints", None) and self._impliedPointSize > 175
-        drawCoordinates = self.getDrawingAttribute_layerName_("showGlyphPointCoordinates", None) and self._impliedPointSize > 250
-        drawing.drawGlyphPoints(self._glyph, self._inverseScale, self._drawingRect,
+    def drawPoints(self, glyph, layerName):
+        drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", layerName) and self._impliedPointSize > 175
+        drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) and self._impliedPointSize > 175
+        drawOffCurves = self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName) and self._impliedPointSize > 175
+        drawCoordinates = self.getDrawingAttribute_layerName_("showGlyphPointCoordinates", layerName) and self._impliedPointSize > 250
+        drawing.drawGlyphPoints(glyph, self._inverseScale, self._drawingRect,
             drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
             backgroundColor=self._backgroundColor)
 
-    def drawAnchors(self):
+    def drawAnchors(self, glyph, layerName):
         drawText = self._impliedPointSize > 50
-        drawing.drawGlyphAnchors(self._glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
+        drawing.drawGlyphAnchors(glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
 
-#    def drawBottomLayers(self):
-#        layerSet = self._glyph.layerSet
-#        if layerSet is None:
-#            return
-#        glyphLayer = self._glyph.layer
-#        glyphName = self._glyph.name
-#        for otherLayerName in reversed(layerSet.layerOrder):
-#            otherLayer = layerSet[otherLayerName]
-#            if otherLayer == layer:
-#                break
-#            if glyphName in otherLayer:
-#                drawing.drawGlyphFillAndStroke(otherLayer[glyphName], self._inverseScale, self._drawingRect, drawFill=self._showFill, drawStroke=self._showStroke, backgroundColor=self._backgroundColor)
-#
-#    def drawTopLayers(self):
-#        return
-#        layer = self._glyph.layer
-#        if layer is None:
-#            return
-#        glyphName = self._glyph.name
-#        layerSet = layer.layerSet
-#        seenMain = False
-#        for otherLayerName in reversed(layerSet.layerOrder):
-#            otherLayer = layerSet[otherLayerName]
-#            if otherLayer == layer:
-#                seenMain = True
-#                continue
-#            if not seenMain:
-#                continue
-#            if glyphName in otherLayer:
-#                drawing.drawGlyphFillAndStroke(otherLayer[glyphName], self._inverseScale, self._drawingRect, drawFill=self._showFill, drawStroke=self._showStroke, backgroundColor=self._backgroundColor)
 
 class GlyphView(PlacardScrollView):
 
@@ -464,79 +471,89 @@ class GlyphView(PlacardScrollView):
         self._subscribeToGlyph(glyph)
         self._glyphView.setGlyph_(glyph)
 
-    def setShowFill(self, value):
-        self._populatePlacard()
-        self._glyphView.setShowFill_(value)
+    def setDrawingAttribute(self, attr, value, layerName=None):
+        self._glyphView.setDrawingAttribute_value_layerName_(attr, value, layerName)
+
+    def getDrawingAttribute(self, attr, layerName=None):
+        return self._glyphView.getDrawingAttribute_layerName_(attr, layerName)
+
+    # convenience
 
     def getShowFill(self):
-        return self._glyphView.getShowFill()
+        return self.getDrawingAttribute("showGlyphFill")
+
+    def setShowFill(self, value):
+        self._populatePlacard()
+        self.setDrawingAttribute("showGlyphFill", value)
+
+    def getShowStroke(self):
+        return self.getDrawingAttribute("showGlyphStroke")
 
     def setShowStroke(self, value):
         self._populatePlacard()
-        self._glyphView.setShowStroke_(value)
+        self.setDrawingAttribute("showGlyphStroke", value)
 
-    def getShowStroke(self):
-        return self._glyphView.getShowStroke()
+    def getShowMetrics(self):
+        return self.getDrawingAttribute("showGlyphMargins")
 
     def setShowMetrics(self, value):
         self._populatePlacard()
-        self._glyphView.setShowMetrics_(value)
+        self.setDrawingAttribute("showGlyphMargins", value)
+        self.setDrawingAttribute("showFontVerticalMetrics", value)
+        self.setDrawingAttribute("showFontVerticalMetricsTitles", value)
 
     def getShowImage(self):
-        return self._glyphView.getShowImage()
+        return self.getDrawingAttribute("showGlyphImage")
 
     def setShowImage(self, value):
         self._populatePlacard()
-        self._glyphView.setShowImage_(value)
+        self.setDrawingAttribute("showGlyphImage", value)
 
-    def getShowMetrics(self):
-        return self._glyphView.getShowMetrics()
+#    def setShowMetricsTitles(self, value):
+#        self._populatePlacard()
+#        self.setDrawingAttribute("showFontVerticalMetricsTitles", value)
+#
+#    def getShowMetricsTitles(self):
+#        return self.getDrawingAttribute("showFontVerticalMetricsTitles")
 
-    def setShowMetricsTitles(self, value):
-        self._populatePlacard()
-        self._glyphView.setShowMetricsTitles_(value)
-
-    def getShowMetricsTitles(self):
-        return self._glyphView.getShowMetricsTitles()
+    def getShowOnCurvePoints(self):
+        return self.getDrawingAttribute("showGlyphOnCurvePoints")
 
     def setShowOnCurvePoints(self, value):
         self._populatePlacard()
-        self._glyphView.setShowOnCurvePoints_(value)
+        self.setDrawingAttribute("showGlyphOnCurvePoints", value)
 
-    def getShowOnCurvePoints(self):
-        return self._glyphView.getShowOnCurvePoints()
+    def getShowOffCurvePoints(self):
+        return self.getDrawingAttribute("showGlyphOffCurvePoints")
 
     def setShowOffCurvePoints(self, value):
         self._populatePlacard()
-        self._glyphView.setShowOffCurvePoints_(value)
+        self.setDrawingAttribute("showGlyphOffCurvePoints", value)
 
-    def getShowOffCurvePoints(self):
-        return self._glyphView.getShowOffCurvePoints()
+    def getShowPointCoordinates(self):
+        return self.getDrawingAttribute("showGlyphPointCoordinates")
 
     def setShowPointCoordinates(self, value):
         self._populatePlacard()
-        self._glyphView.setShowPointCoordinates_(value)
+        self.setDrawingAttribute("showGlyphPointCoordinates", value)
 
-    def getShowPointCoordinates(self):
-        return self._glyphView.getShowPointCoordinates()
+    def getShowAnchors(self):
+        return self.getDrawingAttribute("showGlyphAnchors")
 
     def setShowAnchors(self, value):
         self._populatePlacard()
-        self._glyphView.setShowAnchors_(value)
+        self.setDrawingAttribute("showGlyphAnchors", value)
 
-    def getShowAnchors(self):
-        return self._glyphView.getShowAnchors()
+    def getShowBlues(self):
+        return self.getDrawingAttribute("showFontPostscriptBlues")
 
     def setShowBlues(self, value):
         self._populatePlacard()
-        self._glyphView.setShowBlues_(value)
+        self.setDrawingAttribute("showFontPostscriptBlues", value)
 
-    def getShowBlues(self):
-        return self._glyphView.getShowBlues()
+    def getShowFamilyBlues(self):
+        return self.getDrawingAttribute("showFontPostscriptFamilyBlues")
 
     def setShowFamilyBlues(self, value):
         self._populatePlacard()
         self._glyphView.setShowFamilyBlues_(value)
-
-    def getShowFamilyBlues(self):
-        return self._glyphView.getShowFamilyBlues()
