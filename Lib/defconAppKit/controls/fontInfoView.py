@@ -14,66 +14,89 @@ objc.setVerbose(True)
 # These will be used in the controls.
 # -----------------------------------
 
-integerFormatter = NSNumberFormatter.alloc().init()
-integerFormatter.setFormat_("#;0;-#")
-integerFormatter.setAllowsFloats_(False)
-integerFormatter.setGeneratesDecimalNumbers_(False)
 
-integerPositiveFormatter = NSNumberFormatter.alloc().init()
-integerPositiveFormatter.setFormat_("#;0;-#")
-integerPositiveFormatter.setAllowsFloats_(False)
-integerPositiveFormatter.setGeneratesDecimalNumbers_(False)
-integerPositiveFormatter.setMinimum_(NSNumber.numberWithInt_(0))
+class NumberEditText(vanilla.EditText):
 
-floatFormatter = NSNumberFormatter.alloc().init()
-floatFormatter.setNumberStyle_(NSNumberFormatterDecimalStyle)
-floatFormatter.setFormat_("#.00;0.00;-#.00")
-floatFormatter.setAllowsFloats_(True)
-floatFormatter.setGeneratesDecimalNumbers_(False)
+    def __init__(self, posSize, text="", sizeStyle="regular", callback=None, allowFloat=True, allowNegative=True, minimum=None, maximum=None, decimals=2):
+        super(NumberEditText, self).__init__(posSize, text="", callback=self._entryCallback, sizeStyle=sizeStyle)
+        self._finalCallback = callback
+        self._allowFloat = allowFloat
+        self._allowNegative = allowNegative
+        self._minimum = minimum
+        self._maximum = maximum
+        if allowFloat:
+            self._floatFormat = "%%.%df" % decimals
+        if allowFloat:
+            self._numberClass = float
+        else:
+            self._numberClass = int
+        self._previousString = None
+        self.set(text)
 
-positiveFloatFormatter = NSNumberFormatter.alloc().init()
-positiveFloatFormatter.setAllowsFloats_(True)
-positiveFloatFormatter.setGeneratesDecimalNumbers_(False)
-positiveFloatFormatter.setMinimum_(NSNumber.numberWithInt_(0))
+    def _numberToString(self, value):
+        if self._allowFloat:
+            return self._floatFormat % value
+        return str(value)
 
-class NegativeIntegerEditText(vanilla.EditText):
+    def _stringToNumber(self, string):
+        value = None
+        newString = string
+        try:
+            value = self._numberClass(string)
+            if value < 0 and not self._allowNegative:
+                newString = self._previousString
+                value, n = self._stringToNumber(newString)
+            if self._minimum is not None and value < self._minimum:
+                value = self._minimum
+                newString = self._numberToString(value)
+            if self._maximum is not None and value > self._maximum:
+                value = self._maximum
+                newString = self._numberToString(value)
+        except ValueError:
+            value = None
+            if string == "":
+                pass
+            elif string == "-" and self._allowNegative:
+                pass
+            elif string == "." and self._allowFloat:
+                pass
+            elif string == "-." and self._allowFloat and self._allowNegative:
+                pass
+            else:
+                newString = self._previousString
+        # handle -0.0
+        if value == 0:
+            value = 0
+        return value, newString
 
-    def __init__(self, *args, **kwargs):
-        self._finalCallback = kwargs.get("callback")
-        kwargs["callback"] = self._textEditCallback
-        super(NegativeIntegerEditText, self).__init__(*args, **kwargs)
-
-    def _breakCycles(self):
-        self._finalCallback = None
-        super(NegativeIntegerEditText, self)._breakCycles()
-
-    def _get(self):
-        return self._nsObject.stringValue()
+    def _entryCallback(self, sender):
+        oldString = super(NumberEditText, self).get()
+        value, newString = self._stringToNumber(oldString)
+        self._previousString = newString
+        if newString != oldString:
+            super(NumberEditText, self).set(newString)
+        self._finalCallback(sender)
 
     def get(self):
-        v = self._get()
-        if not v:
-            return None
-        v = int(v)
-        return v
+        string = super(NumberEditText, self).get()
+        return self._stringToNumber(string)[0]
 
-    def _textEditCallback(self, sender):
-        value = sender._get()
-        if value != "-":
-            try:
-                v = int(value)
-                if v > 0:
-                    sender.set("")
-                    return
-            except ValueError:
-                if value.startswith("-"):
-                    value = value = "-"
-                else:
-                    value = ""
-                sender.set(value)
-                return
-            if self._finalCallback is not None:
-                self._finalCallback(sender)
+    def set(self, value):
+        if value is None:
+            self._previousString = ""
+        else:
+            self._previousString = value
+        if value == "":
+            value = None
+        if isinstance(value, basestring):
+            if self._allowFloat:
+                value = float(value)
+            else:
+                value = int(value)
+        if value is not None:
+            string = self._numberToString(value)
+        super(NumberEditText, self).set(value)
+
 
 
 class NumberSequenceFormatter(NSFormatter):
@@ -858,12 +881,14 @@ styleMapStyleNameItem = inputItemDict(
 versionMajorItem = inputItemDict(
     title="Version Major",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 versionMinorItem = inputItemDict(
     title="Version Minor",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 
 ## Basic Dimensions
@@ -871,34 +896,39 @@ versionMinorItem = inputItemDict(
 unitsPerEmItem = inputItemDict(
     title="Units Per Em",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowNegative=False)
 )
 descenderItem = inputItemDict(
     title="Descender",
     hasDefault=False,
-    controlClass=NegativeIntegerEditText,
+    controlClass=NumberEditText,
     controlOptions=dict(style="number"),
     conversionToUFO=noneToZero
 )
 xHeightItem = inputItemDict(
     title="x-height",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 capHeightItem = inputItemDict(
     title="Cap-height",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 ascenderItem = inputItemDict(
     title="Ascender",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 italicAngleItem = inputItemDict(
     title="Italic Angle",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=floatFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 
 ## Basic Legal
@@ -971,7 +1001,8 @@ openTypeHeadCreatedItem = inputItemDict(
 
 openTypeHeadLowestRecPPEMItem = inputItemDict(
     title="lowestRecPPEM",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 
 openTypeHeadFlagsOptions = [
@@ -1029,56 +1060,67 @@ openTypeNameSampleTextItem = inputItemDict(
 
 openTypeHheaAscenderItem = inputItemDict(
     title="Ascender",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeHheaDescenderItem = inputItemDict(
     title="Descender",
-    controlClass=NegativeIntegerEditText,
-    controlOptions=dict(style="number"),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False),
     conversionToUFO=noneToZero
 )
 openTypeHheaLineGapItem = inputItemDict(
     title="LineGap",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeHheaCaretSlopeRiseItem = inputItemDict(
     title="caretSlopeRise",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeHheaCaretSlopeRunItem = inputItemDict(
     title="caretSlopeRun",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeHheaCaretOffsetItem = inputItemDict(
     title="caretOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 
 ## OpenType vhea Table
 
 openTypeVheaVertTypoAscenderItem = inputItemDict(
     title="vertTypoAscender",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeVheaVertTypoDescenderItem = inputItemDict(
     title="vertTypoDescender",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeVheaVertTypoLineGapItem = inputItemDict(
     title="vertTypoLineGap",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeVheaCaretSlopeRiseItem = inputItemDict(
     title="caretSlopeRise",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeVheaCaretSlopeRunItem = inputItemDict(
     title="caretSlopeRun",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeVheaCaretOffsetItem = inputItemDict(
     title="caretOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 
 ## OpenType OS/2 Table
@@ -1086,7 +1128,8 @@ openTypeVheaCaretOffsetItem = inputItemDict(
 openTypeOS2WeightClassItem = inputItemDict(
     title="usWeightClass",
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 
 openTypeOS2WidthClassOptions = [
@@ -1328,25 +1371,29 @@ openTypeOS2CodePageRangesItem = inputItemDict(
 
 openTypeOS2TypoAscenderItem = inputItemDict(
     title="sTypoAscender",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2TypoDescenderItem = inputItemDict(
     title="sTypoDescender",
-    controlClass=NegativeIntegerEditText,
-    controlOptions=dict(style="number"),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False),
     conversionToUFO=noneToZero
 )
 openTypeOS2TypoLineGapItem = inputItemDict(
     title="sTypoLineGap",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2WinAscentItem = inputItemDict(
     title="usWinAscent",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 openTypeOS2WinDescentItem = inputItemDict(
     title="usWinDescent",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 openTypeOS2TypeItem = inputItemDict(
     title="fsType",
@@ -1355,43 +1402,53 @@ openTypeOS2TypeItem = inputItemDict(
 )
 openTypeOS2SubscriptXSizeItem = inputItemDict(
     title="ySubscriptXSize",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SubscriptYSizeItem = inputItemDict(
     title="ySubscriptYSize",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SubscriptXOffsetItem = inputItemDict(
     title="ySubscriptXOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SubscriptYOffsetItem = inputItemDict(
     title="ySubscriptYOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SuperscriptXSizeItem = inputItemDict(
     title="ySuperscriptXSize",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SuperscriptYSizeItem = inputItemDict(
     title="ySuperscriptYSize",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SuperscriptXOffsetItem = inputItemDict(
     title="ySuperscriptXOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2SuperscriptYOffsetItem = inputItemDict(
     title="ySuperscriptYOffset",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2StrikeoutSizeItem = inputItemDict(
     title="yStrikeoutSize",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 openTypeOS2StrikeoutPositionItem = inputItemDict(
     title="yStrikeoutPosition",
-    controlOptions=dict(style="number", formatter=integerFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False)
 )
 
 ## Postscript Identification
@@ -1407,7 +1464,8 @@ postscriptWeightNameItem = inputItemDict(
 )
 postscriptUniqueIDItem = inputItemDict(
     title="Unique ID Number",
-    controlOptions=dict(style="idNumber", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="idNumber", allowFloat=False, allowNegative=False)
 )
 
 ## Postscript Hinting
@@ -1493,15 +1551,18 @@ postscriptStemSnapVItem = inputItemDict(
 )
 postscriptBlueFuzzItem = inputItemDict(
     title="BlueFuzz",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 postscriptBlueShiftItem = inputItemDict(
     title="BlueShift",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 postscriptBlueScaleItem = inputItemDict(
     title="BlueScale",
-    controlOptions=dict(style="number", formatter=positiveFloatFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", decimals=10)
 )
 postscriptForceBoldItem = inputItemDict(
     title="ForceBold",
@@ -1512,16 +1573,19 @@ postscriptForceBoldItem = inputItemDict(
 
 postscriptSlantAngleItem = inputItemDict(
     title="SlantAngle",
-    controlOptions=dict(style="number", formatter=floatFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number")
 )
 postscriptUnderlineThicknessItem = inputItemDict(
     title="UnderlineThickness",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number"),
     hasDefault=True
 )
 postscriptUnderlinePositionItem = inputItemDict(
     title="UnderlinePosition",
-    controlOptions=dict(style="number", formatter=integerFormatter),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number"),
     hasDefault=True
 )
 postscriptIsFixedPitchItem = inputItemDict(
@@ -1530,12 +1594,14 @@ postscriptIsFixedPitchItem = inputItemDict(
 )
 postscriptDefaultWidthXItem = inputItemDict(
     title="DefaultWidthX",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number"),
     hasDefault=True
 )
 postscriptNominalWidthXItem = inputItemDict(
     title="NominalWidthX",
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number"),
     hasDefault=True
 )
 
@@ -1581,7 +1647,7 @@ macintoshFONDNameItem = inputItemDict(
 )
 macintoshFONDFamilyIDItem = inputItemDict(
     title="Family ID Number",
-    controlOptions=dict(style="idNumber", formatter=integerPositiveFormatter)
+    controlOptions=dict(style="idNumber", allowFloat=False, allowNegative=False)
 )
 
 # -----------------------------------------------------------------------
@@ -1709,10 +1775,10 @@ controlOrganization = [
                 "styleMapFamilyName",
                 "styleMapStyleName",
                 "versionMajor",
-                "versionMinor"
+                "versionMinor" # change
             ),
             ("Dimensions",
-                "unitsPerEm",
+                "unitsPerEm", # change
                 "descender",
                 "xHeight",
                 "capHeight",
@@ -1738,9 +1804,10 @@ controlOrganization = [
         title="OpenType",
         customView=None,
         groups = [
+            # gasp table
             ("head Table",
                 "openTypeHeadCreated",
-                "openTypeHeadLowestRecPPEM",
+                "openTypeHeadLowestRecPPEM", # change
                 "openTypeHeadFlags"
             ),
             ("name Table",
@@ -1753,6 +1820,7 @@ controlOrganization = [
                 "openTypeNameUniqueID",
                 "openTypeNameDescription",
                 "openTypeNameSampleText"
+                # specific records
             ),
             ("hhea Table",
                 "openTypeHheaAscender",
@@ -1772,7 +1840,7 @@ controlOrganization = [
             ),
             ("OS/2 Table",
                 "openTypeOS2WidthClass",
-                "openTypeOS2WeightClass",
+                "openTypeOS2WeightClass", # change
                 "openTypeOS2Selection",
                 "openTypeOS2VendorID",
                 "openTypeOS2Type",
@@ -1781,8 +1849,8 @@ controlOrganization = [
                 "openTypeOS2TypoAscender",
                 "openTypeOS2TypoDescender",
                 "openTypeOS2TypoLineGap",
-                "openTypeOS2WinAscent",
-                "openTypeOS2WinDescent",
+                "openTypeOS2WinAscent", # change
+                "openTypeOS2WinDescent", # change
                 "openTypeOS2SubscriptXSize",
                 "openTypeOS2SubscriptYSize",
                 "openTypeOS2SubscriptXOffset",
@@ -1795,6 +1863,7 @@ controlOrganization = [
                 "openTypeOS2StrikeoutPosition",
                 "openTypeOS2Panose"
             )
+            # WOFF
         ]
     ),
     dict(
@@ -2017,12 +2086,21 @@ class FontInfoSection(vanilla.Group):
                 if itemClass == vanilla.EditText:
                     if itemOptions.get("lineCount", 1) != 1:
                         itemClass = vanilla.TextEditor
-                ## EditText
-                if itemClass == vanilla.EditText or itemClass == NegativeIntegerEditText:
+                ## EditText, NumberEditText
+                if itemClass == vanilla.EditText or itemClass == NumberEditText:
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputEditText_%s" % fontAttribute
-                    itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback, formatter=itemOptions.get("formatter"))
+                    if itemClass == NumberEditText:
+                        allowFloat = itemOptions.get("allowFloat", True)
+                        allowNegative = itemOptions.get("allowNegative", True)
+                        minimum = itemOptions.get("minimum", None)
+                        maximum = itemOptions.get("maximum", None)
+                        decimals = itemOptions.get("decimals", 2)
+                        itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback,
+                            allowFloat=allowFloat, allowNegative=allowNegative, minimum=minimum, maximum=maximum, decimals=decimals)
+                    else:
+                        itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback, formatter=itemOptions.get("formatter"))
                     setattr(controlView, itemAttribute, itemControl)
                 ## TextEditor
                 elif itemClass == vanilla.TextEditor:
@@ -2226,6 +2304,8 @@ class FontInfoSection(vanilla.Group):
 class FontInfoView(vanilla.Tabs):
 
     def __init__(self, posSize, font, controlAdditions=None):
+        if controlAdditions is None:
+            controlAdditions = []
         allControlOrganization = controlOrganization + controlAdditions
         sectionNames = [section["title"] for section in allControlOrganization]
         super(FontInfoView, self).__init__(posSize, sectionNames)
