@@ -1,7 +1,9 @@
 import time
+from copy import deepcopy
 from Foundation import *
 from AppKit import *
 import vanilla
+from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
 
@@ -13,7 +15,6 @@ objc.setVerbose(True)
 # Formatters
 # These will be used in the controls.
 # -----------------------------------
-
 
 class NumberEditText(vanilla.EditText):
 
@@ -170,6 +171,8 @@ class NumberSequenceFormatter(NSFormatter):
 # Special Controls
 # These are vanilla subclasses that have special behavior.
 # --------------------------------------------------------
+
+# openTypeOS2Panose Control
 
 panoseFamilyKindOptions = """Any
 No Fit
@@ -724,6 +727,7 @@ class PanoseControl(vanilla.Group):
                 values.append(control.get())
         return [familyKind] + values
 
+# openTypeOS2Type Control
 
 embeddingPopUpOptions = """
 No embedding restrictions.
@@ -781,6 +785,7 @@ class EmbeddingControl(vanilla.Group):
             values.append(9)
         return values
 
+# List of check boxes
 
 class CheckList(vanilla.List):
 
@@ -826,6 +831,119 @@ class CheckList(vanilla.List):
             bits.append(bit)
         return bits
 
+# sizeFormatter = NSNumberFormatter.alloc().init()
+# sizeFormatter.setPositiveFormat_("#")
+# sizeFormatter.setAllowsFloats_(False)
+# sizeFormatter.setGeneratesDecimalNumbers_(False)
+# sizeFormatter.setMinimum_(0)
+# sizeFormatter.setMaximum_(65535)
+# columnDescriptions = [
+#     dict(key="size", title="Size", width=50, editable=True, formatter=sizeFormatter),
+#     dict(key="gridfit", title="", cell=vanilla.CheckBoxListCell(title="Gridfit"), width=60),
+#     dict(key="doGray", title="", cell=vanilla.CheckBoxListCell(title="Grayscale"), width=77),
+#     dict(key="symmSmoothing", title="", cell=vanilla.CheckBoxListCell(title="Symmetric Smoothing"), width=143),
+#     dict(key="symmGridfit", title="", cell=vanilla.CheckBoxListCell(title="Symmetric Gridfit"), width=100),
+# ]
+
+# list of dictionaries
+
+class DictList(vanilla.Group):
+
+    def __init__(self, posSize, columnDescriptions, itemPrototype=None, callback=None, variableRowHeights=False):
+        self._prototype = itemPrototype
+        self._callback = callback
+        super(DictList, self).__init__(posSize)
+        if variableRowHeights:
+            listClass = VariableRowHeightList
+        else:
+            listClass = vanilla.List
+        self._list = listClass((0, 0, -0, -20), [], columnDescriptions=columnDescriptions,
+            editCallback=self._listEditCallback, drawFocusRing=False)
+        self._buttonBar = GradientButtonBar((0, -22, -0, 22))
+        self._addButton = vanilla.GradientButton((0, -22, 22, 22), imageNamed="NSAddTemplate", callback=self._addButtonCallback)
+        self._removeButton = vanilla.GradientButton((21, -22, 22, 22), imageNamed="NSRemoveTemplate", callback=self._removeButtonCallback)
+
+    def _listEditCallback(self, sender):
+        self._callback(self)
+
+    def _addButtonCallback(self, sender):
+        item = deepcopy(self._prototype)
+        self._list.append(item)
+
+    def _removeButtonCallback(self, sender):
+        selection = self._list.getSelection()
+        for index in reversed(selection):
+            del self._list[index]
+
+    def get(self):
+        return self._list.get()
+
+    def set(self, items):
+        self._list.set(items)
+
+
+class DefconAppKitGradientButtonBar(NSButton):
+
+    def acceptsFirstResponder(self):
+        return False
+
+    def mouseDown_(self, event):
+        return
+
+    def mouseUp_(self, event):
+        return
+
+
+class GradientButtonBar(vanilla.GradientButton):
+
+        nsButtonClass = DefconAppKitGradientButtonBar
+
+
+# variable row height list
+
+class DefconAppKitVariableRowHeightTableView(VanillaTableViewSubclass):
+
+    def frameOfCellAtColumn_row_(self, column, row):
+        frame = super(DefconAppKitVariableRowHeightTableView, self).frameOfCellAtColumn_row_(column, row)
+        if frame.size.height < 17:
+            frame.size.height = 17.0
+        return frame
+
+
+class DefconAppKitVariableRowHeightTableViewDelegate(NSObject):
+
+    def tableView_heightOfRow_(self, tableView, row):
+        heights = []
+        columns = tableView.tableColumns()
+        for column in columns:
+            column = columns[-1]
+            cell = column.dataCell()
+            hold = cell.stringValue()
+            text = tableView.dataSource().content()[row][column.identifier()]
+            cell.setStringValue_(text)
+            width = column.width()
+            rect = ((0, 0), (width, 10000))
+            height = cell.cellSizeForBounds_(rect)[1]
+            cell.setStringValue_(hold)
+            heights.append(height)
+        return max(heights)
+
+
+class VariableRowHeightList(vanilla.List):
+
+    nsTableViewClass = DefconAppKitVariableRowHeightTableView
+
+    def __init__(self, *args, **kwargs):
+        super(VariableRowHeightList, self).__init__(*args, **kwargs)
+        tableView = self.getNSTableView()
+        for column in tableView.tableColumns():
+            cell = column.dataCell()
+            if isinstance(cell, NSTextFieldCell):
+                cell.setWraps_(True)
+        assert tableView.delegate() is None
+        self._delegate = DefconAppKitVariableRowHeightTableViewDelegate.alloc().init()
+        tableView.setDelegate_(self._delegate)
+
 
 # -------------------------------------------------------
 # Input control definitions.
@@ -839,7 +957,7 @@ def inputItemDict(**kwargs):
         controlClass=vanilla.EditText,
         #controlOptions=None,
         conversionFromUFO=None,
-        conversionToUFO=None,
+        conversionToUFO=None
     )
     default.update(kwargs)
     return default
@@ -1640,6 +1758,230 @@ postscriptWindowsCharacterSetItem = inputItemDict(
     controlOptions=dict(items=postscriptWindowsCharacterSetOptions)
 )
 
+## WOFF Identification
+
+woffMajorVersionItem = inputItemDict(
+    title="Major Version",
+    hasDefault=False,
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
+)
+woffMinorVersionItem = inputItemDict(
+    title="Minor Version",
+    hasDefault=False,
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
+)
+
+def woffMetadataUniqueIDFromUFO(value):
+    if value is None:
+        return None
+    return value["id"]
+
+def woffMetadataUniqueIDToUFO(value):
+    if not value:
+        return None
+    return dict(id=value)
+
+woffMetadataUniqueIDItem = inputItemDict(
+    title="Unique ID",
+    hasDefault=False,
+    conversionFromUFO=woffMetadataUniqueIDFromUFO,
+    conversionToUFO=woffMetadataUniqueIDToUFO,
+)
+
+## WOFF Vendor
+
+woffMetadataVendorNameItem = inputItemDict(
+    title="Name",
+    hasDefault=False
+)
+
+woffMetadataVendorURLItem = inputItemDict(
+    title="URL",
+    hasDefault=False
+)
+
+woffWritingDirectionToIndex = {
+    None : 0,
+    "ltr" : 1,
+    "rtl" : 2
+}
+
+indexToWoffWritingDirection = {
+    0 : None,
+    1 : "ltr",
+    2 : "rtl"
+}
+
+def woffMetadataDirectionFromUFO(value):
+    return woffWritingDirectionToIndex[value]
+
+def woffMetadataDirectionToUFO(value):
+    return indexToWoffWritingDirection[value]
+
+woffMetadataVendorDirectionItem = inputItemDict(
+    title="Dir",
+    hasDefault=False,
+    controlClass=vanilla.PopUpButton,
+    controlOptions=dict(items=["Default", "Left to Right", "Right to Left"]),
+    conversionFromUFO=woffMetadataDirectionFromUFO,
+    conversionToUFO=woffMetadataDirectionToUFO,
+)
+
+woffMetadataVendorClassItem = inputItemDict(
+    title="Class",
+    hasDefault=False
+)
+
+## WOFF Credits
+
+def woffMetadataCreditsFromUFO(value):
+    if value is None:
+        return []
+    items = []
+    for item in value:
+        item = dict(item)
+        item["name"] = item.get("name", "")
+        item["role"] = item.get("role", "")
+        item["url"] = item.get("url", "")
+        item["class"] = item.get("class", "")
+        item["dir"] = item.get("dir", "Default")
+        items.append(item)
+    return items    
+
+def woffMetadataCreditsToUFO(value):
+    items = []
+    for item in value:
+        item = dict(item)
+        direction = item.get("dir")
+        if direction == "Default":
+            item["dir"] = None
+        for key, value in item.items():
+            if value is None or value == "":
+                del item[key]
+        if item:
+            items.append(item)
+    if not items:
+        return None
+    return items
+
+woffMetadataCreditsItem = inputItemDict(
+    title="",
+    hasDefault=False,
+    controlClass=DictList,
+    controlOptions=dict(
+        columnDescriptions=[
+            dict(title="Name", key="name", editable=True),
+            dict(title="Role", key="role", editable=True),
+            dict(title="URL", key="url", editable=True),
+            dict(title="Dir", key="dir", editable=True, cell=vanilla.PopUpButtonListCell(["Default", "ltr", "rtl"]), binding="selectedValue"),
+            dict(title="Class", key="class", editable=True),
+        ],
+        itemPrototype={"name" : "Name", "role" : "Role", "url" : "http://url.com", "dir" : "Default", "class" : ""}
+    ),
+    conversionFromUFO=woffMetadataCreditsFromUFO,
+    conversionToUFO=woffMetadataCreditsToUFO,
+)
+
+## WOFF Generic Text
+
+def woffMetadataGenericTextFromUFO(value):
+    if value is None:
+        return []
+    items = []
+    for item in value:
+        item = dict(item)
+        item["text"] = item.get("text", "")
+        item["language"] = item.get("language", "")
+        item["class"] = item.get("class", "")
+        item["dir"] = item.get("dir", "Default")
+        items.append(item)
+    return items    
+
+def woffMetadataGenericTextToUFO(value):
+    items = []
+    for item in value:
+        item = dict(item)
+        direction = item.get("dir")
+        if direction == "Default":
+            item["dir"] = None
+        for key, value in item.items():
+            if value is None or value == "":
+                del item[key]
+        if item:
+            items.append(item)
+    if not items:
+        return None
+    return items
+
+def woffMetadataGenericTextItemFactory(title=""):
+    item = inputItemDict(
+        title=title,
+        hasDefault=False,
+        controlClass=DictList,
+        controlOptions=dict(
+            columnDescriptions=[
+                dict(title="Text", key="text", editable=True),
+                dict(title="Language", key="language", editable=True),
+                dict(title="Dir", key="dir", editable=True, cell=vanilla.PopUpButtonListCell(["Default", "ltr", "rtl"]), binding="selectedValue"),
+                dict(title="Class", key="class", editable=True)
+            ],
+            itemPrototype={"text" : "Text", "language" : "", "dir" : "Default", "class" : ""},
+            variableRowHeights=True
+        ),
+        conversionFromUFO=woffMetadataGenericTextFromUFO,
+        conversionToUFO=woffMetadataGenericTextToUFO,
+    )
+    return item
+
+## WOFF Description
+
+woffMetadataDescriptionURLItem = inputItemDict(
+    title="URL",
+    hasDefault=False
+)
+
+woffMetadataDescriptionTextItem = woffMetadataGenericTextItemFactory("Text")
+
+## WOFF Legal
+
+woffMetadataCopyrightTextItem = woffMetadataGenericTextItemFactory("Copyright Text")
+
+woffMetadataTrademarkTextItem = woffMetadataGenericTextItemFactory("Trademark Text")
+
+woffMetadataLicenseURLItem = inputItemDict(
+    title="License URL",
+    hasDefault=False
+)
+
+woffMetadataLicenseIDItem = inputItemDict(
+    title="License ID",
+    hasDefault=False
+)
+
+woffMetadataLicenseTextItem = woffMetadataGenericTextItemFactory("License Text")
+
+woffMetadataLicenseeNameItem = inputItemDict(
+    title="Licensee Name",
+    hasDefault=False
+)
+
+woffMetadataLicenseeDirectionItem = inputItemDict(
+    title="Licensee Dir",
+    hasDefault=False,
+    controlClass=vanilla.PopUpButton,
+    controlOptions=dict(items=["Default", "Left to Right", "Right to Left"]),
+    conversionFromUFO=woffMetadataDirectionFromUFO,
+    conversionToUFO=woffMetadataDirectionToUFO,
+)
+
+woffMetadataLicenseeClassItem = inputItemDict(
+    title="Licensee Class",
+    hasDefault=False
+)
+
+
 ## Miscellaneous
 
 macintoshFONDNameItem = inputItemDict(
@@ -1655,114 +1997,137 @@ macintoshFONDFamilyIDItem = inputItemDict(
 # These define the grouping and subgrouping of controls in the interface.
 # -----------------------------------------------------------------------
 
-allControlDescriptions = dict(
-    familyName=familyNameItem,
-    styleName=styleNameItem,
-    styleMapFamilyName=styleMapFamilyNameItem,
-    styleMapStyleName=styleMapStyleNameItem,
-    versionMajor=versionMajorItem,
-    versionMinor=versionMinorItem,
+allControlDescriptions = {
+    "familyName" : familyNameItem,
+    "styleName" : styleNameItem,
+    "styleMapFamilyName" : styleMapFamilyNameItem,
+    "styleMapStyleName" : styleMapStyleNameItem,
+    "versionMajor" : versionMajorItem,
+    "versionMinor" : versionMinorItem,
 
-    unitsPerEm=unitsPerEmItem,
-    descender=descenderItem,
-    xHeight=xHeightItem,
-    capHeight=capHeightItem,
-    ascender=ascenderItem,
-    italicAngle=italicAngleItem,
+    "unitsPerEm" : unitsPerEmItem,
+    "descender" : descenderItem,
+    "xHeight" : xHeightItem,
+    "capHeight" : capHeightItem,
+    "ascender" : ascenderItem,
+    "italicAngle" : italicAngleItem,
 
-    copyright=copyrightItem,
-    trademark=trademarkItem,
-    openTypeNameLicense=openTypeNameLicenseItem,
-    openTypeNameLicenseURL=openTypeNameLicenseURLItem,
+    "copyright" : copyrightItem,
+    "trademark" : trademarkItem,
+    "openTypeNameLicense" : openTypeNameLicenseItem,
+    "openTypeNameLicenseURL" : openTypeNameLicenseURLItem,
 
-    openTypeNameDesigner=openTypeNameDesignerItem,
-    openTypeNameDesignerURL=openTypeNameDesignerURLItem,
-    openTypeNameManufacturer=openTypeNameManufacturerItem,
-    openTypeNameManufacturerURL=openTypeNameManufacturerURLItem,
+    "openTypeNameDesigner" : openTypeNameDesignerItem,
+    "openTypeNameDesignerURL" : openTypeNameDesignerURLItem,
+    "openTypeNameManufacturer" : openTypeNameManufacturerItem,
+    "openTypeNameManufacturerURL" : openTypeNameManufacturerURLItem,
 
-    note=noteItem,
+    "note" : noteItem,
 
-    openTypeHeadCreated=openTypeHeadCreatedItem,
-    openTypeHeadLowestRecPPEM=openTypeHeadLowestRecPPEMItem,
-    openTypeHeadFlags=openTypeHeadFlagsItem,
+    "openTypeHeadCreated" : openTypeHeadCreatedItem,
+    "openTypeHeadLowestRecPPEM" : openTypeHeadLowestRecPPEMItem,
+    "openTypeHeadFlags" : openTypeHeadFlagsItem,
 
-    openTypeNamePreferredFamilyName=openTypeNamePreferredFamilyNameItem,
-    openTypeNamePreferredSubfamilyName=openTypeNamePreferredSubfamilyNameItem,
-    openTypeNameCompatibleFullName=openTypeNameCompatibleFullNameItem,
-    openTypeNameWWSFamilyName=openTypeNameWWSFamilyNameItem,
-    openTypeNameWWSSubfamilyName=openTypeNameWWSSubfamilyNameItem,
-    openTypeNameVersion=openTypeNameVersionItem,
-    openTypeNameUniqueID=openTypeNameUniqueIDItem,
-    openTypeNameDescription=openTypeNameDescriptionItem,
-    openTypeNameSampleText=openTypeNameSampleTextItem,
+    "openTypeNamePreferredFamilyName" : openTypeNamePreferredFamilyNameItem,
+    "openTypeNamePreferredSubfamilyName" : openTypeNamePreferredSubfamilyNameItem,
+    "openTypeNameCompatibleFullName" : openTypeNameCompatibleFullNameItem,
+    "openTypeNameWWSFamilyName" : openTypeNameWWSFamilyNameItem,
+    "openTypeNameWWSSubfamilyName" : openTypeNameWWSSubfamilyNameItem,
+    "openTypeNameVersion" : openTypeNameVersionItem,
+    "openTypeNameUniqueID" : openTypeNameUniqueIDItem,
+    "openTypeNameDescription" : openTypeNameDescriptionItem,
+    "openTypeNameSampleText" : openTypeNameSampleTextItem,
 
-    openTypeHheaAscender=openTypeHheaAscenderItem,
-    openTypeHheaDescender=openTypeHheaDescenderItem,
-    openTypeHheaLineGap=openTypeHheaLineGapItem,
-    openTypeHheaCaretSlopeRise=openTypeHheaCaretSlopeRiseItem,
-    openTypeHheaCaretSlopeRun=openTypeHheaCaretSlopeRunItem,
-    openTypeHheaCaretOffset=openTypeHheaCaretOffsetItem,
+    "openTypeHheaAscender" : openTypeHheaAscenderItem,
+    "openTypeHheaDescender" : openTypeHheaDescenderItem,
+    "openTypeHheaLineGap" : openTypeHheaLineGapItem,
+    "openTypeHheaCaretSlopeRise" : openTypeHheaCaretSlopeRiseItem,
+    "openTypeHheaCaretSlopeRun" : openTypeHheaCaretSlopeRunItem,
+    "openTypeHheaCaretOffset" : openTypeHheaCaretOffsetItem,
 
-    openTypeVheaVertTypoAscender=openTypeVheaVertTypoAscenderItem,
-    openTypeVheaVertTypoDescender=openTypeVheaVertTypoDescenderItem,
-    openTypeVheaVertTypoLineGap=openTypeVheaVertTypoLineGapItem,
-    openTypeVheaCaretSlopeRise=openTypeVheaCaretSlopeRiseItem,
-    openTypeVheaCaretSlopeRun=openTypeVheaCaretSlopeRunItem,
-    openTypeVheaCaretOffset=openTypeVheaCaretOffsetItem,
+    "openTypeVheaVertTypoAscender" : openTypeVheaVertTypoAscenderItem,
+    "openTypeVheaVertTypoDescender" : openTypeVheaVertTypoDescenderItem,
+    "openTypeVheaVertTypoLineGap" : openTypeVheaVertTypoLineGapItem,
+    "openTypeVheaCaretSlopeRise" : openTypeVheaCaretSlopeRiseItem,
+    "openTypeVheaCaretSlopeRun" : openTypeVheaCaretSlopeRunItem,
+    "openTypeVheaCaretOffset" : openTypeVheaCaretOffsetItem,
 
-    openTypeOS2WidthClass=openTypeOS2WidthClassItem,
-    openTypeOS2WeightClass=openTypeOS2WeightClassItem,
-    openTypeOS2Selection=openTypeOS2SelectionItem,
-    openTypeOS2VendorID=openTypeOS2VendorIDItem,
-    openTypeOS2Panose=openTypeOS2PanoseItem,
-    openTypeOS2UnicodeRanges=openTypeOS2UnicodeRangesItem,
-    openTypeOS2CodePageRanges=openTypeOS2CodePageRangesItem,
-    openTypeOS2TypoAscender=openTypeOS2TypoAscenderItem,
-    openTypeOS2TypoDescender=openTypeOS2TypoDescenderItem,
-    openTypeOS2TypoLineGap=openTypeOS2TypoLineGapItem,
-    openTypeOS2WinAscent=openTypeOS2WinAscentItem,
-    openTypeOS2WinDescent=openTypeOS2WinDescentItem,
-    openTypeOS2Type=openTypeOS2TypeItem,
-    openTypeOS2SubscriptXSize=openTypeOS2SubscriptXSizeItem,
-    openTypeOS2SubscriptYSize=openTypeOS2SubscriptYSizeItem,
-    openTypeOS2SubscriptXOffset=openTypeOS2SubscriptXOffsetItem,
-    openTypeOS2SubscriptYOffset=openTypeOS2SubscriptYOffsetItem,
-    openTypeOS2SuperscriptXSize=openTypeOS2SuperscriptXSizeItem,
-    openTypeOS2SuperscriptYSize=openTypeOS2SuperscriptYSizeItem,
-    openTypeOS2SuperscriptXOffset=openTypeOS2SuperscriptXOffsetItem,
-    openTypeOS2SuperscriptYOffset=openTypeOS2SuperscriptYOffsetItem,
-    openTypeOS2StrikeoutSize=openTypeOS2StrikeoutSizeItem,
-    openTypeOS2StrikeoutPosition=openTypeOS2StrikeoutPositionItem,
+    "openTypeOS2WidthClass" : openTypeOS2WidthClassItem,
+    "openTypeOS2WeightClass" : openTypeOS2WeightClassItem,
+    "openTypeOS2Selection" : openTypeOS2SelectionItem,
+    "openTypeOS2VendorID" : openTypeOS2VendorIDItem,
+    "openTypeOS2Panose" : openTypeOS2PanoseItem,
+    "openTypeOS2UnicodeRanges" : openTypeOS2UnicodeRangesItem,
+    "openTypeOS2CodePageRanges" : openTypeOS2CodePageRangesItem,
+    "openTypeOS2TypoAscender" : openTypeOS2TypoAscenderItem,
+    "openTypeOS2TypoDescender" : openTypeOS2TypoDescenderItem,
+    "openTypeOS2TypoLineGap" : openTypeOS2TypoLineGapItem,
+    "openTypeOS2WinAscent" : openTypeOS2WinAscentItem,
+    "openTypeOS2WinDescent" : openTypeOS2WinDescentItem,
+    "openTypeOS2Type" : openTypeOS2TypeItem,
+    "openTypeOS2SubscriptXSize" : openTypeOS2SubscriptXSizeItem,
+    "openTypeOS2SubscriptYSize" : openTypeOS2SubscriptYSizeItem,
+    "openTypeOS2SubscriptXOffset" : openTypeOS2SubscriptXOffsetItem,
+    "openTypeOS2SubscriptYOffset" : openTypeOS2SubscriptYOffsetItem,
+    "openTypeOS2SuperscriptXSize" : openTypeOS2SuperscriptXSizeItem,
+    "openTypeOS2SuperscriptYSize" : openTypeOS2SuperscriptYSizeItem,
+    "openTypeOS2SuperscriptXOffset" : openTypeOS2SuperscriptXOffsetItem,
+    "openTypeOS2SuperscriptYOffset" : openTypeOS2SuperscriptYOffsetItem,
+    "openTypeOS2StrikeoutSize" : openTypeOS2StrikeoutSizeItem,
+    "openTypeOS2StrikeoutPosition" : openTypeOS2StrikeoutPositionItem,
 
-    postscriptFontName=postscriptFontNameItem,
-    postscriptFullName=postscriptFullNameItem,
-    postscriptWeightName=postscriptWeightNameItem,
-    postscriptUniqueID=postscriptUniqueIDItem,
+    "postscriptFontName" : postscriptFontNameItem,
+    "postscriptFullName" : postscriptFullNameItem,
+    "postscriptWeightName" : postscriptWeightNameItem,
+    "postscriptUniqueID" : postscriptUniqueIDItem,
 
-    postscriptBlueValues=postscriptBlueValuesItem,
-    postscriptOtherBlues=postscriptOtherBluesItem,
-    postscriptFamilyBlues=postscriptFamilyBluesItem,
-    postscriptFamilyOtherBlues=postscriptFamilyOtherBluesItem,
-    postscriptStemSnapH=postscriptStemSnapHItem,
-    postscriptStemSnapV=postscriptStemSnapVItem,
-    postscriptBlueFuzz=postscriptBlueFuzzItem,
-    postscriptBlueShift=postscriptBlueShiftItem,
-    postscriptBlueScale=postscriptBlueScaleItem,
-    postscriptForceBold=postscriptForceBoldItem,
+    "postscriptBlueValues" : postscriptBlueValuesItem,
+    "postscriptOtherBlues" : postscriptOtherBluesItem,
+    "postscriptFamilyBlues" : postscriptFamilyBluesItem,
+    "postscriptFamilyOtherBlues" : postscriptFamilyOtherBluesItem,
+    "postscriptStemSnapH" : postscriptStemSnapHItem,
+    "postscriptStemSnapV" : postscriptStemSnapVItem,
+    "postscriptBlueFuzz" : postscriptBlueFuzzItem,
+    "postscriptBlueShift" : postscriptBlueShiftItem,
+    "postscriptBlueScale" : postscriptBlueScaleItem,
+    "postscriptForceBold" : postscriptForceBoldItem,
 
-    postscriptSlantAngle=postscriptSlantAngleItem,
-    postscriptUnderlineThickness=postscriptUnderlineThicknessItem,
-    postscriptUnderlinePosition=postscriptUnderlinePositionItem,
-    postscriptIsFixedPitch=postscriptIsFixedPitchItem,
-    postscriptDefaultWidthX=postscriptDefaultWidthXItem,
-    postscriptNominalWidthX=postscriptNominalWidthXItem,
+    "postscriptSlantAngle" : postscriptSlantAngleItem,
+    "postscriptUnderlineThickness" : postscriptUnderlineThicknessItem,
+    "postscriptUnderlinePosition" : postscriptUnderlinePositionItem,
+    "postscriptIsFixedPitch" : postscriptIsFixedPitchItem,
+    "postscriptDefaultWidthX" : postscriptDefaultWidthXItem,
+    "postscriptNominalWidthX" : postscriptNominalWidthXItem,
 
-    postscriptDefaultCharacter=postscriptDefaultCharacterItem,
-    postscriptWindowsCharacterSet=postscriptWindowsCharacterSetItem,
+    "postscriptDefaultCharacter" : postscriptDefaultCharacterItem,
+    "postscriptWindowsCharacterSet" : postscriptWindowsCharacterSetItem,
 
-    macintoshFONDName=macintoshFONDNameItem,
-    macintoshFONDFamilyID=macintoshFONDFamilyIDItem,
-)
+    "woffMajorVersion" : woffMajorVersionItem,
+    "woffMinorVersion" : woffMinorVersionItem,
+    "woffMetadataUniqueID" : woffMetadataUniqueIDItem,
+
+    "woffMetadataVendor{name" : woffMetadataVendorNameItem,
+    "woffMetadataVendor{url" : woffMetadataVendorURLItem,
+    "woffMetadataVendor{dir" : woffMetadataVendorDirectionItem,
+    "woffMetadataVendor{class" : woffMetadataVendorClassItem,
+
+    "woffMetadataCredits{credits" : woffMetadataCreditsItem,
+
+    "woffMetadataDescription{url" : woffMetadataDescriptionURLItem,
+    "woffMetadataDescription{text" : woffMetadataDescriptionTextItem,
+
+    "woffMetadataCopyright{text" : woffMetadataCopyrightTextItem,
+    "woffMetadataTrademark{text" : woffMetadataTrademarkTextItem,
+    "woffMetadataLicense{url" : woffMetadataLicenseURLItem,
+    "woffMetadataLicense{id" : woffMetadataLicenseIDItem,
+    "woffMetadataLicense{text" : woffMetadataLicenseTextItem,
+    "woffMetadataLicensee{name" : woffMetadataLicenseeNameItem,
+    "woffMetadataLicensee{dir" : woffMetadataLicenseeDirectionItem,
+    "woffMetadataLicensee{class" : woffMetadataLicenseeClassItem,
+
+    "macintoshFONDName" : macintoshFONDNameItem,
+    "macintoshFONDFamilyID" : macintoshFONDFamilyIDItem
+}
 
 controlOrganization = [
     dict(
@@ -1863,7 +2228,6 @@ controlOrganization = [
                 "openTypeOS2StrikeoutPosition",
                 "openTypeOS2Panose"
             )
-            # WOFF
         ]
     ),
     dict(
@@ -1903,6 +2267,40 @@ controlOrganization = [
         ]
     ),
     dict(
+        title="WOFF",
+        customView=None,
+        groups = [
+            ("Identification",
+                "woffMajorVersion",
+                "woffMinorVersion",
+                "woffMetadataUniqueID"
+            ),
+            ("Vendor",
+                "woffMetadataVendor{name",
+                "woffMetadataVendor{url",
+                "woffMetadataVendor{dir",
+                "woffMetadataVendor{class"
+            ),
+            ("Credits",
+                "woffMetadataCredits{credits"
+            ),
+            ("Description",
+                "woffMetadataDescription{url",
+                "woffMetadataDescription{text"
+            ),
+            ("Legal",
+                "woffMetadataCopyright{text",
+                "woffMetadataTrademark{text",
+                "woffMetadataLicense{url",
+                "woffMetadataLicense{id",
+                "woffMetadataLicense{text",
+                "woffMetadataLicensee{name",
+                "woffMetadataLicensee{dir",
+                "woffMetadataLicensee{class",
+            )
+        ]
+    ),
+    dict(
         title="Miscellaneous",
         customView=None,
         groups = [
@@ -1914,6 +2312,47 @@ controlOrganization = [
     ),
 ]
 
+
+## Attribute Getting and Setting
+
+def getAttributeValue(info, attr):
+    if "{" not in attr:
+        return getattr(info, attr)
+    keys = attr.split("{")
+    attr = keys[0]
+    keys = keys[1:]
+    d = getattr(info, attr, {})
+    if d is None:
+        d = {}
+    for key in keys[:-1]:
+        if key not in d:
+            return None
+        d = d[key]
+    return d.get(keys[-1])
+
+def setAttributeValue(info, attr, value):
+    if value == "":
+        value = None
+    if "{" not in attr:
+        setattr(info, attr, value)
+        return
+    keys = attr.split("{")
+    attr = keys[0]
+    keys = keys[1:]
+    d = getattr(info, attr)
+    if d is None:
+        d = {}
+    for key in keys[:-1]:
+        if key not in d:
+            d[key] = {}
+        d = d[key]
+    key = keys[-1]
+    if value is None:
+        if key in d:
+            del d[key]
+    else:
+        d[key] = value
+    setattr(info, attr, d)
 
 ## Toolbar
 
@@ -2049,6 +2488,7 @@ class FontInfoSection(vanilla.Group):
             vanilla.CheckBox : 22,
             PanoseControl : controlViewWidth,
             EmbeddingControl : itemInputStringWidth,
+            DictList : controlViewWidth,
         }
         # run through the groups
         currentTop = -10
@@ -2069,17 +2509,23 @@ class FontInfoSection(vanilla.Group):
             # run through the controls
             for fontAttribute in group[1:]:
                 item = controlDescriptions[fontAttribute]
+                itemClass = item["controlClass"]
+                fontAttributeTag = fontAttribute.replace("{", "_").replace("}", "_")
                 # title
                 itemTitle = item["title"]
                 if itemTitle:
                     itemTitle += ":"
                 # item title
-                if itemTitle is not None:
-                    itemTitleAttribute = "itemTitle_%s" % fontAttribute
-                    itemTitleControl = vanilla.TextBox((itemTitleLeft, currentTop-19, itemTitleWidth, 17), itemTitle, alignment="right")
+                if itemTitle:
+                    itemTitleAttribute = "itemTitle_%s" % fontAttributeTag
+                    alignment = "right"
+                    if itemClass == DictList:
+                        alignment = "left"
+                    itemTitleControl = vanilla.TextBox((itemTitleLeft, currentTop-19, itemTitleWidth, 17), itemTitle, alignment=alignment)
                     setattr(controlView, itemTitleAttribute, itemTitleControl)
+                    if itemClass == DictList:
+                        currentTop -= 25
                 # control
-                itemClass = item["controlClass"]
                 itemOptions = item.get("controlOptions", {})
                 itemWidthKey = itemOptions.get("style", itemClass)
                 itemWidth = itemWidths[itemWidthKey]
@@ -2090,7 +2536,7 @@ class FontInfoSection(vanilla.Group):
                 if itemClass == vanilla.EditText or itemClass == NumberEditText:
                     itemHeight = 22
                     currentTop -= itemHeight
-                    itemAttribute = "inputEditText_%s" % fontAttribute
+                    itemAttribute = "inputEditText_%s" % fontAttributeTag
                     if itemClass == NumberEditText:
                         allowFloat = itemOptions.get("allowFloat", True)
                         allowNegative = itemOptions.get("allowNegative", True)
@@ -2106,7 +2552,7 @@ class FontInfoSection(vanilla.Group):
                 elif itemClass == vanilla.TextEditor:
                     itemHeight = (itemOptions["lineCount"] * 14) + 8
                     currentTop -= itemHeight
-                    itemAttribute = "inputTextEditor_%s" % fontAttribute
+                    itemAttribute = "inputTextEditor_%s" % fontAttributeTag
                     if not itemTitle:
                         l = groupTitleLeft
                         w = groupTitleWidth
@@ -2120,14 +2566,14 @@ class FontInfoSection(vanilla.Group):
                     radioOptions = itemOptions["items"]
                     itemHeight = 20 * len(radioOptions)
                     currentTop -= itemHeight
-                    itemAttribute = "inputRadioGroup_%s" % fontAttribute
+                    itemAttribute = "inputRadioGroup_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop-2, itemWidth, itemHeight), radioOptions, callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## CheckBox
                 elif itemClass == vanilla.CheckBox:
                     itemHeight = 22
                     currentTop -= itemHeight
-                    itemAttribute = "inputCheckBox_%s" % fontAttribute
+                    itemAttribute = "inputCheckBox_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop-1, itemWidth, itemHeight), "", callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## PopUpButton
@@ -2135,7 +2581,7 @@ class FontInfoSection(vanilla.Group):
                     itemHeight = 20
                     currentTop -= itemHeight
                     popupOptions = itemOptions["items"]
-                    itemAttribute = "inputPopUpButton_%s" % fontAttribute
+                    itemAttribute = "inputPopUpButton_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop-2, itemWidth, itemHeight), popupOptions, callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## CheckList
@@ -2145,7 +2591,7 @@ class FontInfoSection(vanilla.Group):
                     if len(listOptions) * 20 < itemHeight:
                         itemHeight = len(listOptions) * 20
                     currentTop -= itemHeight
-                    itemAttribute = "inputCheckList_%s" % fontAttribute
+                    itemAttribute = "inputCheckList_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), listOptions, callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## DatePicker
@@ -2155,22 +2601,32 @@ class FontInfoSection(vanilla.Group):
                     minDate = None
                     itemHeight = 27
                     currentTop -= itemHeight
-                    itemAttribute = "inputDatePicker_%s" % fontAttribute
+                    itemAttribute = "inputDatePicker_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop+5, itemWidth, itemHeight), date=now, minDate=minDate, callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## Panose
                 elif itemClass == PanoseControl:
                     itemHeight = 335
                     currentTop -= itemHeight
-                    itemAttribute = "inputPanoseControl_%s" % fontAttribute
+                    itemAttribute = "inputPanoseControl_%s" % fontAttributeTag
                     itemControl = itemClass((10, currentTop, itemWidth, itemHeight), 0, itemTitleWidth, itemInputLeft-10, itemInputStringWidth, self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 ## Embedding
                 elif itemClass == EmbeddingControl:
                     itemHeight = 75
                     currentTop -= itemHeight
-                    itemAttribute = "inputEmbeddingControl_%s" % fontAttribute
+                    itemAttribute = "inputEmbeddingControl_%s" % fontAttributeTag
                     itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), self._controlEditCallback)
+                    setattr(controlView, itemAttribute, itemControl)
+                ## DictList
+                elif itemClass == DictList:
+                    itemHeight = 200
+                    currentTop -= itemHeight
+                    itemAttribute = "inputDictList_%s" % fontAttributeTag
+                    columnDescriptions = itemOptions["columnDescriptions"]
+                    itemPrototype = itemOptions["itemPrototype"]
+                    variableRowHeights = itemOptions.get("variableRowHeights")
+                    itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, itemPrototype=itemPrototype, callback=self._controlEditCallback, variableRowHeights=variableRowHeights)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
                     print itemClass
@@ -2179,7 +2635,7 @@ class FontInfoSection(vanilla.Group):
                 if item["hasDefault"]:
                     currentTop -= 17
                     defaultControl = vanilla.CheckBox((itemInputLeft, currentTop, 100, 10), "Use Default Value", sizeStyle="mini", callback=self._useDefaultCallback)
-                    defaultAttribute = "inputDefaultCheckBox_%s" % fontAttribute
+                    defaultAttribute = "inputDefaultCheckBox_%s" % fontAttributeTag
                     setattr(controlView, defaultAttribute, defaultControl)
                     self._defaultControlToAttribute[defaultControl] = fontAttribute
                     self._attributeToDefaultControl[fontAttribute] = defaultControl
@@ -2189,7 +2645,6 @@ class FontInfoSection(vanilla.Group):
                 self._attributeToControl[fontAttribute] = itemControl
                 ## final offset
                 currentTop -= 15
-
 
         # scroll view
         height = abs(currentTop)
@@ -2209,7 +2664,7 @@ class FontInfoSection(vanilla.Group):
 
     def _loadInfo(self):
         for attribute, control in self._attributeToControl.items():
-            value = getattr(self._font.info, attribute)
+            value = getAttributeValue(self._font.info, attribute)
             attributeData = self._controlToAttributeData[control]
             # handle the default control
             if attributeData["hasDefault"]:
@@ -2268,7 +2723,7 @@ class FontInfoSection(vanilla.Group):
         if conversionFunction is not None:
             value = conversionFunction(value)
         # set
-        setattr(self._font.info, attribute, value)
+        setAttributeValue(self._font.info, attribute, value)
 
     def _useDefaultCallback(self, sender):
         state = sender.get()
@@ -2281,7 +2736,7 @@ class FontInfoSection(vanilla.Group):
         else:
             value = getAttrWithFallback(self._font.info, fontAttribute)
         # set in the font
-        setattr(self._font.info, fontAttribute, value)
+        setAttributeValue(self._font.info, fontAttribute, value)
         # convert for the interface
         if value is not None:
             conversionFunction = attributeData["conversionFromUFO"]
