@@ -1253,6 +1253,69 @@ openTypeNameSampleTextItem = inputItemDict(
     controlOptions=dict(lineCount=5)
 )
 
+def openTypeNameRecordsFromUFO(value):
+    if value is None:
+        return []
+    return value
+
+def openTypeNameRecordsToUFO(value):
+    records = {}
+    intKeys = ["nameID", "platformID", "encodingID", "languageID"]
+    for record in value:
+        record = dict(record)
+        for key in intKeys:
+            v = record[key]
+            if isinstance(v, NSDecimalNumber):
+                record[key] = int(v.intValue())
+        key = tuple([record[k] for k in intKeys])
+        records[key] = record
+    records = [value for key, value in sorted(records.items())]
+    return records
+
+def openTypeNameRecordsInputValidator(records):
+    # look for duplicate keys
+    combinationKeys = ["nameID", "platformID", "encodingID", "languageID"]
+    seen = []
+    for record in records:
+        key = []
+        for k in combinationKeys:
+            v = record[k]
+            if isinstance(v, NSDecimalNumber):
+                v = int(v.intValue())
+            key.append(v)
+        if key in seen:
+            return False, "A duplicate name id, platform id, encoding id and language id combination has been created.", "Duplicate name id, platform id, encoding id and language id combinations aren't allowed. Only the final name id, platform id, encoding id and language id combination will be stored in the font."
+        seen.append(key)
+    return True, None, None
+
+openTypeNameRecordFormatter = NSNumberFormatter.alloc().init()
+openTypeNameRecordFormatter.setPositiveFormat_("#")
+openTypeNameRecordFormatter.setAllowsFloats_(False)
+openTypeNameRecordFormatter.setGeneratesDecimalNumbers_(False) # this seems to have no effect. NSNumberFormatter is awful.
+openTypeNameRecordFormatter.setMinimum_(0)
+openTypeNameRecordFormatter.setMaximum_(65535)
+
+openTypeNameRecordsItem = inputItemDict(
+    title="Name Records",
+    hasDefault=False,
+    controlClass=DictList,
+    controlOptions=dict(
+        showColumnTitles=True,
+        columnDescriptions=[
+            dict(key="nameID", title="NID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
+            dict(key="platformID", title="PID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
+            dict(key="encodingID", title="EID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
+            dict(key="languageID", title="LID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
+            dict(key="string", title="String", editable=True),
+        ],
+        itemPrototype=dict(nameID=0, platformID=0, encodingID=0, languageID=0, string=""),
+        validator=openTypeNameRecordsInputValidator
+    ),
+    conversionFromUFO=openTypeNameRecordsFromUFO,
+    conversionToUFO=openTypeNameRecordsToUFO,
+)
+
+
 ## OpenType hhea Table
 
 openTypeHheaAscenderItem = inputItemDict(
@@ -2116,6 +2179,7 @@ allControlDescriptions = {
     "openTypeNameUniqueID" : openTypeNameUniqueIDItem,
     "openTypeNameDescription" : openTypeNameDescriptionItem,
     "openTypeNameSampleText" : openTypeNameSampleTextItem,
+    "openTypeNameRecords" : openTypeNameRecordsItem,
 
     "openTypeHheaAscender" : openTypeHheaAscenderItem,
     "openTypeHheaDescender" : openTypeHheaDescenderItem,
@@ -2265,8 +2329,8 @@ controlOrganization = [
                 "openTypeNameVersion",
                 "openTypeNameUniqueID",
                 "openTypeNameDescription",
-                "openTypeNameSampleText"
-                # specific records
+                "openTypeNameSampleText",
+                "openTypeNameRecords"
             ),
             ("hhea Table",
                 "openTypeHheaAscender",
