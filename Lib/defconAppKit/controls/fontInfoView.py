@@ -3,6 +3,7 @@ from copy import deepcopy
 from Foundation import *
 from AppKit import *
 import vanilla
+from vanilla import dialogs
 from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
@@ -831,40 +832,28 @@ class CheckList(vanilla.List):
             bits.append(bit)
         return bits
 
-# sizeFormatter = NSNumberFormatter.alloc().init()
-# sizeFormatter.setPositiveFormat_("#")
-# sizeFormatter.setAllowsFloats_(False)
-# sizeFormatter.setGeneratesDecimalNumbers_(False)
-# sizeFormatter.setMinimum_(0)
-# sizeFormatter.setMaximum_(65535)
-# columnDescriptions = [
-#     dict(key="size", title="Size", width=50, editable=True, formatter=sizeFormatter),
-#     dict(key="gridfit", title="", cell=vanilla.CheckBoxListCell(title="Gridfit"), width=60),
-#     dict(key="doGray", title="", cell=vanilla.CheckBoxListCell(title="Grayscale"), width=77),
-#     dict(key="symmSmoothing", title="", cell=vanilla.CheckBoxListCell(title="Symmetric Smoothing"), width=143),
-#     dict(key="symmGridfit", title="", cell=vanilla.CheckBoxListCell(title="Symmetric Gridfit"), width=100),
-# ]
-
 # list of dictionaries
 
 class DictList(vanilla.Group):
 
-    def __init__(self, posSize, columnDescriptions, itemPrototype=None, callback=None, variableRowHeights=False):
+    def __init__(self, posSize, columnDescriptions, itemPrototype=None, callback=None, validator=None, variableRowHeights=False, showColumnTitles=True):
         self._prototype = itemPrototype
         self._callback = callback
+        self._validator = validator
         super(DictList, self).__init__(posSize)
         if variableRowHeights:
             listClass = VariableRowHeightList
         else:
             listClass = vanilla.List
         self._list = listClass((0, 0, -0, -20), [], columnDescriptions=columnDescriptions,
-            editCallback=self._listEditCallback, drawFocusRing=False)
+            editCallback=self._listEditCallback, drawFocusRing=False, showColumnTitles=showColumnTitles)
         self._buttonBar = GradientButtonBar((0, -22, -0, 22))
         self._addButton = vanilla.GradientButton((0, -22, 22, 22), imageNamed="NSAddTemplate", callback=self._addButtonCallback)
         self._removeButton = vanilla.GradientButton((21, -22, 22, 22), imageNamed="NSRemoveTemplate", callback=self._removeButtonCallback)
 
     def _listEditCallback(self, sender):
         self._callback(self)
+        self._validate()
 
     def _addButtonCallback(self, sender):
         item = deepcopy(self._prototype)
@@ -875,11 +864,21 @@ class DictList(vanilla.Group):
         for index in reversed(selection):
             del self._list[index]
 
+    def _validate(self):
+        if self._validator is not None:
+            valid, message, information = self._validator(self.get())
+            if not valid:
+                view = self.getNSView()
+                window = view.window()
+                dialogs.message(messageText=message, informativeText=information, parentWindow=window, alertStyle=NSWarningAlertStyle)
+
     def get(self):
         return self._list.get()
 
     def set(self, items):
+        hold = self._validator
         self._list.set(items)
+        self._validator = hold
 
 
 class DefconAppKitGradientButtonBar(NSButton):
@@ -1098,6 +1097,86 @@ noteItem = inputItemDict(
     controlOptions=dict(lineCount=20)
 )
 
+## OpenType gasp table
+
+def openTypeGaspRangeRecordsFromUFO(value):
+    if value is None:
+        return []
+    items = []
+    for record in value:
+        behavior = record.get("rangeGaspBehavior", [])
+        if behavior is None:
+            behavior = []
+        item = dict(
+            ppem=record["rangeMaxPPEM"],
+            gridfit=0 in behavior,
+            doGray=1 in behavior,
+            symmSmoothing=2 in behavior,
+            symmGridfit=3 in behavior
+        )
+        items.append(item)
+    return items
+
+def openTypeGaspRangeRecordsToUFO(value):
+    sorter = {}
+    for item in value:
+        ppem = item["ppem"]
+        sorter[ppem] = item
+    records = []
+    for ppem, item in sorted(sorter.items()):
+        if isinstance(ppem, NSDecimalNumber):
+            ppem = int(ppem.intValue())
+        behavior = []
+        if item["gridfit"]:
+            behavior.append(0)
+        if item["doGray"]:
+            behavior.append(1)
+        if item["symmSmoothing"]:
+            behavior.append(2)
+        if item["symmGridfit"]:
+            behavior.append(3)
+        record = dict(rangeMaxPPEM=ppem, rangeGaspBehavior=behavior)
+        records.append(record)
+    return records
+
+def openTypeGaspRangeRecordsInputValidator(records):
+    # look for duplicate sizes
+    ppems = []
+    for record in records:
+        ppem = record["ppem"]
+        if isinstance(ppem, NSDecimalNumber):
+            ppem = int(ppem.intValue())
+        if ppem in ppems:
+            return False, "A duplicate PPEM %d record has been created." % ppem, "Duplicate PPEM records aren't allowed. Only the final PPEM %d record will be stored in the font." % ppem
+        ppems.append(ppem)
+    return True, None, None
+
+openTypeGaspSizeFormatter = NSNumberFormatter.alloc().init()
+openTypeGaspSizeFormatter.setPositiveFormat_("#")
+openTypeGaspSizeFormatter.setAllowsFloats_(False)
+openTypeGaspSizeFormatter.setGeneratesDecimalNumbers_(False) # this seems to have no effect. NSNumberFormatter is awful.
+openTypeGaspSizeFormatter.setMinimum_(0)
+openTypeGaspSizeFormatter.setMaximum_(65535)
+
+openTypeGaspRangeRecordsItem = inputItemDict(
+    title="",
+    hasDefault=False,
+    controlClass=DictList,
+    controlOptions=dict(
+        showColumnTitles=False,
+        columnDescriptions=[
+            dict(key="ppem", title="Max PPEM", width=50, editable=True, formatter=openTypeGaspSizeFormatter),
+            dict(key="gridfit", title="", width=60, editable=True, cell=vanilla.CheckBoxListCell(title="Gridfit")),
+            dict(key="doGray", title="", width=77, editable=True, cell=vanilla.CheckBoxListCell(title="Grayscale")),
+            dict(key="symmSmoothing", title="", width=143, editable=True, cell=vanilla.CheckBoxListCell(title="Symmetric Smoothing")),
+            dict(key="symmGridfit", title="", width=100, editable=True, cell=vanilla.CheckBoxListCell(title="Symmetric Gridfit")),
+        ],
+        itemPrototype=dict(ppem=65535, gridfit=False, doGray=False, symmSmoothing=False, symmGridfit=False),
+        validator=openTypeGaspRangeRecordsInputValidator
+    ),
+    conversionFromUFO=openTypeGaspRangeRecordsFromUFO,
+    conversionToUFO=openTypeGaspRangeRecordsToUFO,
+)
 
 ## OpenType head Table
 
@@ -1281,8 +1360,6 @@ openTypeOS2WidthClassItem = inputItemDict(
     conversionFromUFO=openTypeOS2WidthClassFromUFO,
     conversionToUFO=openTypeOS2WidthClassToUFO
 )
-
-
 
 openTypeOS2SelectionOptions = [
     "1 UNDERSCORE",
@@ -2024,6 +2101,8 @@ allControlDescriptions = {
 
     "note" : noteItem,
 
+    "openTypeGaspRangeRecords" : openTypeGaspRangeRecordsItem,
+
     "openTypeHeadCreated" : openTypeHeadCreatedItem,
     "openTypeHeadLowestRecPPEM" : openTypeHeadLowestRecPPEMItem,
     "openTypeHeadFlags" : openTypeHeadFlagsItem,
@@ -2140,10 +2219,10 @@ controlOrganization = [
                 "styleMapFamilyName",
                 "styleMapStyleName",
                 "versionMajor",
-                "versionMinor" # change
+                "versionMinor"
             ),
             ("Dimensions",
-                "unitsPerEm", # change
+                "unitsPerEm",
                 "descender",
                 "xHeight",
                 "capHeight",
@@ -2169,10 +2248,12 @@ controlOrganization = [
         title="OpenType",
         customView=None,
         groups = [
-            # gasp table
+            ("gasp Table",
+                "openTypeGaspRangeRecords"
+            ),
             ("head Table",
                 "openTypeHeadCreated",
-                "openTypeHeadLowestRecPPEM", # change
+                "openTypeHeadLowestRecPPEM",
                 "openTypeHeadFlags"
             ),
             ("name Table",
@@ -2205,7 +2286,7 @@ controlOrganization = [
             ),
             ("OS/2 Table",
                 "openTypeOS2WidthClass",
-                "openTypeOS2WeightClass", # change
+                "openTypeOS2WeightClass",
                 "openTypeOS2Selection",
                 "openTypeOS2VendorID",
                 "openTypeOS2Type",
@@ -2214,8 +2295,8 @@ controlOrganization = [
                 "openTypeOS2TypoAscender",
                 "openTypeOS2TypoDescender",
                 "openTypeOS2TypoLineGap",
-                "openTypeOS2WinAscent", # change
-                "openTypeOS2WinDescent", # change
+                "openTypeOS2WinAscent",
+                "openTypeOS2WinDescent",
                 "openTypeOS2SubscriptXSize",
                 "openTypeOS2SubscriptYSize",
                 "openTypeOS2SubscriptXOffset",
@@ -2625,8 +2706,10 @@ class FontInfoSection(vanilla.Group):
                     itemAttribute = "inputDictList_%s" % fontAttributeTag
                     columnDescriptions = itemOptions["columnDescriptions"]
                     itemPrototype = itemOptions["itemPrototype"]
-                    variableRowHeights = itemOptions.get("variableRowHeights")
-                    itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, itemPrototype=itemPrototype, callback=self._controlEditCallback, variableRowHeights=variableRowHeights)
+                    validator = itemOptions.get("validator")
+                    variableRowHeights = itemOptions.get("variableRowHeights", False)
+                    showColumnTitles = itemOptions.get("showColumnTitles", True)
+                    itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, itemPrototype=itemPrototype, callback=self._controlEditCallback, validator=validator, variableRowHeights=variableRowHeights, showColumnTitles=showColumnTitles)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
                     print itemClass
