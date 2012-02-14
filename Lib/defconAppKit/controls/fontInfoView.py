@@ -12,12 +12,71 @@ import objc
 objc.setVerbose(True)
 
 
+# --------------------------
+# First Responder Subclasses
+# --------------------------
+
+# EditText
+
+class DefconAppKitTextField(NSTextField):
+
+    def becomeFirstResponder(self):
+        result = super(DefconAppKitTextField, self).becomeFirstResponder()
+        if result:
+            view = self.superview()
+            view.scrollControlToVisible_(self)
+        return result
+
+class InfoEditText(vanilla.EditText):
+
+    nsTextFieldClass = DefconAppKitTextField
+
+# TextEditor
+
+class DefconAppKitTextView(NSTextView):
+
+    def becomeFirstResponder(self):
+        result = super(DefconAppKitTextView, self).becomeFirstResponder()
+        if result:
+            scrollView = self.enclosingScrollView()
+            view = scrollView.superview()
+            view.scrollControlToVisible_(scrollView)
+        return result
+
+class InfoTextEditor(vanilla.TextEditor):
+
+    nsTextViewClass = DefconAppKitTextView
+
+# List
+
+class DefconAppKitTableView(VanillaTableViewSubclass):
+
+    def becomeFirstResponder(self):
+        result = super(DefconAppKitTableView, self).becomeFirstResponder()
+        if result:
+            scrollView = self.enclosingScrollView()
+            view = scrollView
+            while 1:
+                view = view.superview()
+                if view is None:
+                    break
+                if hasattr(view, "scrollControlToVisible_"):
+                    break
+            if view is not None:
+                view.scrollControlToVisible_(scrollView)
+        return result
+
+class InfoList(vanilla.List):
+
+    nsTableViewClass = DefconAppKitTableView
+
+
 # -----------------------------------
 # Formatters
 # These will be used in the controls.
 # -----------------------------------
 
-class NumberEditText(vanilla.EditText):
+class NumberEditText(InfoEditText):
 
     def __init__(self, posSize, text="", sizeStyle="regular", callback=None, allowFloat=True, allowNegative=True, minimum=None, maximum=None, decimals=2):
         super(NumberEditText, self).__init__(posSize, text="", callback=self._entryCallback, sizeStyle=sizeStyle)
@@ -788,7 +847,7 @@ class EmbeddingControl(vanilla.Group):
 
 # List of check boxes
 
-class CheckList(vanilla.List):
+class CheckList(InfoList):
 
     def __init__(self, posSize, template, callback):
         # create the dict items
@@ -844,7 +903,7 @@ class DictList(vanilla.Group):
         if variableRowHeights:
             listClass = VariableRowHeightList
         else:
-            listClass = vanilla.List
+            listClass = InfoList
         self._list = listClass((0, 0, -0, -20), [], columnDescriptions=columnDescriptions,
             editCallback=self._listEditCallback, drawFocusRing=False, showColumnTitles=showColumnTitles)
         self._buttonBar = GradientButtonBar((0, -22, -0, 22))
@@ -900,7 +959,7 @@ class GradientButtonBar(vanilla.GradientButton):
 
 # variable row height list
 
-class DefconAppKitVariableRowHeightTableView(VanillaTableViewSubclass):
+class DefconAppKitVariableRowHeightTableView(DefconAppKitTableView):
 
     def frameOfCellAtColumn_row_(self, column, row):
         frame = super(DefconAppKitVariableRowHeightTableView, self).frameOfCellAtColumn_row_(column, row)
@@ -928,7 +987,7 @@ class DefconAppKitVariableRowHeightTableViewDelegate(NSObject):
         return max(heights)
 
 
-class VariableRowHeightList(vanilla.List):
+class VariableRowHeightList(InfoList):
 
     nsTableViewClass = DefconAppKitVariableRowHeightTableView
 
@@ -953,7 +1012,7 @@ def inputItemDict(**kwargs):
     default = dict(
         title=None,
         hasDefault=True,
-        controlClass=vanilla.EditText,
+        controlClass=InfoEditText,
         #controlOptions=None,
         conversionFromUFO=None,
         conversionToUFO=None
@@ -2568,6 +2627,21 @@ class DefconAppKitFontInfoCategoryControlsGroup(NSView):
         clipView.scrollToPoint_(pt)
         scrollView.reflectScrolledClipView_(clipView)
 
+    def scrollControlToVisible_(self, control):
+        frame = control.frame()
+        top = (0, frame.origin.y)
+        bottom = (0, frame.origin.y + frame.size.height)
+        visibleRect = self.visibleRect()
+        if not NSPointInRect(top, visibleRect) or not NSPointInRect(bottom, visibleRect):
+            scrollView = self.enclosingScrollView()
+            clipView = scrollView.contentView()
+            viewHeight = clipView.visibleRect().size.height
+            x, y = bottom
+            if y < viewHeight:
+                y = viewHeight
+            clipView.scrollToPoint_((x, y))
+            scrollView.reflectScrolledClipView_(clipView)
+
 
 class FontInfoCategoryControlsGroup(vanilla.Group):
 
@@ -2625,7 +2699,7 @@ class FontInfoSection(vanilla.Group):
         itemWidths = {
             "idNumber" : 140,
             "number" : 70,
-            vanilla.EditText : itemInputStringWidth,
+            InfoEditText : itemInputStringWidth,
             vanilla.RadioGroup : itemInputStringWidth,
             vanilla.PopUpButton : itemInputStringWidth,
             CheckList : itemInputStringWidth,
@@ -2674,11 +2748,11 @@ class FontInfoSection(vanilla.Group):
                 itemOptions = item.get("controlOptions", {})
                 itemWidthKey = itemOptions.get("style", itemClass)
                 itemWidth = itemWidths[itemWidthKey]
-                if itemClass == vanilla.EditText:
+                if itemClass == InfoEditText:
                     if itemOptions.get("lineCount", 1) != 1:
-                        itemClass = vanilla.TextEditor
+                        itemClass = InfoTextEditor
                 ## EditText, NumberEditText
-                if itemClass == vanilla.EditText or itemClass == NumberEditText:
+                if itemClass == InfoEditText or itemClass == NumberEditText:
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputEditText_%s" % fontAttributeTag
@@ -2694,7 +2768,7 @@ class FontInfoSection(vanilla.Group):
                         itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback, formatter=itemOptions.get("formatter"))
                     setattr(controlView, itemAttribute, itemControl)
                 ## TextEditor
-                elif itemClass == vanilla.TextEditor:
+                elif itemClass == InfoTextEditor:
                     itemHeight = (itemOptions["lineCount"] * 14) + 8
                     currentTop -= itemHeight
                     itemAttribute = "inputTextEditor_%s" % fontAttributeTag
@@ -2892,7 +2966,7 @@ class FontInfoSection(vanilla.Group):
         # update the control
         control.enable(not state)
         if value is None:
-            if isinstance(control, vanilla.EditText):
+            if isinstance(control, InfoEditText):
                 control.set("")
         else:
             control.set(value)
