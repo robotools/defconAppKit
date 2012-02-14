@@ -803,7 +803,7 @@ class CheckList(vanilla.List):
         # describe the columns
         columnDescriptions = [
             dict(title="value", cell=vanilla.CheckBoxListCell(), width=16),
-            dict(title="title"),
+            dict(title="title", editable=False),
         ]
         # let super do the rest
         super(CheckList, self).__init__(posSize, items, columnDescriptions=columnDescriptions,
