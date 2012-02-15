@@ -837,8 +837,9 @@ class EmbeddingControl(vanilla.Group):
     def get(self):
         values = []
         basicValue = self.basicsPopUp.get()
-        if basicValue != 0:
+        if basicValue == 0:
             return values
+        values.append(basicValue)
         if not self.subsettingCheckBox.get():
             values.append(8)
         if self.bitmapCheckBox.get():
