@@ -2876,11 +2876,18 @@ class FontInfoSection(vanilla.Group):
         size = controlView.getNSView().frame().size
         controlView.getNSView().setFrame_(((0, 0), size))
 
-        ##load info
+        # load info
         self._loadInfo()
+        self._updatePlaceholders()
         self._finishedSetup = True
 
+        # observe
+        self._font.info.addObserver(self, "_infoChanged", "Info.Changed")
+
+
     def _breakCycles(self):
+        if self._font.info.hasObserver(self, "Info.Changed"):
+            self._font.info.removeObserver(self, "Info.Changed")
         self._jumpButtons = []
         super(FontInfoSection, self)._breakCycles()
 
@@ -2901,6 +2908,9 @@ class FontInfoSection(vanilla.Group):
                     value = conversionFunction(value)
                 # set
                 control.set(value)
+
+    def _infoChanged(self, notification):
+        self._updatePlaceholders()
 
     # control view shortcut
 
@@ -2967,11 +2977,24 @@ class FontInfoSection(vanilla.Group):
         # update the control
         control.enable(not state)
         if value is None:
-            if isinstance(control, InfoEditText):
+            if isinstance(control, vanilla.EditText):
                 control.set("")
         else:
             control.set(value)
 
+    def _updatePlaceholders(self):
+        for control, attributeData in self._controlToAttributeData.items():
+            if isinstance(control, vanilla.EditText):
+                if not attributeData["hasDefault"]:
+                    continue
+                attribute = attributeData["fontAttribute"]
+                conversionFunction = attributeData["conversionToUFO"]
+                value = getAttrWithFallback(self._font.info, attribute)
+                if value is None:
+                    value = ""
+                if not isinstance(value, basestring):
+                    value = str(value)
+                control.setPlaceholder(value)
 
 # ---------
 # main view
