@@ -714,7 +714,6 @@ class GlyphLineView(PlacardScrollView):
         self._glyphLineView.setGlyphColor_(color)
 
     def setBackgroundColor(self, color):
-        self.setBackgroundColor(color)
         self._glyphLineView.setBackgroundColor_(color)
 
     def setShowLayers(self, value):
