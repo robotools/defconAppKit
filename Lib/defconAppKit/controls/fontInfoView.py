@@ -1440,7 +1440,7 @@ def postscriptStemSnapToUFO(string):
     except ValueError:
         values = []
     if len(values) >= 12:
-        value = value[:12]
+        values = values[:12]
     return values
 
 def infoListFromUFO(value):
