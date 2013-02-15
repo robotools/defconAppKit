@@ -1898,6 +1898,7 @@ class DefconAppKitFontInfoSectionView(NSView):
         if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
             v = self.vanillaWrapper()
             v._scrollView.setPosSize(v._scrollView._posSize)
+            v._adjustControlSizes()
 
 
 class DefconAppKitFontInfoCategoryControlsGroup(NSView):
@@ -2112,7 +2113,6 @@ class FontInfoSection(vanilla.Group):
                 ## final offset
                 currentTop -= 15
 
-
         # scroll view
         height = abs(currentTop)
         self._scrollView = vanilla.ScrollView((0, 62, -0, -0), controlView.getNSView(), backgroundColor=backgroundColor, hasHorizontalScroller=False)
@@ -2154,6 +2154,27 @@ class FontInfoSection(vanilla.Group):
         return scrollView.documentView()
 
     _controlView = property(_get_controlView)
+
+    # control adjustments
+
+    def _adjustControlSizes(self):
+        view = self._controlView
+        for subview in view.subviews():
+            if not hasattr(subview, "vanillaWrapper"):
+                continue
+            wrapper = subview.vanillaWrapper()
+            if wrapper is None:
+                continue
+            if not isinstance(wrapper, vanilla.RadioGroup):
+                continue
+            matrix = wrapper.getNSMatrix()
+            matrixWidth = 0
+            for cell in matrix.cells():
+                w = cell.cellSize().width
+                if w > matrixWidth:
+                    matrixWidth = w
+            matrixHeight = matrix.frame().size.height
+            matrix.setFrameSize_((matrixWidth, matrixHeight))
 
     # navigation
 
