@@ -1952,10 +1952,18 @@ postscriptWindowsCharacterSetOptions = [
     "OEM / DOS"
 ]
 
+def postscriptWindowsCharacterSetFromUFO(value):
+   return value - 1
+
+def postscriptWindowsCharacterSetToUFO(value):
+   return value + 1
+
 postscriptWindowsCharacterSetItem = inputItemDict(
-    title="Microsoft Character Set",
-    controlClass=vanilla.PopUpButton,
-    controlOptions=dict(items=postscriptWindowsCharacterSetOptions)
+   title="Microsoft Character Set",
+   controlClass=vanilla.PopUpButton,
+   controlOptions=dict(items=postscriptWindowsCharacterSetOptions),
+   conversionFromUFO=postscriptWindowsCharacterSetFromUFO,
+   conversionToUFO=postscriptWindowsCharacterSetToUFO
 )
 
 ## WOFF Identification
