@@ -285,7 +285,8 @@ def drawGlyphMargins(glyph, scale, rect, drawFill=True, drawStroke=True, fillCol
 
 def drawGlyphFillAndStroke(glyph, scale, rect,
     drawFill=True, drawStroke=True,
-    contourFillColor=None, contourStrokeColor=None, componentFillColor=None, backgroundColor=None):
+    contourFillColor=None, contourStrokeColor=None, componentFillColor=None, backgroundColor=None,
+    contourStrokeWidth=1.0):
     # get the layer color
     layer = glyph.layer
     layerColor = None
@@ -333,7 +334,7 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
         elif contourStrokeColor is None and layerColor is None:
             contourStrokeColor = getDefaultColor("glyphContourStroke")
         # contours
-        contourPath.setLineWidth_(1.0 * scale)
+        contourPath.setLineWidth_(contourStrokeWidth * scale)
         contourStrokeColor.set()
         contourPath.stroke()
 
