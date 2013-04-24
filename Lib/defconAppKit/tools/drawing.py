@@ -343,7 +343,8 @@ def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, 
     layer = glyph.layer
     layerColor = None
     if layer is not None:
-        color = colorToNSColor(layer.color)
+        if layer.color is not None:
+            color = colorToNSColor(layer.color)
     if color is None:
         color = getDefaultColor("glyphPoints")
     if backgroundColor is None:
