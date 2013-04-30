@@ -284,7 +284,7 @@ class DefconAppKitGlyphLineNSView(NSView):
 
     def drawVerticalMetrics(self, glyph, layerName, rect):
         drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > 150
-        drawing.drawFontVerticalMetrics(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor)
+        drawing.drawFontVerticalMetrics(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
 
     def drawMargins(self, glyph, layerName, rect):
         drawing.drawGlyphMargins(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
@@ -304,11 +304,11 @@ class DefconAppKitGlyphLineNSView(NSView):
         drawCoordinates = self.getDrawingAttribute_layerName_("showGlyphPointCoordinates", layerName) and self._impliedPointSize > 250
         drawing.drawGlyphPoints(glyph, self._inverseScale, rect,
             drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
-            backgroundColor=self._backgroundColor)
+            backgroundColor=self._backgroundColor, flipped=True)
 
     def drawAnchors(self, glyph, layerName, rect):
         drawText = self._impliedPointSize > 50
-        drawing.drawGlyphAnchors(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor)
+        drawing.drawGlyphAnchors(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
 
     def drawGlyphForeground(self, glyph, rect, alternate=False):
         pass

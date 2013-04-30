@@ -112,7 +112,7 @@ def drawLine((x1, y1), (x2, y2), lineWidth=1.0):
     if turnOffAntiAliasing:
         context.setShouldAntialias_(True)
 
-def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="bottom"):
+def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="bottom", flipped=False):
     text = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
     if xAlign != "left" or yAlign != "bottom":
         width, height = text.size()
@@ -132,7 +132,11 @@ def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="botto
     context.saveGraphicsState()
     transform = NSAffineTransform.transform()
     transform.translateXBy_yBy_(pt[0], pt[1])
-    transform.scaleXBy_yBy_(scale, scale)
+    if flipped:
+        s = -scale
+    else:
+        s = scale
+    transform.scaleXBy_yBy_(scale, s)
     transform.concat()
     text.drawAtPoint_((0, 0))
     context.restoreGraphicsState()
@@ -200,8 +204,8 @@ def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, c
             x, y = pt1
             x += 5 * scale
             y -= (fontSize / 2.0) * scale
-            drawTextAtPoint(names, (x, y), scale, glowAttributes)
-            drawTextAtPoint(names, (x, y), scale, attributes)
+            drawTextAtPoint(names, (x, y), scale, glowAttributes, flipped=flipped)
+            drawTextAtPoint(names, (x, y), scale, attributes, flipped=flipped)
 
 # Blues
 
@@ -264,7 +268,7 @@ def drawGlyphImage(glyph, scale, rect, backgroundColor=None):
 
 # Margins
 
-def drawGlyphMargins(glyph, scale, rect, drawFill=True, drawStroke=True, fillColor=None, strokeColor=None, backgroundColor=None):
+def drawGlyphMargins(glyph, scale, rect, drawFill=True, drawStroke=True, fillColor=None, strokeColor=None, backgroundColor=None, flipped=False):
     if fillColor is None:
         fillColor = getDefaultColor("glyphMarginsFill")
     if strokeColor is None:
@@ -340,7 +344,7 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
 
 # points
 
-def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, drawOffCurves=True, drawCoordinates=True, color=None, backgroundColor=None):
+def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, drawOffCurves=True, drawCoordinates=True, color=None, backgroundColor=None, flipped=False):
     layer = glyph.layer
     layerColor = None
     if layer is not None:
@@ -444,11 +448,11 @@ def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, 
             if int(y) == y:
                 y = int(y)
             text = "%d  %d" % (x, y)
-            drawTextAtPoint(text, (posX, posY), scale, attributes=attributes, xAlign="center", yAlign="top")
+            drawTextAtPoint(text, (posX, posY), scale, attributes=attributes, xAlign="center", yAlign="top", flipped=flipped)
 
 # Anchors
 
-def drawGlyphAnchors(glyph, scale, rect, drawAnchor=True, drawText=True, color=None, backgroundColor=None):
+def drawGlyphAnchors(glyph, scale, rect, drawAnchor=True, drawText=True, color=None, backgroundColor=None, flipped=False):
     if not glyph.anchors:
         return
     if color is None:
@@ -483,5 +487,5 @@ def drawGlyphAnchors(glyph, scale, rect, drawAnchor=True, drawText=True, color=N
                 NSForegroundColorAttributeName : color,
             }
             y -= 2 * scale
-            drawTextAtPoint(name, (x, y), scale, attributes, xAlign="center", yAlign="top")
+            drawTextAtPoint(name, (x, y), scale, attributes, xAlign="center", yAlign="top", flipped=flipped)
         context.restoreGraphicsState()
