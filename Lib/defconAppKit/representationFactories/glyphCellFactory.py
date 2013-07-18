@@ -1,4 +1,5 @@
 from AppKit import *
+from defconAppKit.tools.drawing import colorToNSColor
 
 GlyphCellHeaderHeight = 14
 GlyphCellMinHeightForHeader = 40
@@ -139,10 +140,26 @@ class GlyphCellFactoryDrawingController(object):
         cellMetricsFillColor.set()
         NSRectFillListUsingOperation(rects, len(rects), NSCompositeSourceOver)
 
+#    def drawCellGlyph(self):
+#        NSColor.blackColor().set()
+#        path = self.glyph.getRepresentation("defconAppKit.NSBezierPath")
+#        path.fill()
+
     def drawCellGlyph(self):
-        NSColor.blackColor().set()
-        path = self.glyph.getRepresentation("defconAppKit.NSBezierPath")
-        path.fill()
+        layers = self.font.layers
+        for layerName in reversed(layers.layerOrder):
+            layer = layers[layerName]
+            if self.glyph.name not in layer:
+                continue
+            layerColor = None
+            if layer.color is not None:
+                layerColor = colorToNSColor(layer.color)
+            if layerColor is None:
+                layerColor = NSColor.blackColor()
+            glyph = layer[self.glyph.name]
+            path = glyph.getRepresentation("defconAppKit.NSBezierPath")
+            layerColor.set()
+            path.fill()
 
     def drawCellForeground(self, rect):
         pass
