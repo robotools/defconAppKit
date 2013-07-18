@@ -9,7 +9,6 @@ from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox,
 
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
 selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
 insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
 insertionLocationShadow = NSShadow.shadow()
@@ -85,7 +84,7 @@ def _makeGlyphCellDragIcon(glyphs):
 
 
 class DefconAppKitGlyphCellNSView(NSView):
-
+        
     def initWithFrame_cellRepresentationName_detailWindowClass_(self,
         frame, cellRepresentationName, detailWindowClass):
         self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
@@ -97,6 +96,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._indexToClickRects = {}
 
         self._selection = set()
+        self._lastSelectionFound = None
         self._lastKeyInputTime = None
 
         self._columnCount = 0
@@ -415,17 +415,25 @@ class DefconAppKitGlyphCellNSView(NSView):
         elif not self._selection:
             newSelection = set([index])
         else:
-            minEdge = min(self._selection)
-            maxEdge = max(self._selection)
-            if index < minEdge:
-                newSelection = set(range(index, maxEdge + 1))
-            elif index > maxEdge:
-                newSelection = set(range(minEdge, index + 1))
+
+            if index < self._lastSelectionFound:
+                newSelection = self._selection | set(range(index, self._lastSelectionFound + 1))
             else:
-                if abs(index - minEdge) < abs(index - maxEdge):
-                    newSelection = self._selection | set(range(minEdge, index + 1))
-                else:
-                    newSelection = self._selection | set(range(index, maxEdge + 1))
+                newSelection = self._selection | set(range(self._lastSelectionFound, index + 1))
+
+            # minEdge = min(self._selection)
+            # maxEdge = max(self._selection)
+            # print minEdge, maxEdge, index, self._lastSelectionFound
+
+            # if index < minEdge:
+            #     newSelection = self._selection | set(range(index, minEdge + 1))
+            # elif index > maxEdge:
+            #     newSelection = self._selection | set(range(maxEdge, index + 1))
+            # else:
+            #     if abs(index - minEdge) < abs(index - maxEdge):
+            #         newSelection = self._selection | set(range(minEdge, index + 1))
+            #     else:
+            #         newSelection = self._selection | set(range(index, maxEdge + 1))
         return newSelection
 
     def scrollToCell_(self, index):
@@ -439,6 +447,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._havePreviousMouseDown = True
         found = self._findGlyphForEvent(event)
         self._mouseSelection(event, found, mouseDown=True)
+        self._lastSelectionFound = found
         self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
@@ -449,6 +458,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def mouseDragged_(self, event):
         found = self._findGlyphForEvent(event)
         self._mouseSelection(event, found, mouseDragged=True)
+        self._lastSelectionFound = found
         self._handleDetailWindow(event, found, mouseDragged=True)
         self.autoscroll_(event)
         # mouseUp is not called if a drag has begun.
@@ -496,7 +506,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         if self._windowIsClosed:
             return
         glyphDetailWindow = self.glyphDetailWindow()
-        if glyphDetailWindow is None:
+        if glyphDetailWindow is None or glyphDetailWindow.getNSWindow() is None:
             return
         # determine show/hide
         shouldBeVisible = True
@@ -562,7 +572,6 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._oldSelection = set(self._selection)
         if found is None:
             return
-
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
         commandDown = modifiers & NSCommandKeyMask
@@ -650,7 +659,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
         commandDown = modifiers & NSCommandKeyMask
-
+        optionDown = modifiers & NSAlternateKeyMask
         newSelection = None
 
         # delete key. call the delete callback.
@@ -664,7 +673,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         elif characters in arrowCharacters:
             self._lastKeyInputTime = None
             fieldEditor.setString_(u"")
-            self._arrowKeyDown(characters, shiftDown)
+            self._arrowKeyDown(characters, shiftDown, commandDown, optionDown)
         else:
             # get the current time
             rightNow = time.time()
@@ -681,7 +690,9 @@ class DefconAppKitGlyphCellNSView(NSView):
             fieldEditor.interpretKeyEvents_([event])
             # get the input string
             inputString = fieldEditor.string()
-
+            inputUnicode = None
+            if len(inputString) == 1:
+                inputUnicode = ord(inputString)
             match = None
             matchIndex = None
             lastResort = None
@@ -704,6 +715,12 @@ class DefconAppKitGlyphCellNSView(NSView):
                         match = item
                         matchIndex = index
                         continue
+                # try on unicode base
+                if inputUnicode is not None and inputUnicode == glyph.unicode:
+                    match = item
+                    matchIndex = index
+                    continue
+                    
                 # if the item is greater than the input string,it can be used as a last resort
                 # example:
                 # given this order: vanilla, zipimport
@@ -731,15 +748,20 @@ class DefconAppKitGlyphCellNSView(NSView):
             self.vanillaWrapper()._selection()
             self.scrollToCell_(newSelection)
 
-    def _arrowKeyDown(self, character, haveShiftKey):
+    def _arrowKeyDown(self, character, haveShiftKey, haveCommandDown, haveOptionDown):
         if not self._selection:
             currentSelection = None
         else:
-            if character == NSUpArrowFunctionKey or character == NSLeftArrowFunctionKey:
-                currentSelection = sorted(self._selection)[0]
-            else:
-                currentSelection = sorted(self._selection)[-1]
-
+            
+            currentSelection = self._lastSelectionFound
+            if haveShiftKey:
+                if character == NSUpArrowFunctionKey or character == NSLeftArrowFunctionKey:
+                    currentSelection = sorted(self._selection)[0]
+                    self._lastSelectionFound = sorted(self._selection)[-1]
+                else:
+                    self._lastSelectionFound = sorted(self._selection)[0]
+                    currentSelection = sorted(self._selection)[-1]
+            
         if character == NSUpArrowFunctionKey or character == NSDownArrowFunctionKey:
             if currentSelection is None:
                 newSelection = 0
@@ -766,14 +788,22 @@ class DefconAppKitGlyphCellNSView(NSView):
                 else:
                     newSelection = currentSelection + 1
 
+
         newSelectionIndex = newSelection
-        if haveShiftKey:
+        if haveCommandDown:
+            if haveOptionDown and newSelection in self._selection:
+                self._selection.remove(newSelection)
+            else:
+                self._selection.add(newSelection)
+            newSelection = set(self._selection)
+        elif haveShiftKey:
             newSelection = self._linearSelection(newSelection)
             if newSelection is None:
                 return
         else:
             newSelection = set([newSelection])
 
+        self._lastSelectionFound = newSelectionIndex
         self._selection = newSelection
         self.setNeedsDisplay_(True)
         self.vanillaWrapper()._selection()
@@ -898,11 +928,28 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._dropTargetOn = None
         self._dropTargetSelf = False
         # get some settings
-        allowDropOnRow = settings.get("allowDropOnRow", False)
-        allowDropBetweenRows = settings.get("allowDropBetweenRows", True)
+        allowDropOnRow = settings.get("allowsDropOnRows", False)
+        allowDropBetweenRows = settings.get("allowsDropBetweenRows", True)
         rowIndex = dropInformation["rowIndex"]
         # drop on a specific cell
-        if allowDropOnRow and rowIndex is not None:
+        if allowDropOnRow and allowDropBetweenRows and rowIndex is not None:
+            mouseLocation = self._getMouseLocation()
+            (x, y), (w, h) = self._indexToClickRects[rowIndex]
+            _s = .35
+            left = ((x, y), (w * _s, h))
+            right = ((x + w *(1-_s), y), (w * _s, h))
+            if NSPointInRect(mouseLocation, left):
+                target = (rowIndex - 1, rowIndex)
+                self._dropTargetBetween = target
+                dropInformation["dropOnRow"] = False
+            elif NSPointInRect(mouseLocation, right):
+                target = (rowIndex, rowIndex + 1)
+                dropInformation["rowIndex"] += 1
+                self._dropTargetBetween = target
+                dropInformation["dropOnRow"] = False
+            else:
+                self._dropTargetOn = rowIndex
+        elif allowDropOnRow and rowIndex is not None:
             self._dropTargetOn = rowIndex
         # drop between cells
         elif allowDropBetweenRows and rowIndex is not None:
@@ -915,6 +962,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 target = (rowIndex, rowIndex + 1)
                 dropInformation["rowIndex"] += 1
             self._dropTargetBetween = target
+            dropInformation["dropOnRow"] = False
         # drop on the view
         if not allowDropOnRow or not allowDropBetweenRows or rowIndex is None:
             self._dropTargetSelf = True
@@ -932,6 +980,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         # other times it won't
         else:
             return settings.get("operation", NSDragOperationCopy)
+        self._dropTargetBetween = None
+        self._dropTargetOn = None
+        self._dropTargetSelf = False
         return NSDragOperationNone
 
     def _unpackPboard(self, settings, draggingInfo):
@@ -942,10 +993,10 @@ class DefconAppKitGlyphCellNSView(NSView):
         return data
 
     def draggingEntered_(self, sender):
-        return self._handleDrop(sender, isProposal=True, callCallback=False)
+        return self._handleDrop(sender, isProposal=True, callCallback=True)
 
     def draggingUpdated_(self, sender):
-        return self._handleDrop(sender, isProposal=True, callCallback=False)
+        return self._handleDrop(sender, isProposal=True, callCallback=True)
 
     def draggingExited_(self, sender):
         self._dropTargetBetween = None
