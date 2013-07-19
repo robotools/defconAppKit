@@ -36,45 +36,101 @@ positiveFloatFormatter.setAllowsFloats_(True)
 positiveFloatFormatter.setGeneratesDecimalNumbers_(False)
 positiveFloatFormatter.setMinimum_(NSNumber.numberWithInt_(0))
 
-class NegativeIntegerEditText(vanilla.EditText):
+## number inpunt
+class NumberEditText(vanilla.EditText):
 
-    def __init__(self, *args, **kwargs):
-        self._finalCallback = kwargs.get("callback")
-        kwargs["callback"] = self._textEditCallback
-        super(NegativeIntegerEditText, self).__init__(*args, **kwargs)
+    def __init__(self, posSize, text="", sizeStyle="regular", callback=None, allowFloat=True, allowNegative=True, allowEmpty=True, minimum=None, maximum=None, decimals=2, formatter=None):
+        super(NumberEditText, self).__init__(posSize, text="", callback=self._entryCallback, sizeStyle=sizeStyle)
+        self._finalCallback = callback
+        self._allowFloat = allowFloat
+        self._allowNegative = allowNegative
+        self._allowEmpty = allowEmpty
+        self._minimum = minimum
+        self._maximum = maximum
+        self._numberStringFormat = "%i"
+        if allowFloat:
+            self._numberStringFormat = "%%.%df" % decimals
+        if allowFloat:
+            self._numberClass = float
+        else:
+            self._numberClass = int
+        self._previousString = None
+        self.set(text)
 
-    def _breakCycles(self):
-        self._finalCallback = None
-        super(NegativeIntegerEditText, self)._breakCycles()
+    def _numberToString(self, value):
+        return self._numberStringFormat % value
 
-    def _get(self):
-        return self._nsObject.stringValue()
+    def _stringToNumber(self, string):
+        value = None
+        newString = string
+        try:
+            value = self._numberClass(string)
+            if value < 0 and not self._allowNegative:
+                newString = self._previousString
+                value, n = self._stringToNumber(newString)
+            if self._minimum is not None and value < self._minimum:
+                value = self._minimum
+                newString = self._numberToString(value)
+            if self._maximum is not None and value > self._maximum:
+                value = self._maximum
+                newString = self._numberToString(value)
+        except ValueError:
+            value = None
+            if string == "":
+                pass
+            elif string == "-" and self._allowNegative:
+                pass
+            elif string == "." and self._allowFloat:
+                pass
+            elif string == "-." and self._allowFloat and self._allowNegative:
+                pass
+            else:
+                newString = self._previousString
+        # handle -0.0
+        if value == 0:
+            value = 0
+        if not self._allowEmpty and value is None:
+            if self._minimum is not None:
+                value = self._minimum
+            else:
+                value = 0
+            newString = self._numberToString(value)
+        return value, newString
+
+    def _entryCallback(self, sender):
+        oldString = super(NumberEditText, self).get()
+        value, newString = self._stringToNumber(oldString)
+        self._previousString = newString
+        if newString != oldString:
+            super(NumberEditText, self).set(newString)
+        if self._finalCallback is not None:
+            self._finalCallback(sender)
 
     def get(self):
-        v = self._get()
-        if not v:
-            return None
-        v = int(v)
-        return v
+        string = super(NumberEditText, self).get()
+        return self._stringToNumber(string)[0]
 
-    def _textEditCallback(self, sender):
-        value = sender._get()
-        if value != "-":
-            try:
-                v = int(value)
-                if v > 0:
-                    sender.set("")
-                    return
-            except ValueError:
-                if value.startswith("-"):
-                    value = value = "-"
-                else:
-                    value = ""
-                sender.set(value)
-                return
-            if self._finalCallback is not None:
-                self._finalCallback(sender)
-
+    def set(self, value):
+        if value is None:
+            self._previousString = ""
+        else:
+            self._previousString = value
+        if value == "":
+            value = None
+        if isinstance(value, basestring):
+            if self._allowFloat:
+                value = float(value)
+            else:
+                value = int(value)
+        if value is not None:
+            value = self._numberToString(value)
+        elif value is None and not self._allowEmpty:
+            if self._minimum is not None:
+                value = self._minimum
+            else:
+                value = 0
+            value = self._numberToString(value)
+        super(NumberEditText, self).set(value)
 
 class NumberSequenceFormatter(NSFormatter):
 
@@ -715,7 +771,7 @@ class EmbeddingControl(vanilla.Group):
     def __init__(self, posSize, callback):
         super(EmbeddingControl, self).__init__(posSize)
         self._callback = callback
-        self.basicsPopUp = vanilla.PopUpButton((0, 0, -0, 20), embeddingPopUpOptions, callback=self._controlCallback)
+        self.basicsPopUp = vanilla.PopUpButton((1, 0, -0, 20), embeddingPopUpOptions, callback=self._controlCallback)
         self.subsettingCheckBox = vanilla.CheckBox((0, 30, -0, 20), "Allow Subsetting", callback=self._controlCallback)
         self.bitmapCheckBox = vanilla.CheckBox((0, 55, -10, 20), "Allow Only Bitmap Embedding", callback=self._controlCallback)
         self.subsettingCheckBox.enable(False)
@@ -750,8 +806,9 @@ class EmbeddingControl(vanilla.Group):
     def get(self):
         values = []
         basicValue = self.basicsPopUp.get()
-        if basicValue != 0:
+        if basicValue == 0:
             return values
+        values.append(basicValue)
         if not self.subsettingCheckBox.get():
             values.append(8)
         if self.bitmapCheckBox.get():
@@ -826,6 +883,14 @@ def noneToZero(value):
         return 0
     return value
 
+def intToBool(value):
+    return bool(value)
+
+def emptyToNone(value):
+    if not value:
+        return None
+    return value
+
 ## Basic Naming
 
 familyNameItem = inputItemDict(
@@ -876,8 +941,8 @@ unitsPerEmItem = inputItemDict(
 descenderItem = inputItemDict(
     title="Descender",
     hasDefault=False,
-    controlClass=NegativeIntegerEditText,
-    controlOptions=dict(style="number"),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=True, maximum=0),
     conversionToUFO=noneToZero
 )
 xHeightItem = inputItemDict(
@@ -897,8 +962,9 @@ ascenderItem = inputItemDict(
 )
 italicAngleItem = inputItemDict(
     title="Italic Angle",
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=True, allowNegative=True),
     hasDefault=False,
-    controlOptions=dict(style="number", formatter=floatFormatter)
 )
 
 ## Basic Legal
@@ -1017,12 +1083,14 @@ openTypeNameUniqueIDItem = inputItemDict(
 openTypeNameDescriptionItem = inputItemDict(
     title="Description",
     hasDefault=False,
-    controlOptions=dict(lineCount=5)
+    controlOptions=dict(lineCount=5),
+    conversionToUFO=emptyToNone
 )
 openTypeNameSampleTextItem = inputItemDict(
     title="Sample Text",
     hasDefault=False,
-    controlOptions=dict(lineCount=5)
+    controlOptions=dict(lineCount=5),
+    conversionToUFO=emptyToNone
 )
 
 ## OpenType hhea Table
@@ -1033,8 +1101,8 @@ openTypeHheaAscenderItem = inputItemDict(
 )
 openTypeHheaDescenderItem = inputItemDict(
     title="Descender",
-    controlClass=NegativeIntegerEditText,
-    controlOptions=dict(style="number"),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=True, maximum=0),
     conversionToUFO=noneToZero
 )
 openTypeHheaLineGapItem = inputItemDict(
@@ -1083,14 +1151,8 @@ openTypeVheaCaretOffsetItem = inputItemDict(
 
 ## OpenType OS/2 Table
 
-openTypeOS2WeightClassItem = inputItemDict(
-    title="usWeightClass",
-    hasDefault=False,
-    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
-)
-
 openTypeOS2WidthClassOptions = [
-    "None",
+    "none",
     "Ultra-condensed",
     "Extra-condensed",
     "Condensed",
@@ -1103,14 +1165,12 @@ openTypeOS2WidthClassOptions = [
 ]
 
 def openTypeOS2WidthClassFromUFO(value):
-    if value is None:
-        return 0
-    return value
+    return value# - 1
 
 def openTypeOS2WidthClassToUFO(value):
     if value == 0:
         return None
-    return value
+    return value# + 1
 
 openTypeOS2WidthClassItem = inputItemDict(
     title="usWidthClass",
@@ -1121,7 +1181,11 @@ openTypeOS2WidthClassItem = inputItemDict(
     conversionToUFO=openTypeOS2WidthClassToUFO
 )
 
-
+openTypeOS2WeightClassItem = inputItemDict(
+    title="usWeightClass",
+    hasDefault=False,
+    controlOptions=dict(style="number", formatter=integerPositiveFormatter)
+)
 
 openTypeOS2SelectionOptions = [
     "1 UNDERSCORE",
@@ -1332,8 +1396,8 @@ openTypeOS2TypoAscenderItem = inputItemDict(
 )
 openTypeOS2TypoDescenderItem = inputItemDict(
     title="sTypoDescender",
-    controlClass=NegativeIntegerEditText,
-    controlOptions=dict(style="number"),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=True, maximum=0),
     conversionToUFO=noneToZero
 )
 openTypeOS2TypoLineGapItem = inputItemDict(
@@ -1501,18 +1565,21 @@ postscriptBlueShiftItem = inputItemDict(
 )
 postscriptBlueScaleItem = inputItemDict(
     title="BlueScale",
-    controlOptions=dict(style="number", formatter=positiveFloatFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=True, allowNegative=False, decimals=6)
 )
 postscriptForceBoldItem = inputItemDict(
     title="ForceBold",
-    controlClass=vanilla.CheckBox
+    controlClass=vanilla.CheckBox,
+    conversionToUFO=intToBool,
 )
 
 ## Postscript Dimensions
 
 postscriptSlantAngleItem = inputItemDict(
     title="SlantAngle",
-    controlOptions=dict(style="number", formatter=floatFormatter)
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=True, allowNegative=True)
 )
 postscriptUnderlineThicknessItem = inputItemDict(
     title="UnderlineThickness",
@@ -1521,12 +1588,14 @@ postscriptUnderlineThicknessItem = inputItemDict(
 )
 postscriptUnderlinePositionItem = inputItemDict(
     title="UnderlinePosition",
-    controlOptions=dict(style="number", formatter=integerFormatter),
+    controlClass=NumberEditText,
+    controlOptions=dict(style="number", allowFloat=False, allowNegative=True),
     hasDefault=True
 )
 postscriptIsFixedPitchItem = inputItemDict(
     title="isFixedPitched",
-    controlClass=vanilla.CheckBox
+    controlClass=vanilla.CheckBox,
+    conversionToUFO=intToBool,
 )
 postscriptDefaultWidthXItem = inputItemDict(
     title="DefaultWidthX",
@@ -1544,6 +1613,12 @@ postscriptNominalWidthXItem = inputItemDict(
 postscriptDefaultCharacterItem = inputItemDict(
     title="Default Character"
 )
+
+def postscriptWindowsCharacterSetFromUFO(value):
+    return value - 1
+
+def postscriptWindowsCharacterSetToUFO(value):
+    return value + 1
 
 postscriptWindowsCharacterSetOptions = [
     "Western CP 1252 /ANSI",
@@ -1568,18 +1643,12 @@ postscriptWindowsCharacterSetOptions = [
     "OEM / DOS"
 ]
 
-def postscriptWindowsCharacterSetFromUFO(value):
-   return value - 1
-
-def postscriptWindowsCharacterSetToUFO(value):
-   return value + 1
-
 postscriptWindowsCharacterSetItem = inputItemDict(
-   title="Microsoft Character Set",
-   controlClass=vanilla.PopUpButton,
-   controlOptions=dict(items=postscriptWindowsCharacterSetOptions),
-   conversionFromUFO=postscriptWindowsCharacterSetFromUFO,
-   conversionToUFO=postscriptWindowsCharacterSetToUFO
+    title="Microsoft Character Set",
+    controlClass=vanilla.PopUpButton,
+    controlOptions=dict(items=postscriptWindowsCharacterSetOptions),
+    conversionFromUFO=postscriptWindowsCharacterSetFromUFO,
+    conversionToUFO=postscriptWindowsCharacterSetToUFO
 )
 
 ## Miscellaneous
@@ -1908,7 +1977,6 @@ class DefconAppKitFontInfoSectionView(NSView):
             v._scrollView.setPosSize(v._scrollView._posSize)
             v._adjustControlSizes()
 
-
 class DefconAppKitFontInfoCategoryControlsGroup(NSView):
 
     def isFlipped(self):
@@ -2027,11 +2095,21 @@ class FontInfoSection(vanilla.Group):
                     if itemOptions.get("lineCount", 1) != 1:
                         itemClass = vanilla.TextEditor
                 ## EditText
-                if itemClass == vanilla.EditText or itemClass == NegativeIntegerEditText:
+                if itemClass == vanilla.EditText:
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputEditText_%s" % fontAttribute
                     itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback, formatter=itemOptions.get("formatter"))
+                    setattr(controlView, itemAttribute, itemControl)
+                ## NumberEditText
+                elif itemClass == NumberEditText:
+                    itemHeight = 22
+                    currentTop -= itemHeight
+                    itemAttribute = "inputEditText_%s" % fontAttribute
+                    kwargs = dict(itemOptions)
+                    if "style" in kwargs:
+                        del kwargs["style"]
+                    itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), callback=self._controlEditCallback, **kwargs)
                     setattr(controlView, itemAttribute, itemControl)
                 ## TextEditor
                 elif itemClass == vanilla.TextEditor:
@@ -2045,6 +2123,8 @@ class FontInfoSection(vanilla.Group):
                         l = itemInputLeft
                         w = itemWidth
                     itemControl = itemClass((l, currentTop, w, itemHeight), callback=self._controlEditCallback)
+                    itemControl.getNSTextView().setRichText_(False)
+                    itemControl.getNSTextView().setUsesFontPanel_(False)
                     setattr(controlView, itemAttribute, itemControl)
                 ## RadioGroup
                 elif itemClass == vanilla.RadioGroup:
@@ -2104,7 +2184,6 @@ class FontInfoSection(vanilla.Group):
                     itemControl = itemClass((itemInputLeft, currentTop, itemWidth, itemHeight), self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
-                    print itemClass
                     continue
                 ## default
                 if item["hasDefault"]:
@@ -2121,6 +2200,7 @@ class FontInfoSection(vanilla.Group):
                 ## final offset
                 currentTop -= 15
 
+
         # scroll view
         height = abs(currentTop)
         self._scrollView = vanilla.ScrollView((0, 62, -0, -0), controlView.getNSView(), backgroundColor=backgroundColor, hasHorizontalScroller=False)
@@ -2131,9 +2211,13 @@ class FontInfoSection(vanilla.Group):
 
         ##load info
         self._loadInfo()
+        self._updatePlaceholders()
+        self._font.info.addObserver(self, "_infoChanged", "Info.Changed") 
         self._finishedSetup = True
 
     def _breakCycles(self):
+        if self._font.info.hasObserver(self, "Info.Changed"): 
+            self._font.info.removeObserver(self, "Info.Changed")
         self._jumpButtons = []
         super(FontInfoSection, self)._breakCycles()
 
@@ -2220,6 +2304,7 @@ class FontInfoSection(vanilla.Group):
             value = conversionFunction(value)
         # set
         setattr(self._font.info, attribute, value)
+        
 
     def _useDefaultCallback(self, sender):
         state = sender.get()
@@ -2230,7 +2315,10 @@ class FontInfoSection(vanilla.Group):
         if state:
             value = None
         else:
-            value = getAttrWithFallback(self._font.info, fontAttribute)
+            try:
+                value = getAttrWithFallback(self._font.info, fontAttribute)
+            except:
+                value = None
         # set in the font
         setattr(self._font.info, fontAttribute, value)
         # convert for the interface
@@ -2246,7 +2334,25 @@ class FontInfoSection(vanilla.Group):
         else:
             control.set(value)
 
-
+    def _infoChanged(self, notification): 
+        self._updatePlaceholders()
+    
+    def _updatePlaceholders(self):
+        for control, attributeData in self._controlToAttributeData.items(): 
+            if isinstance(control, vanilla.EditText): 
+                if not attributeData["hasDefault"]: 
+                    continue 
+                attribute = attributeData["fontAttribute"] 
+                conversionFunction = attributeData["conversionToUFO"] 
+                try:
+                    value = getAttrWithFallback(self._font.info, attribute) 
+                except:
+                    value = None
+                if value is None: 
+                    value = "" 
+                if not isinstance(value, basestring): 
+                    value = str(value) 
+                control.setPlaceholder(value)
 # ---------
 # main view
 # ---------
@@ -2254,7 +2360,7 @@ class FontInfoSection(vanilla.Group):
 
 class FontInfoView(vanilla.Tabs):
 
-    def __init__(self, posSize, font, controlAdditions=None):
+    def __init__(self, posSize, font, controlAdditions=[]):
         allControlOrganization = controlOrganization + controlAdditions
         sectionNames = [section["title"] for section in allControlOrganization]
         super(FontInfoView, self).__init__(posSize, sectionNames)
