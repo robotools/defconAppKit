@@ -727,6 +727,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 newSelection = lastResortIndex
 
         if newSelection is not None:
+            self._lastSelectionFound = newSelection
             self.setSelection_(set([newSelection]))
             self.vanillaWrapper()._selection()
             self.scrollToCell_(newSelection)
