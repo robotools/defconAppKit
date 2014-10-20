@@ -159,7 +159,7 @@ class JumpToLinePopUpWindow(object):
         formatter.setFormat_("#;0;-#")
         formatter.setAllowsFloats_(False)
         formatter.setGeneratesDecimalNumbers_(False)
-        formatter.setMinimum_(1)
+        formatter.setMinimum_(NSNumber.numberWithInt_(1))
 
         self.w = InteractivePopUpWindow((x, y, width, height))
         self.w.title = vanilla.TextBox((15, 18, 88, 17), "Jump to line:")

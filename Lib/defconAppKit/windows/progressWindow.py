@@ -13,7 +13,7 @@ class ProgressWindow(BaseWindowController):
             tickCount = 0
         else:
             isIndeterminate = False
-        self.w.progress = vanilla.ProgressBar((15, 15, -15, 10), maxValue=tickCount, isIndeterminate=isIndeterminate, sizeStyle="small")
+        self.w.progress = vanilla.ProgressBar((15, 15, -15, 12), maxValue=tickCount, isIndeterminate=isIndeterminate, sizeStyle="small")
         self.w.text = vanilla.TextBox((15, 32, -15, 14), text, sizeStyle="small")
         self.w.progress.start()
         self.w.center()
