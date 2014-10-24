@@ -47,7 +47,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._fitToFrame = None
 
         self._backgroundColor = NSColor.whiteColor()
-        self._glyphColor = NSColor.blackColor()
+        self._glyphColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1)
         self._alternateHighlightColor = defaultAlternateHighlightColor
         self._notdefBackgroundColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 0, 0, .25)
         return self
@@ -538,7 +538,7 @@ class GlyphLineView(PlacardScrollView):
         glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
         autohideScrollers=True, showPointSizePlacard=False):
         if glyphColor is None:
-            glyphColor = NSColor.blackColor()
+            glyphColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1)
         if backgroundColor is None:
             backgroundColor = NSColor.whiteColor()
         if alternateHighlightColor is None:
@@ -718,7 +718,7 @@ class GlyphLineView(PlacardScrollView):
 
     def setShowLayers(self, value):
         self._glyphLineView.setShowLayers_(value)
-        
+
 
 # ------------------
 # Basic Glyph Record
