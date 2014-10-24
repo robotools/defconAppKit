@@ -163,7 +163,7 @@ def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, c
         ("Cap Height", "capHeight"),
         ("Ascender", "ascender")
     )
-    toDraw = [(name, getattr(font.info, attr)) for name, attr in toDraw if getattr(font.info, attr) is not None]    
+    toDraw = [(name, getattr(font.info, attr)) for name, attr in toDraw if getattr(font.info, attr) is not None]
     toDraw.append(("Baseline", 0))
     positions = {}
     for name, position in toDraw:
