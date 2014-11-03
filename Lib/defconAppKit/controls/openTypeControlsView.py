@@ -99,6 +99,10 @@ class OpenTypeControlsView(vanilla.ScrollView):
             del self._controlGroup.gposTitle
         if hasattr(self._controlGroup, "gsubTitle"):
             del self._controlGroup.gsubTitle
+        # stylistic set names
+        if hasattr(font, "stylisticSetNames"):
+            stylisticSetNames = font.stylisticSetNames
+        else: stylisticSetNames = {}
         # GSUB
         top = self._dynamicTop
         if font is None:
@@ -121,6 +125,13 @@ class OpenTypeControlsView(vanilla.ScrollView):
                 setattr(self._controlGroup, attr, obj)
                 self._gsubAttributes[attr] = tag
                 top += 20
+                # stylistic set name
+                if tag in stylisticSetNames:
+                    attr = "ssName_%s" % tag
+                    setName = stylisticSetNames[tag]
+                    obj = vanilla.TextBox((26, top, -10, 13), setName, sizeStyle="mini")
+                    setattr(self._controlGroup, attr, obj)
+                    top += 13
             top += 10
         # GPOS
         if font is None:
