@@ -129,13 +129,16 @@ class DefconAppKitGlyphCellNSView(NSView):
     def setAllowsDrag_(self, value):
         self._allowDrag = value
 
+    def getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(self, glyph, representationName, representationArguments):
+        return glyph.getRepresentation(representationName, **representationArguments)
+
     def preloadGlyphCellImages(self):
         representationName = self._cellRepresentationName
         representationArguments = self._cellRepresentationArguments
-        cellWidth = self._cellWidth
-        cellHeight = self._cellHeight
+        representationArguments["width"] = self._cellWidth
+        representationArguments["height"] = self._cellHeight
         for glyph in self._glyphs:
-            glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
+            self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
 
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
@@ -300,15 +303,17 @@ class DefconAppKitGlyphCellNSView(NSView):
         backgroundColor.set()
         NSRectFill(self.frame())
 
-        representationName = self._cellRepresentationName
-        representationArguments = self._cellRepresentationArguments
-
         cellWidth = self._cellWidth
         cellHeight = self._cellHeight
         width, height = self.frame().size
         left = 0
         top = height
         top = cellHeight
+
+        representationName = self._cellRepresentationName
+        representationArguments = self._cellRepresentationArguments
+        representationArguments["width"] = cellWidth
+        representationArguments["height"] = cellHeight
 
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
@@ -326,7 +331,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._indexToClickRects[index] = rect
 
             if NSIntersectsRect(visibleRect, rect):
-                image = glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
+                image = self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
                 image.drawAtPoint_fromRect_operation_fraction_(
                     (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                     )
