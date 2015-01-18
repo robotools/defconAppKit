@@ -9,8 +9,7 @@ from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox,
 
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
+selectionColor = NSColor.selectedControlColor()
 insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
 insertionLocationShadow = NSShadow.shadow()
 insertionLocationShadow.setShadowColor_(NSColor.whiteColor())
@@ -334,7 +333,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
                 if index in self._selection:
                     selectionColor.set()
-                    r = ((left+1, t+1), (cellWidth-3, cellHeight-3))
+                    r = ((left, t), (cellWidth, cellHeight))
                     NSRectFillUsingOperation(r, NSCompositePlusDarker)
                     NSColor.whiteColor().set()
 
