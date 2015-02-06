@@ -1,11 +1,23 @@
 import weakref
 from AppKit import *
 import vanilla
-from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardSegmentedButton
 from defconAppKit.controls.glyphCellView import DefconAppKitGlyphCellNSView, gridColor, GlyphInformationPopUpWindow
+from defconAppKit.controls.fontInfoView import GradientButtonBar
 
 
-class GlyphCollectionView(vanilla.List):
+class DefconAppKitGlyphCollectionView(NSView):
+
+    def viewDidMoveToWindow(self):
+        wrapper = self.vanillaWrapper()
+        wrapper.setPosSize(wrapper.getPosSize())
+        for subview in self.subviews():
+            if hasattr(subview, "vanillaWrapper"):
+                wrapper = subview.vanillaWrapper()
+                if wrapper is not None:
+                    wrapper.setPosSize(wrapper.getPosSize())
+
+
+class GlyphCollectionView(vanilla.Group):
 
     """
     This object presents the user with a view showing a collection of glyphs.
@@ -71,8 +83,7 @@ class GlyphCollectionView(vanilla.List):
     The drag and drop type for the view. Only change this if you know what you are doing.
     """
 
-    nsScrollViewClass = DefconAppKitPlacardNSScrollView
-    glyphCellViewClass = DefconAppKitGlyphCellNSView
+    nsViewClass = DefconAppKitGlyphCollectionView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
         showModePlacard=True,
@@ -80,12 +91,17 @@ class GlyphCollectionView(vanilla.List):
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
         selfDropSettings=None, selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
-        otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
-        # placeholder attributes
-        self._selectionCallback = None
-        self._doubleClickTarget = None
+        otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"
+    ):
+        super(GlyphCollectionView, self).__init__(posSize)
+        bottom = 0
+        if showModePlacard:
+            bottom = -19
+        self._selectionCallback = selectionCallback
+        self._doubleClickCallback = doubleClickCallback
         self._deleteCallback = deleteCallback
         self._dragAndDropType = dragAndDropType
+        self._enableDelete = enableDelete
         ## set up the list
         self._listEditChangingAttribute = None
         self._listEditChangingGlyph = None
@@ -122,13 +138,15 @@ class GlyphCollectionView(vanilla.List):
             dragSettings = dict(type=dragAndDropType, callback=self._packListRowsForDrag)
         if listColumnDescriptions is None:
             listColumnDescriptions = [dict(title="Name", attribute="name")]
-        super(GlyphCollectionView, self).__init__(posSize, [], columnDescriptions=listColumnDescriptions,
+        self._list = vanilla.List((0, 0, 0, bottom), [],
+            columnDescriptions=listColumnDescriptions,
             editCallback=editCallback, selectionCallback=selectionCallback, doubleClickCallback=doubleClickCallback,
             showColumnTitles=listShowColumnTitles, enableTypingSensitivity=True, enableDelete=enableDelete,
-            autohidesScrollers=False,
+            autohidesScrollers=True,
             selfDropSettings=selfDropSettings, selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,
             selfApplicationDropSettings=selfApplicationDropSettings, otherApplicationDropSettings=otherApplicationDropSettings,
-            dragSettings=dragSettings)
+            dragSettings=dragSettings
+        )
         self._keyToAttribute = {}
         self._orderedListKeys = []
         self._wrappedListItems = {}
@@ -150,19 +168,24 @@ class GlyphCollectionView(vanilla.List):
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
         ## set up the placard
         if showModePlacard:
-            placardW = 34
-            placardH = 16
-            self._placard = vanilla.Group((0, 0, placardW, placardH))
-            self._placard.button = PlacardSegmentedButton((0, 0, placardW, placardH),
-                [dict(imageNamed="defconAppKitPlacardCellImage", width=16), dict(imageNamed="defconAppKitPlacardListImage", width=18)],
-                callback=self._placardSelection, sizeStyle="mini")
-            self._nsObject.setPlacard_(self._placard.getNSView())
+            self._placard = vanilla.Group((0, -21, 0, 21))
+            self._placard.base = GradientButtonBar((0, 0, 0, 0))
+            modeButton = vanilla.SegmentedButton(
+                (0, 0, 43, 0),
+                [
+                    dict(imageNamed="defconAppKitPlacardCellImage", width=20),
+                    dict(imageNamed="defconAppKitPlacardListImage", width=20)
+                ],
+                callback=self._placardSelection
+            )
+            modeButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
+            modeButton.getNSSegmentedButton().setSegmentStyle_(NSSegmentStyleSmallSquare)
+            modeButton.set(0)
+            self._placard.button = modeButton
         else:
             self._placard = None
         ## tweak the scroll view
-        self._nsObject.setBackgroundColor_(gridColor)
-        ## table view tweak
-        self._haveTweakedColumnWidths = initialMode == "list"
+        self._list.getNSScrollView().setBackgroundColor_(gridColor)
         ## set the mode
         self._mode = None
         self.setMode(initialMode)
@@ -192,7 +215,7 @@ class GlyphCollectionView(vanilla.List):
         selection = self.getSelection()
         placard = self._placard
         if mode == "list":
-            documentView = self._tableView
+            documentView = self._list.getNSTableView()
             if placard is not None:
                 placard.button.set(1)
             # the cell view needs to be told to stop paying attention to the window
@@ -201,15 +224,11 @@ class GlyphCollectionView(vanilla.List):
             documentView = self._glyphCellView
             if placard is not None:
                 placard.button.set(0)
-        self._nsObject.setDocumentView_(documentView)
+        self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode
         self.setSelection(selection)
         if mode == "cell":
             self._glyphCellView.recalculateFrame()
-        elif not self._haveTweakedColumnWidths:
-            tableView = self.getNSTableView()
-            tableView.sizeToFit()
-            self._haveTweakedColumnWidths = True
 
     def getMode(self):
         """
@@ -226,7 +245,7 @@ class GlyphCollectionView(vanilla.List):
         Get the selection in the view as a list of indexes.
         """
         if self._mode == "list":
-            return super(GlyphCollectionView, self).getSelection()
+            return self._list.getSelection()
         return self._glyphCellView.getSelection()
 
     def setSelection(self, selection):
@@ -235,7 +254,7 @@ class GlyphCollectionView(vanilla.List):
         should be a list of indexes.
         """
         if self._mode == "list":
-            super(GlyphCollectionView, self).setSelection(selection)
+            self._list.setSelection(selection)
         else:
             self._glyphCellView.setSelection_(selection)
 
@@ -243,7 +262,7 @@ class GlyphCollectionView(vanilla.List):
         """
         Scroll the view so that the current selection is visible.
         """
-        super(GlyphCollectionView, self).scrollToSelection()
+        self._list.scrollToSelection()
         selection = self.getSelection()
         if selection:
             self._glyphCellView.scrollToCell_(selection[0])
@@ -267,23 +286,23 @@ class GlyphCollectionView(vanilla.List):
 
     def _selfDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)
-        return self._selfDropSettings["finalCallback"](self, dropInfo)
+        return self._list._selfDropSettings["finalCallback"](self, dropInfo)
 
     def _selfWindowDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)
-        return self._selfWindowDropSettings["finalCallback"](self, dropInfo)
+        return self._list._selfWindowDropSettings["finalCallback"](self, dropInfo)
 
     def _selfDocumentDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)
-        return self._selfDocumentDropSettings["finalCallback"](self, dropInfo)
+        return self._list._selfDocumentDropSettings["finalCallback"](self, dropInfo)
 
     def _selfApplicationDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)
-        return self._selfApplicationDropSettings["finalCallback"](self, dropInfo)
+        return self._list._selfApplicationDropSettings["finalCallback"](self, dropInfo)
 
     def _otherApplicationDropCallback(self, sender, dropInfo):
         dropInfo = self._convertDropInfo(dropInfo)
-        return self._otherApplicationDropSettings["finalCallback"](self, dropInfo)
+        return self._list._otherApplicationDropSettings["finalCallback"](self, dropInfo)
 
     # -------------
     # list behavior
@@ -327,20 +346,21 @@ class GlyphCollectionView(vanilla.List):
 
     def _listEditCallback(self, sender):
         # only listen to this if the list is the first responder
-        window = self._tableView.window()
+        window = self.getNSView().window()
+        tableView = self._list.getNSTableView()
         if window is None:
             return
         app = NSApp()
         windows = [app.keyWindow(), app.mainWindow()]
         if window not in windows:
             return
-        if window.firstResponder() != self._tableView:
+        if window.firstResponder() != tableView:
             responder = window.firstResponder()
             foundSelf = False
             if hasattr(responder, "superview"):
                 superview = responder.superview()
                 while superview is not None:
-                    if superview == self._tableView:
+                    if superview == tableView:
                         foundSelf = True
                         break
                     else:
@@ -360,7 +380,7 @@ class GlyphCollectionView(vanilla.List):
         else:
             editedKey = self._orderedListKeys[columnIndex]
             editedAttribute = self._keyToAttribute[editedKey]
-        item = super(GlyphCollectionView, self).__getitem__(rowIndex)
+        item = self._list[rowIndex]
         glyph = item["_glyph"]()
         self._listEditChangingAttribute = editedAttribute
         self._listEditChangingGlyph = glyph
@@ -408,7 +428,7 @@ class GlyphCollectionView(vanilla.List):
 
     def _unwrapListItems(self, items=None):
         if items is None:
-            items = super(GlyphCollectionView, self).get()
+            items = self._list.get()
         glyphs = [d["_glyph"]() for d in items]
         return glyphs
 
@@ -419,7 +439,8 @@ class GlyphCollectionView(vanilla.List):
             return
         selection = self.getSelection()
         # list
-        super(GlyphCollectionView, self)._removeSelection()
+        for index in reversed(sorted(selection)):
+            del self._list[index]
         # cell
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
         # call the callback
@@ -430,7 +451,7 @@ class GlyphCollectionView(vanilla.List):
         return glyph in self._wrappedListItems
 
     def __getitem__(self, index):
-        item = super(GlyphCollectionView, self).__getitem__(index)
+        item = self._list[index]
         glyph = self._unwrapListItems([item])[0]
         return glyph
 
@@ -438,8 +459,8 @@ class GlyphCollectionView(vanilla.List):
         # list
         existing = self[index]
         item = self._wrapGlyphForList(glyph)
-        super(GlyphCollectionView, self).__setitem__(index, glyph)
-        if not super(GlyphCollectionView, self).__contains__(existing):
+        self._list[index] = item
+        if not existing in self._list:
             otherGlyph = existing["_glyph"]
             del self._wrappedListItems[otherGlyph]
             self._unsubscribeFromGlyph(otherGlyph)
@@ -449,8 +470,8 @@ class GlyphCollectionView(vanilla.List):
     def __delitem__(self, index):
         # list
         item = self[index]
-        super(GlyphCollectionView, self).__delitem__(index)
-        if not super(GlyphCollectionView, self).__contains__(item):
+        del self._list[index]
+        if not item in self._list:
             glyph = item["_glyph"]
             del self._wrappedListItems[glyph]
             self._unsubscribeFromGlyph(glyph)
@@ -460,15 +481,15 @@ class GlyphCollectionView(vanilla.List):
     def append(self, glyph):
         # list
         item = self._wrapGlyphForList(glyph)
-        super(GlyphCollectionView, self).append(item)
+        self._list.append(item)
         # cell view
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def remove(self, glyph):
         # list
         item = self._wrappedListItems[glyph]
-        super(GlyphCollectionView, self).remove(item)
-        if not super(GlyphCollectionView, self).__contains__(item):
+        self._list.remove(item)
+        if not item in self._list:
             glyph = item["_glyph"]
             del self._wrappedListItems[glyph]
             self._unsubscribeFromGlyph(glyph)
@@ -477,19 +498,19 @@ class GlyphCollectionView(vanilla.List):
 
     def index(self, glyph):
         item = self._wrappedListItems[glyph]
-        return super(GlyphCollectionView, self).index(item)
+        return self._list.index(item)
 
     def insert(self, index, glyph):
         # list
         item = self._wrapGlyphForList(glyph)
-        super(GlyphCollectionView, self).insert(index, item)
+        self._list.insert(index, item)
         # cell view
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def extend(self, glyphs):
         # list
         items = [self._wrapGlyphForList(glyph) for glyph in glyphs]
-        super(GlyphCollectionView, self).extend(items)
+        self._list.extend(items)
         # cell view
         self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
@@ -507,7 +528,7 @@ class GlyphCollectionView(vanilla.List):
         # set the cell view
         self._glyphCellView.setGlyphs_(glyphs)
         # set the list
-        super(GlyphCollectionView, self).set(wrappedGlyphs)
+        self._list.set(wrappedGlyphs)
 
     def get(self):
         """

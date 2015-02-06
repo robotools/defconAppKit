@@ -140,6 +140,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         for glyph in self._glyphs:
             self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
 
+    def getGlyphs(self):
+        return self._glyphs
+
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
         newSelection = set([glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs])
@@ -446,8 +449,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
-            if vanillaWrapper._doubleClickTarget is not None:
-                vanillaWrapper._doubleClickTarget.action_(self)
+            if vanillaWrapper._doubleClickCallback is not None:
+                vanillaWrapper._doubleClickCallback(vanillaWrapper)
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):
