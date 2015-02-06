@@ -55,6 +55,14 @@ class GlyphCollectionView(vanilla.Group):
     Flag to indicate if the mode switch placard should be shown. This can be
     useful if you only want to show the list or the cell view.
 
+    placardActionItems
+    An optional list of items (defined as defined in vanilla.ActionButton) that
+    will be shown via a vanilla.ActionButton. The default is None.
+
+    showPlacard
+    Flag to indicate if the placard should be shown. If showModePlacard is True
+    or placardActionItems is not None, showPlacard will automatically be True.
+
     cellRepresentationName
     The representation name used to fetch the cell representations.
 
