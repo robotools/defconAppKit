@@ -87,7 +87,7 @@ class GlyphCollectionView(vanilla.Group):
     glyphCellViewClass = DefconAppKitGlyphCellNSView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
-        showPlacard=True, showModePlacard=True,
+        showPlacard=True, showModePlacard=True, placardActionItems=None,
         cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
@@ -95,7 +95,7 @@ class GlyphCollectionView(vanilla.Group):
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"
     ):
         super(GlyphCollectionView, self).__init__(posSize)
-        if showModePlacard:
+        if showModePlacard or placardActionItems is not None:
             showPlacard = True
         bottom = 0
         if showPlacard:
@@ -177,8 +177,7 @@ class GlyphCollectionView(vanilla.Group):
             extensionWidth = 0
             # mode
             if showModePlacard:
-                extensionLeft = 42
-                extensionWidth = 0
+                extensionLeft += 42
                 modeButton = vanilla.SegmentedButton(
                     (0, 0, 43, 0),
                     [
@@ -191,6 +190,18 @@ class GlyphCollectionView(vanilla.Group):
                 modeButton.getNSSegmentedButton().setSegmentStyle_(NSSegmentStyleSmallSquare)
                 modeButton.set(0)
                 self._placard.button = modeButton
+            # action button
+            if placardActionItems is not None:
+                extensionWidth -= 35
+                actionButton = vanilla.ActionButton(
+                    (-35, 0, 45, 21),
+                    placardActionItems
+                )
+                actionButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
+                button = actionButton.getNSPopUpButton()
+                button.setBordered_(False)
+                button.setBezelStyle_(NSSmallSquareBezelStyle)
+                self._placard.actionButton = actionButton
             # extension
             self._placard.extension = vanilla.Group((extensionLeft, 0, extensionWidth, 0))
         else:
