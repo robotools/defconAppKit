@@ -4,11 +4,9 @@ from defconAppKit.tools.drawing import colorToNSColor
 GlyphCellHeaderHeight = 14
 GlyphCellMinHeightForHeader = 40
 
-cellHeaderBaseColor = NSColor.colorWithCalibratedWhite_alpha_(.6, .4)
-cellHeaderHighlightColor = NSColor.colorWithCalibratedWhite_alpha_(.7, .4)
-cellHeaderSelectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.2, .3, .7, .15)
+cellHeaderBaseColor = NSColor.colorWithCalibratedWhite_alpha_(0.968, 1.0)
+cellHeaderHighlightColor = NSColor.colorWithCalibratedWhite_alpha_(0.98, 1.0)
 cellHeaderLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .2)
-cellHeaderHighlightLineColor = NSColor.colorWithCalibratedWhite_alpha_(1, .5)
 cellMetricsLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
 cellMetricsFillColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
 
@@ -173,15 +171,6 @@ class GlyphCellFactoryDrawingController(object):
         except NameError:
             cellHeaderBaseColor.set()
             NSRectFill(rect)
-        # left and right line
-        cellHeaderHighlightLineColor.set()
-        sizePath = NSBezierPath.bezierPath()
-        sizePath.moveToPoint_((xMin + .5, yMin))
-        sizePath.lineToPoint_((xMin + .5, yMin + height))
-        sizePath.moveToPoint_((xMin + width - 1.5, yMin))
-        sizePath.lineToPoint_((xMin + width - 1.5, yMin + height))
-        sizePath.setLineWidth_(1.0)
-        sizePath.stroke()
         # bottom line
         cellHeaderLineColor.set()
         bottomPath = NSBezierPath.bezierPath()
@@ -194,15 +183,10 @@ class GlyphCellFactoryDrawingController(object):
         paragraph = NSMutableParagraphStyle.alloc().init()
         paragraph.setAlignment_(NSCenterTextAlignment)
         paragraph.setLineBreakMode_(NSLineBreakByTruncatingMiddle)
-        shadow = NSShadow.alloc().init()
-        shadow.setShadowColor_(NSColor.whiteColor())
-        shadow.setShadowOffset_((0, 1))
-        shadow.setShadowBlurRadius_(1)
         attributes = {
             NSFontAttributeName : NSFont.systemFontOfSize_(10.0),
             NSForegroundColorAttributeName : NSColor.colorWithCalibratedRed_green_blue_alpha_(.22, .22, .27, 1.0),
             NSParagraphStyleAttributeName : paragraph,
-            NSShadowAttributeName : shadow
         }
         text = NSAttributedString.alloc().initWithString_attributes_(self.glyph.name, attributes)
         text.drawInRect_(rect)
