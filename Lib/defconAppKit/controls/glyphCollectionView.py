@@ -84,9 +84,10 @@ class GlyphCollectionView(vanilla.Group):
     """
 
     nsViewClass = DefconAppKitGlyphCollectionView
+    glyphCellViewClass = DefconAppKitGlyphCellNSView
 
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
-        showModePlacard=True,
+        showPlacard=True, showModePlacard=True,
         cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
         selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
         enableDelete=False,
@@ -94,8 +95,10 @@ class GlyphCollectionView(vanilla.Group):
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"
     ):
         super(GlyphCollectionView, self).__init__(posSize)
-        bottom = 0
         if showModePlacard:
+            showPlacard = True
+        bottom = 0
+        if showPlacard:
             bottom = -19
         self._selectionCallback = selectionCallback
         self._doubleClickCallback = doubleClickCallback
@@ -167,21 +170,29 @@ class GlyphCollectionView(vanilla.Group):
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
         ## set up the placard
-        if showModePlacard:
+        if showPlacard:
             self._placard = vanilla.Group((0, -21, 0, 21))
             self._placard.base = GradientButtonBar((0, 0, 0, 0))
-            modeButton = vanilla.SegmentedButton(
-                (0, 0, 43, 0),
-                [
-                    dict(imageNamed="defconAppKitPlacardCellImage", width=20),
-                    dict(imageNamed="defconAppKitPlacardListImage", width=20)
-                ],
-                callback=self._placardSelection
-            )
-            modeButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
-            modeButton.getNSSegmentedButton().setSegmentStyle_(NSSegmentStyleSmallSquare)
-            modeButton.set(0)
-            self._placard.button = modeButton
+            extensionLeft = 0
+            extensionWidth = 0
+            # mode
+            if showModePlacard:
+                extensionLeft = 42
+                extensionWidth = 0
+                modeButton = vanilla.SegmentedButton(
+                    (0, 0, 43, 0),
+                    [
+                        dict(imageNamed="defconAppKitPlacardCellImage", width=20),
+                        dict(imageNamed="defconAppKitPlacardListImage", width=20)
+                    ],
+                    callback=self._placardSelection
+                )
+                modeButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
+                modeButton.getNSSegmentedButton().setSegmentStyle_(NSSegmentStyleSmallSquare)
+                modeButton.set(0)
+                self._placard.button = modeButton
+            # extension
+            self._placard.extension = vanilla.Group((extensionLeft, 0, extensionWidth, 0))
         else:
             self._placard = None
         ## tweak the scroll view
@@ -235,6 +246,19 @@ class GlyphCollectionView(vanilla.Group):
         Get the current mode.
         """
         return self._mode
+
+    # -----------------
+    # placard retrieval
+    # -----------------
+
+    def getPlacardGroup(self):
+        """
+        If a placard has been defined, this returns
+        a vanilla.Group between the prebuilt controls.
+        """
+        if self._placard is None:
+            return None
+        return self._placard.extension
 
     # --------------------
     # selection management
