@@ -203,11 +203,12 @@ class GlyphCollectionView(vanilla.Group):
                 extensionWidth -= 35
                 actionButton = vanilla.ActionButton(
                     (-35, 0, 45, 21),
-                    placardActionItems
+                    placardActionItems,
+                    sizeStyle="small",
+                    bordered=False
                 )
                 actionButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
                 button = actionButton.getNSPopUpButton()
-                button.setBordered_(False)
                 button.setBezelStyle_(NSSmallSquareBezelStyle)
                 self._placard.actionButton = actionButton
             # extension
