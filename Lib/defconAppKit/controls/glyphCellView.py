@@ -9,8 +9,7 @@ from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox,
 
 
 gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.82, .82, .9, 1.0)
-selectionColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.62, .62, .7, .5)
+selectionColor = NSColor.selectedControlColor()
 insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
 insertionLocationShadow = NSShadow.shadow()
 insertionLocationShadow.setShadowColor_(NSColor.whiteColor())
@@ -130,13 +129,19 @@ class DefconAppKitGlyphCellNSView(NSView):
     def setAllowsDrag_(self, value):
         self._allowDrag = value
 
+    def getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(self, glyph, representationName, representationArguments):
+        return glyph.getRepresentation(representationName, **representationArguments)
+
     def preloadGlyphCellImages(self):
         representationName = self._cellRepresentationName
         representationArguments = self._cellRepresentationArguments
-        cellWidth = self._cellWidth
-        cellHeight = self._cellHeight
+        representationArguments["width"] = self._cellWidth
+        representationArguments["height"] = self._cellHeight
         for glyph in self._glyphs:
-            glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
+            self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
+
+    def getGlyphs(self):
+        return self._glyphs
 
     def setGlyphs_(self, glyphs):
         currentSelection = [self._glyphs[index] for index in self._selection]
@@ -301,15 +306,17 @@ class DefconAppKitGlyphCellNSView(NSView):
         backgroundColor.set()
         NSRectFill(self.frame())
 
-        representationName = self._cellRepresentationName
-        representationArguments = self._cellRepresentationArguments
-
         cellWidth = self._cellWidth
         cellHeight = self._cellHeight
         width, height = self.frame().size
         left = 0
         top = height
         top = cellHeight
+
+        representationName = self._cellRepresentationName
+        representationArguments = self._cellRepresentationArguments
+        representationArguments["width"] = cellWidth
+        representationArguments["height"] = cellHeight
 
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
@@ -327,14 +334,14 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._indexToClickRects[index] = rect
 
             if NSIntersectsRect(visibleRect, rect):
-                image = glyph.getRepresentation(representationName, width=cellWidth, height=cellHeight, **representationArguments)
+                image = self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
                 image.drawAtPoint_fromRect_operation_fraction_(
                     (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                     )
 
                 if index in self._selection:
                     selectionColor.set()
-                    r = ((left+1, t+1), (cellWidth-3, cellHeight-3))
+                    r = ((left, t), (cellWidth, cellHeight))
                     NSRectFillUsingOperation(r, NSCompositePlusDarker)
                     NSColor.whiteColor().set()
 
@@ -442,8 +449,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
-            if vanillaWrapper._doubleClickTarget is not None:
-                vanillaWrapper._doubleClickTarget.action_(self)
+            if vanillaWrapper._doubleClickCallback is not None:
+                vanillaWrapper._doubleClickCallback(vanillaWrapper)
         self.autoscroll_(event)
 
     def mouseDragged_(self, event):
