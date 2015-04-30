@@ -39,6 +39,12 @@ setup(name="defconAppKit",
     author_email="tal@typesupply.com",
     url="http://code.typesupply.com",
     license="MIT",
-    packages=["defconAppKit"],
+    packages=[
+        "defconAppKit",
+        "defconAppKit.controls",
+        "defconAppKit.representationFactories",
+        "defconAppKit.tools",
+        "defconAppKit.windows"
+    ],
     package_dir={"":"Lib"}
 )
