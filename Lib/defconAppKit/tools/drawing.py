@@ -119,14 +119,17 @@ def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="botto
         width *= scale
         height *= scale
         x, y = pt
+        f = 1
+        if flipped:
+            f = -1
         if xAlign == "center":
             x -= width / 2
         elif xAlign == "right":
             x -= width
         if yAlign == "center":
-            y -= height / 2
+            y -= height / 2 * f
         elif yAlign == "top":
-            y -= height
+            y -= height * f
         pt = (x, y)
     context = NSGraphicsContext.currentContext()
     context.saveGraphicsState()
