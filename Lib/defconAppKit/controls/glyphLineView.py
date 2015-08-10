@@ -34,6 +34,7 @@ class DefconAppKitGlyphLineNSView(NSView):
 
         self._glyphRecords = []
         self._alternateRects = {}
+        self._currentZeroZeroPoint = NSPoint(0, 0)
 
         self._rightToLeft = False
         self._pointSize = 150
@@ -42,7 +43,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._inverseScale = 0.1
         self._upm = 1000
         self._descender = -250
-        self._buffer = 15
+        self._bufferLeft = self._bufferRight = self._bufferBottom = self._bufferTop = 15
 
         self._fitToFrame = None
 
@@ -146,7 +147,7 @@ class DefconAppKitGlyphLineNSView(NSView):
     def _calcScale(self):
         if self._pointSize is None:
             w, h = self.superview().visibleRect()[1]
-            fitH = h - (self._buffer * 2)
+            fitH = h - self._bufferBottom - self._bufferTop
             self._scale = fitH / self._upm
         else:
             self._scale = self._pointSize / float(self._upm)
@@ -166,7 +167,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             width = 0
             for glyphRecord in self._glyphRecords:
                 width += (glyphRecord.glyph.width + glyphRecord.xPlacement + glyphRecord.xAdvance) * self._scale
-        width += self._buffer * 2
+        width += self._bufferLeft + self._bufferRight
 
         if scrollHeight is None:
             height = (self._unitsPerEm - self._descender) * scale
@@ -178,6 +179,34 @@ class DefconAppKitGlyphLineNSView(NSView):
         self.setFrame_(((0, 0), (width, height)))
         self.setNeedsDisplay_(True)
         self._fitToFrame = self.superview().bounds()
+
+    def needsToDrawRectInGlyphSpace_scale_(self, rect, scale=None):
+        if scale is None:
+            scale = self._scale
+        (x, y), (w, h) = rect
+        x *= scale
+        y *= -scale
+        x += self._currentZeroZeroPoint.x
+        y += self._currentZeroZeroPoint.y
+        w *= scale
+        h *= scale
+        y -= h
+        print NSMakeRect(x, y, w, h), "rect in rect"
+        return self.needsToDrawRect_(((x, y), (w, h)))
+
+    def needsToDrawPointInGlyphSpace_scale_(self, (x, y), scale=None):
+        if scale is None:
+            scale = self._scale
+        b = 20
+        x *= scale
+        y *= -scale
+        x += self._currentZeroZeroPoint.x - b
+        y += self._currentZeroZeroPoint.y - b
+        w = b * 2
+        h = b * 2
+
+        print NSMakeRect(x, y, w, h), "point in rect"
+        return self.needsToDrawRect_(((x, y), (w, h)))
 
     # window resize notification support
 
@@ -239,39 +268,42 @@ class DefconAppKitGlyphLineNSView(NSView):
                 layers.append((g, layerName))
 
         self.drawGlyphBackground(glyph, rect, alternate=alternate)
-
-        for g, layerName in layers:
-            # draw the image
-            if self.getDrawingAttribute_layerName_("showGlyphImage", layerName):
-                self.drawImage(g, layerName, rect)
-            # draw the blues
-            if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptBlues", None):
-                self.drawBlues(g, layerName, rect)
-            if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptFamilyBlues", None):
-                self.drawFamilyBlues(g, layerName, rect)
-            # draw the margins
-            if self.getDrawingAttribute_layerName_("showGlyphMargins", layerName):
-                self.drawMargins(g, layerName, rect)
-            # draw the vertical metrics
-            if layerName is None and self.getDrawingAttribute_layerName_("showFontVerticalMetrics", None):
-                self.drawVerticalMetrics(g, layerName, rect)
-            # draw the glyph
-            if self.getDrawingAttribute_layerName_("showGlyphFill", layerName) or self.getDrawingAttribute_layerName_("showGlyphStroke", layerName):
-                self.drawFillAndStroke(g, layerName, rect)
-            if self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) or self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName):
-                self.drawPoints(g, layerName, rect)
-            if self.getDrawingAttribute_layerName_("showGlyphAnchors", layerName):
-                self.drawAnchors(g, layerName, rect)
+        if not self.needsToDrawRectInGlyphSpace_scale_(rect):
+            print "skipped", glyph.name
+        if self.needsToDrawRectInGlyphSpace_scale_(rect):
+            for g, layerName in layers:
+                # draw the image
+                if self.getDrawingAttribute_layerName_("showGlyphImage", layerName):
+                    self.drawImage(g, layerName, rect)
+                # draw the blues
+                if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptBlues", None):
+                    self.drawBlues(g, layerName, rect)
+                if layerName is None and self.getDrawingAttribute_layerName_("showFontPostscriptFamilyBlues", None):
+                    self.drawFamilyBlues(g, layerName, rect)
+                # draw the margins
+                if self.getDrawingAttribute_layerName_("showGlyphMargins", layerName):
+                    self.drawMargins(g, layerName, rect)
+                # draw the vertical metrics
+                if layerName is None and self.getDrawingAttribute_layerName_("showFontVerticalMetrics", None):
+                    self.drawVerticalMetrics(g, layerName, rect)
+                # draw the glyph
+                if self.getDrawingAttribute_layerName_("showGlyphFill", layerName) or self.getDrawingAttribute_layerName_("showGlyphStroke", layerName):
+                    self.drawFillAndStroke(g, layerName, rect)
+                if self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) or self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName):
+                    self.drawPoints(g, layerName, rect)
+                if self.getDrawingAttribute_layerName_("showGlyphAnchors", layerName):
+                    self.drawAnchors(g, layerName, rect)
 
         self.drawGlyphForeground(glyph, rect, alternate=alternate)
 
     def drawGlyphBackground(self, glyph, rect, alternate=False):
-        if glyph.name == ".notdef":
-            self._notdefBackgroundColor.set()
-            NSRectFillUsingOperation(rect, NSCompositeSourceOver)
-        if alternate:
-            self._alternateHighlightColor.set()
-            NSRectFillUsingOperation(rect, NSCompositeSourceOver)
+        if self.needsToDrawRectInGlyphSpace_scale_(rect):
+            if glyph.name == ".notdef":
+                self._notdefBackgroundColor.set()
+                NSRectFillUsingOperation(rect, NSCompositeSourceOver)
+            if alternate:
+                self._alternateHighlightColor.set()
+                NSRectFillUsingOperation(rect, NSCompositeSourceOver)
 
     def drawImage(self, glyph, layerName, rect):
         drawing.drawGlyphImage(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
@@ -359,12 +391,11 @@ class DefconAppKitGlyphLineNSView(NSView):
         scale = self._scale
         descender = self._descender
         upm = self._upm
-        scaledBuffer = self._buffer * (1.0 / scale)
         # offset for the buffer
         ctx = NSGraphicsContext.currentContext()
         ctx.saveGraphicsState()
         aT = NSAffineTransform.transform()
-        aT.translateXBy_yBy_(self._buffer, self._buffer)
+        aT.translateXBy_yBy_(self._bufferLeft, self._bufferTop)
         aT.concat()
         # offset for the descender
         aT = NSAffineTransform.transform()
@@ -379,9 +410,10 @@ class DefconAppKitGlyphLineNSView(NSView):
         # set the glyph color
         self._glyphColor.set()
         # draw the records
-        left = self._buffer
-        bottom = self._buffer
         height = upm * scale
+        left = self._bufferLeft
+        bottom = self._bufferTop
+
         for recordIndex, glyphRecord in enumerate(self._glyphRecords):
             glyph = glyphRecord.glyph
             w = glyphRecord.advanceWidth
@@ -398,6 +430,8 @@ class DefconAppKitGlyphLineNSView(NSView):
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
+            self._currentZeroZeroPoint = NSPoint(glyphLeft, bottom + height + (descender * scale))
+            print self._currentZeroZeroPoint
             # handle placement
             if xP or yP:
                 aT = NSAffineTransform.transform()
@@ -423,13 +457,12 @@ class DefconAppKitGlyphLineNSView(NSView):
         scale = self._scale
         descender = self._descender
         upm = self._upm
-        scaledBuffer = self._buffer * (1.0 / scale)
         scrollWidth = bounds.size[0]
         # offset for the buffer
         ctx = NSGraphicsContext.currentContext()
         ctx.saveGraphicsState()
         aT = NSAffineTransform.transform()
-        aT.translateXBy_yBy_(scrollWidth - self._buffer, self._buffer)
+        aT.translateXBy_yBy_(scrollWidth - self._bufferLeft, self._bufferTop)
         aT.concat()
         # offset for the descender
         aT = NSAffineTransform.transform()
@@ -444,8 +477,8 @@ class DefconAppKitGlyphLineNSView(NSView):
         # set the glyph color
         self._glyphColor.set()
         # draw the records
-        left = scrollWidth - self._buffer
-        bottom = self._buffer
+        left = scrollWidth - self._bufferLeft
+        bottom = self._bufferTop
         height = upm * scale
         previousXA = 0
         for recordIndex, glyphRecord in enumerate(reversed(self._glyphRecords)):
@@ -464,6 +497,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             # store the glyph rect for the alternate menu
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
+            self._currentZeroZeroPoint = NSPoint(glyphLeft, bottom + height + (descender * scale))
             # handle the placement
             aT = NSAffineTransform.transform()
             if xP:
