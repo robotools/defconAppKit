@@ -191,7 +191,6 @@ class DefconAppKitGlyphLineNSView(NSView):
         w *= scale
         h *= scale
         y -= h
-        print NSMakeRect(x, y, w, h), "rect in rect"
         return self.needsToDrawRect_(((x, y), (w, h)))
 
     def needsToDrawPointInGlyphSpace_scale_(self, (x, y), scale=None):
@@ -204,8 +203,6 @@ class DefconAppKitGlyphLineNSView(NSView):
         y += self._currentZeroZeroPoint.y - b
         w = b * 2
         h = b * 2
-
-        print NSMakeRect(x, y, w, h), "point in rect"
         return self.needsToDrawRect_(((x, y), (w, h)))
 
     # window resize notification support
@@ -268,8 +265,6 @@ class DefconAppKitGlyphLineNSView(NSView):
                 layers.append((g, layerName))
 
         self.drawGlyphBackground(glyph, rect, alternate=alternate)
-        if not self.needsToDrawRectInGlyphSpace_scale_(rect):
-            print "skipped", glyph.name
         if self.needsToDrawRectInGlyphSpace_scale_(rect):
             for g, layerName in layers:
                 # draw the image
@@ -431,7 +426,6 @@ class DefconAppKitGlyphLineNSView(NSView):
             rect = ((glyphLeft, bottom), (glyphWidth, glyphHeight))
             self._alternateRects[rect] = recordIndex
             self._currentZeroZeroPoint = NSPoint(glyphLeft, bottom + height + (descender * scale))
-            print self._currentZeroZeroPoint
             # handle placement
             if xP or yP:
                 aT = NSAffineTransform.transform()
