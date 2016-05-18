@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from distutils.core import setup
+from setuptools import setup
 
 try:
     import fontTools
@@ -37,7 +37,7 @@ setup(name="defconAppKit",
     description="A set of interface objects for working with font data.",
     author="Tal Leming",
     author_email="tal@typesupply.com",
-    url="http://code.typesupply.com",
+    url="https://github.com/typesupply/defconAppKit",
     license="MIT",
     packages=[
         "defconAppKit",
