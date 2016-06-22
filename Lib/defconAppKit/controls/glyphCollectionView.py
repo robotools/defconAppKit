@@ -214,7 +214,6 @@ class GlyphCollectionView(vanilla.Group):
                 )
                 actionButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
                 button = actionButton.getNSPopUpButton()
-                button.setBordered_(False)
                 button.setBezelStyle_(NSSmallSquareBezelStyle)
                 self._placard.actionButton = actionButton
             # extension
