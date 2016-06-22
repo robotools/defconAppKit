@@ -92,10 +92,13 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellHeight = 50
         self._glyphs = []
 
+        self._arrayController = None
+
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
 
-        self._selection = set()
+        self._lastSelectionFound = None
+
         self._lastKeyInputTime = None
 
         self._columnCount = 0
@@ -122,6 +125,19 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         return self
 
+    # ====================
+    # = array controller =
+    # ====================
+
+    def setArrayController_(self, arrayContoller):
+        self._arrayController = arrayContoller
+        self._arrayController.addObserver_forKeyPath_options_context_(self, "arrangedObjects", NSKeyValueObservingOptionNew, 0)
+
+    def observeValueForKeyPath_ofObject_change_context_(self, keyPath, obj, change, context):
+        if keyPath == "arrangedObjects":
+            self._glyphs = [item["_glyph"]() for item in obj.arrangedObjects()]
+            self.recalculateFrame()
+
     # --------------
     # custom methods
     # --------------
@@ -142,13 +158,6 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def getGlyphs(self):
         return self._glyphs
-
-    def setGlyphs_(self, glyphs):
-        currentSelection = [self._glyphs[index] for index in self._selection]
-        newSelection = set([glyphs.index(glyph) for glyph in currentSelection if glyph in glyphs])
-        self._selection = newSelection
-        self._glyphs = glyphs
-        self.recalculateFrame()
 
     def getGlyphsAtIndexes_(self, indexes):
         return [self._glyphs[i] for i in indexes]
@@ -230,15 +239,6 @@ class DefconAppKitGlyphCellNSView(NSView):
                 document = windowController.document()
                 if document is not None:
                     document.addWindowController_(self._glyphDetailWindow.getNSWindowController())
-
-    # selection
-
-    def getSelection(self):
-        return list(sorted(self._selection))
-
-    def setSelection_(self, selection):
-        self._selection = set(selection)
-        self.setNeedsDisplay_(True)
 
     # window resize notification support
 
@@ -322,6 +322,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._indexToClickRects = {}
 
         visibleRect = self.visibleRect()
+        selection = self._arrayController.selectionIndexes()
 
         NSColor.whiteColor().set()
         for index, glyph in enumerate(self._glyphs):
@@ -339,7 +340,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                     (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                     )
 
-                if index in self._selection:
+                if selection.containsIndex_(index):
                     selectionColor.set()
                     r = ((left, t), (cellWidth, cellHeight))
                     NSRectFillUsingOperation(r, NSCompositePlusDarker)
@@ -349,7 +350,6 @@ class DefconAppKitGlyphCellNSView(NSView):
             if left + cellWidth > width:
                 left = 0
                 top += cellHeight
-
         # lines
         path = NSBezierPath.bezierPath()
         for i in xrange(1, self._rowCount+1):
@@ -416,27 +416,24 @@ class DefconAppKitGlyphCellNSView(NSView):
     # Selection
     # ---------
 
-    def _linearSelection(self, index):
-        if index in self._selection:
-            newSelection = None
-        elif not self._selection:
-            newSelection = set([index])
+    def _linearSelection(self, index, selection=None):
+        if selection is None:
+            selection = NSMutableIndexSet.alloc().initWithIndexSet_(self._arrayController.selectionIndexes())
+        contains = selection.containsIndex_(index)
+        if contains:
+            return
+        elif selection.count() == 0:
+            selection.addIndex_(index)
         else:
-            minEdge = min(self._selection)
-            maxEdge = max(self._selection)
-            if index < minEdge:
-                newSelection = set(range(index, maxEdge + 1))
-            elif index > maxEdge:
-                newSelection = set(range(minEdge, index + 1))
+            if index < self._lastSelectionFound:
+                s = index
+                c = self._lastSelectionFound - index + 1
             else:
-                if abs(index - minEdge) < abs(index - maxEdge):
-                    newSelection = self._selection | set(range(minEdge, index + 1))
-                else:
-                    newSelection = self._selection | set(range(index, maxEdge + 1))
-        return newSelection
+                s = self._lastSelectionFound
+                c = index - self._lastSelectionFound + 1
+            selection.addIndexesInRange_((s, c))
 
     def scrollToCell_(self, index):
-        superview = self.superview()
         rect = self._indexToClickRects[index]
         self.scrollRectToVisible_(rect)
 
@@ -445,7 +442,10 @@ class DefconAppKitGlyphCellNSView(NSView):
     def mouseDown_(self, event):
         self._havePreviousMouseDown = True
         found = self._findGlyphForEvent(event)
+        self._currentSelection = self._arrayController.selectionIndexes()
         self._mouseSelection(event, found, mouseDown=True)
+        self._currentSelection = self._arrayController.selectionIndexes()
+        self._lastSelectionFound = found
         self._handleDetailWindow(event, found, mouseDown=True)
         if event.clickCount() > 1:
             vanillaWrapper = self.vanillaWrapper()
@@ -456,6 +456,8 @@ class DefconAppKitGlyphCellNSView(NSView):
     def mouseDragged_(self, event):
         found = self._findGlyphForEvent(event)
         self._mouseSelection(event, found, mouseDragged=True)
+        self._currentSelection = self._arrayController.selectionIndexes()
+        self._lastSelectionFound = found
         self._handleDetailWindow(event, found, mouseDragged=True)
         self.autoscroll_(event)
         # mouseUp is not called if a drag has begun.
@@ -478,11 +480,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             found = self._findGlyphForEvent(event)
             self._mouseSelection(event, found, mouseUp=True)
             self._handleDetailWindow(event, found, mouseUp=True)
-            if self._selection != self._oldSelection:
-                vanillaWrapper = self.vanillaWrapper()
-                if vanillaWrapper._selectionCallback is not None:
-                    vanillaWrapper._selectionCallback(vanillaWrapper)
-            del self._oldSelection
+            del self._currentSelection
             self._havePreviousMouseDown = False
 
     def _findGlyphForEvent(self, event):
@@ -565,19 +563,22 @@ class DefconAppKitGlyphCellNSView(NSView):
             glyphDetailWindow.hide()
 
     def _mouseSelection(self, event, found, mouseDown=False, mouseDragged=False, mouseUp=False, mouseMoved=False):
-        if mouseDown:
-            self._oldSelection = set(self._selection)
+        selection = NSMutableIndexSet.alloc().initWithIndexSet_(self._arrayController.selectionIndexes())
         if found is None:
+            selection.removeAllIndexes()
+            if not selection.isEqualToIndexSet_(self._currentSelection):
+                self._arrayController.setSelectionIndexes_(selection)
+                self.setNeedsDisplay_(True)
             return
-
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
         commandDown = modifiers & NSCommandKeyMask
         optionDown = modifiers & NSAlternateKeyMask
         controlDown = modifiers & NSControlKeyMask
 
+        containsFound = selection.containsIndex_(found)
         # dragging
-        if self._havePreviousMouseDown and (mouseDragged and self._allowDrag) and (found in self._selection) and (not commandDown and not shiftDown and not controlDown):
+        if self._havePreviousMouseDown and (mouseDragged and self._allowDrag) and containsFound and (not commandDown and not shiftDown and not controlDown):
             if found is None:
                 return
             else:
@@ -585,46 +586,48 @@ class DefconAppKitGlyphCellNSView(NSView):
                 return
         if mouseDragged and not self._havePreviousMouseDown:
             return
-        # selecting
-        newSelection = None
+
         if commandDown:
             if found is None:
                 return
             if mouseDown:
-                if found in self._selection:
-                    self._selection.remove(found)
+                if containsFound:
+                    selection.removeIndex_(found)
                 else:
-                    self._selection.add(found)
+                    selection.addIndex_(found)
             elif mouseUp:
                 pass
+            elif mouseDragged and found == self._lastSelectionFound:
+                pass
             else:
-                if found in self._selection and found in self._oldSelection:
-                    self._selection.remove(found)
-                elif found not in self._selection and found not in self._oldSelection:
-                    self._selection.add(found)
-            newSelection = set(self._selection)
+                if containsFound and self._currentSelection.containsIndex_(found):
+                    selection.removeIndex_(found)
+                elif not containsFound and not self._currentSelection.containsIndex_(found):
+                    selection.addIndex_(found)
         elif shiftDown:
             if found is None:
                 return
             else:
-                newSelection = self._linearSelection(found)
+                self._linearSelection(found, selection)
         else:
             if found is None:
-                newSelection = set()
-            elif mouseDown and found in self._selection:
-                pass
+                selection.removeAllIndexes()
+            elif mouseDown or controlDown:
+                selection.removeAllIndexes()
+                selection.addIndex_(found)
             else:
-                newSelection = set([found])
-        if newSelection is not None:
-            self._selection = newSelection
+                selection.addIndex_(found)
+
+        if not selection.isEqualToIndexSet_(self._currentSelection):
+            self._arrayController.setSelectionIndexes_(selection)
             self.setNeedsDisplay_(True)
 
     # key
 
     def selectAll_(self, sender):
-        newSelection = set(xrange(len(self._glyphs)))
-        self.setSelection_(newSelection)
-        self.vanillaWrapper()._selection()
+        selection = NSIndexSet.indexSetWithIndexesInRange_((0, len(self._glyphs)))
+        self._arrayController.setSelectionIndexes_(selection)
+        self.setNeedsDisplay_(True)
 
     def keyDown_(self, event):
         # adapted from vanilla.vanillaList.List._keyDown
@@ -650,6 +653,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             NSPageUpFunctionKey,
             NSPageDownFunctionKey,
             unichr(0x0003),
+            u"\033", # esc
             u"\r",
             u"\t",
         ]
@@ -722,7 +726,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                         lastResortIndex = index
                         continue
                     # if existing the last resort is greater than the item
-                    # the item is a closer match to the input string 
+                    # the item is a closer match to the input string
                     if lastResort > item:
                         lastResort = item
                         lastResortIndex = index
@@ -733,59 +737,59 @@ class DefconAppKitGlyphCellNSView(NSView):
             elif lastResortIndex is not None:
                 newSelection = lastResortIndex
 
-        if newSelection is not None:
-            self._lastSelectionFound = newSelection
-            self.setSelection_(set([newSelection]))
-            self.vanillaWrapper()._selection()
-            self.scrollToCell_(newSelection)
+            if newSelection is not None:
+                self._lastSelectionFound = newSelection
+                selection = NSIndexSet.indexSetWithIndex_(newSelection)
+                self._arrayController.setSelectionIndexes_(selection)
+                self.scrollToCell_(newSelection)
+                self.setNeedsDisplay_(True)
 
     def _arrowKeyDown(self, character, haveShiftKey):
-        if not self._selection:
+        selection = NSMutableIndexSet.alloc().initWithIndexSet_(self._arrayController.selectionIndexes())
+        if not selection.count():
             currentSelection = None
         else:
-            if character == NSUpArrowFunctionKey or character == NSLeftArrowFunctionKey:
-                currentSelection = sorted(self._selection)[0]
-            else:
-                currentSelection = sorted(self._selection)[-1]
+            currentSelection = self._lastSelectionFound
 
-        if character == NSUpArrowFunctionKey or character == NSDownArrowFunctionKey:
+        if currentSelection is None:
+            newSelection = 0
+
+        if character == NSUpArrowFunctionKey:
             if currentSelection is None:
+                currentSelection = 0
+            newSelection = currentSelection - self._columnCount
+            if newSelection < 0:
+                newSelection = 0
+
+        elif character == NSDownArrowFunctionKey:
+            if currentSelection is None:
+                currentSelection = len(self._glyphs) - 1
+            newSelection = currentSelection + self._columnCount
+            if currentSelection is None or newSelection >= len(self._glyphs):
+                newSelection = len(self._glyphs) - 1
+
+        elif character == NSLeftArrowFunctionKey:
+            if currentSelection is None or currentSelection == 0:
+                newSelection = len(self._glyphs) - 1
+            else:
+                newSelection = currentSelection - 1
+
+        elif character == NSRightArrowFunctionKey:
+            if currentSelection is None or currentSelection == len(self._glyphs) - 1:
                 newSelection = 0
             else:
-                if character == NSUpArrowFunctionKey:
-                    newSelection = currentSelection - self._columnCount
-                    if newSelection < 0:
-                        newSelection = 0
-                elif character == NSDownArrowFunctionKey:
-                    newSelection = currentSelection + self._columnCount
-                    if newSelection >= len(self._glyphs):
-                        newSelection = len(self._glyphs) - 1
-        else:
-            if currentSelection is None:
-                newSelection = 0
-            if character == NSLeftArrowFunctionKey:
-                if currentSelection is None or currentSelection == 0:
-                    newSelection = len(self._glyphs) - 1
-                else:
-                    newSelection = currentSelection - 1
-            elif character == NSRightArrowFunctionKey:
-                if currentSelection is None or currentSelection == len(self._glyphs) - 1:
-                    newSelection = 0
-                else:
-                    newSelection = currentSelection + 1
+                newSelection = currentSelection + 1
 
-        newSelectionIndex = newSelection
         if haveShiftKey:
-            newSelection = self._linearSelection(newSelection)
-            if newSelection is None:
-                return
+            self._linearSelection(newSelection, selection)
         else:
-            newSelection = set([newSelection])
+            selection.removeAllIndexes()
+            selection.addIndex_(newSelection)
 
-        self._selection = newSelection
+        self._lastSelectionFound = newSelection
+        self._arrayController.setSelectionIndexes_(selection)
         self.setNeedsDisplay_(True)
-        self.vanillaWrapper()._selection()
-        self.scrollToCell_(newSelectionIndex)
+        self.scrollToCell_(newSelection)
 
     # -------------
     # Drag and Drop
@@ -803,8 +807,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         # hide the detail window
         self._handleDetailWindow(event=event, found=None, inDragAndDrop=True)
         # prep
-        indexes = [i for i in sorted(self._selection)]
-        image = _makeGlyphCellDragIcon([self._glyphs[i] for i in self._selection])
+        indexes = self.vanillaWrapper().getSelection()
+        image = _makeGlyphCellDragIcon([self._glyphs[i] for i in indexes])
 
         eventLocation = event.locationInWindow()
         location = self.convertPoint_fromView_(eventLocation, None)

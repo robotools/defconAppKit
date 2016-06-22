@@ -94,6 +94,8 @@ class GlyphCollectionView(vanilla.Group):
     nsViewClass = DefconAppKitGlyphCollectionView
     glyphCellViewClass = DefconAppKitGlyphCellNSView
 
+    glyphListViewVanillaClass = vanilla.List
+
     def __init__(self, posSize, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
         showPlacard=True, showModePlacard=True, placardActionItems=None,
         cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
@@ -120,6 +122,7 @@ class GlyphCollectionView(vanilla.Group):
         if editCallback is not None:
             self._finalEditCallback = editCallback
             editCallback = self._listEditCallback
+
         # prep for drag and drop
         if selfDropSettings is not None:
             selfDropSettings = dict(selfDropSettings)
@@ -149,9 +152,9 @@ class GlyphCollectionView(vanilla.Group):
             dragSettings = dict(type=dragAndDropType, callback=self._packListRowsForDrag)
         if listColumnDescriptions is None:
             listColumnDescriptions = [dict(title="Name", attribute="name")]
-        self._list = vanilla.List((0, 0, 0, bottom), [],
+        self._list = self.glyphListViewVanillaClass((0, 0, 0, bottom), [],
             columnDescriptions=listColumnDescriptions,
-            editCallback=editCallback, selectionCallback=selectionCallback, doubleClickCallback=doubleClickCallback,
+            editCallback=editCallback, selectionCallback=self._listSelectionCallback, doubleClickCallback=doubleClickCallback,
             showColumnTitles=listShowColumnTitles, enableTypingSensitivity=True, enableDelete=enableDelete,
             autohidesScrollers=True,
             selfDropSettings=selfDropSettings, selfWindowDropSettings=selfWindowDropSettings, selfDocumentDropSettings=selfDocumentDropSettings,
@@ -177,6 +180,8 @@ class GlyphCollectionView(vanilla.Group):
             if d is not None:
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
+        ## set array contoller
+        self._glyphCellView.setArrayController_(self._arrayController)
         ## set up the placard
         if showPlacard:
             self._placard = vanilla.Group((0, -21, 0, 21))
@@ -203,7 +208,9 @@ class GlyphCollectionView(vanilla.Group):
                 extensionWidth -= 35
                 actionButton = vanilla.ActionButton(
                     (-35, 0, 45, 21),
-                    placardActionItems
+                    placardActionItems,
+                    sizeStyle="small",
+                    bordered=False
                 )
                 actionButton.frameAdjustments = dict(regular=(0, 0, 0, 0))
                 button = actionButton.getNSPopUpButton()
@@ -219,6 +226,11 @@ class GlyphCollectionView(vanilla.Group):
         ## set the mode
         self._mode = None
         self.setMode(initialMode)
+
+    def _get_arrayController(self):
+        return self._list._arrayController
+
+    _arrayController = property(_get_arrayController)
 
     def _breakCycles(self):
         for glyph in self._wrappedListItems.keys():
@@ -242,7 +254,6 @@ class GlyphCollectionView(vanilla.Group):
         """
         if mode == self._mode:
             return
-        selection = self.getSelection()
         placard = self._placard
         if mode == "list":
             documentView = self._list.getNSTableView()
@@ -256,8 +267,8 @@ class GlyphCollectionView(vanilla.Group):
                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode
-        self.setSelection(selection)
         if mode == "cell":
+            # cell view
             self._glyphCellView.recalculateFrame()
 
     def getMode(self):
@@ -287,19 +298,14 @@ class GlyphCollectionView(vanilla.Group):
         """
         Get the selection in the view as a list of indexes.
         """
-        if self._mode == "list":
-            return self._list.getSelection()
-        return self._glyphCellView.getSelection()
+        return self._list.getSelection()
 
     def setSelection(self, selection):
         """
         Sets the selection in the view. The passed value
         should be a list of indexes.
         """
-        if self._mode == "list":
-            self._list.setSelection(selection)
-        else:
-            self._glyphCellView.setSelection_(selection)
+        self._list.setSelection(selection)
 
     def scrollToSelection(self):
         """
@@ -309,6 +315,10 @@ class GlyphCollectionView(vanilla.Group):
         selection = self.getSelection()
         if selection:
             self._glyphCellView.scrollToCell_(selection[0])
+
+    def _listSelectionCallback(self, sender):
+        if self._selectionCallback is not None:
+            self._selectionCallback(self)
 
     # -------------
     # drag and drop
@@ -471,7 +481,7 @@ class GlyphCollectionView(vanilla.Group):
 
     def _unwrapListItems(self, items=None):
         if items is None:
-            items = self._list.get()
+            items = self._arrayController.arrangedObjects()
         glyphs = [d["_glyph"]() for d in items]
         return glyphs
 
@@ -484,8 +494,8 @@ class GlyphCollectionView(vanilla.Group):
         # list
         for index in reversed(sorted(selection)):
             del self._list[index]
-        # cell
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        # cell view
+        self._glyphCellView.setGlyphsFromArrayController()
         # call the callback
         if self._deleteCallback is not None:
             self._deleteCallback(self)
@@ -503,64 +513,52 @@ class GlyphCollectionView(vanilla.Group):
         existing = self[index]
         item = self._wrapGlyphForList(glyph)
         self._list[index] = item
-        if not existing in self._list:
+        if existing not in self._list:
             otherGlyph = existing["_glyph"]
             del self._wrappedListItems[otherGlyph]
             self._unsubscribeFromGlyph(otherGlyph)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def __delitem__(self, index):
         # list
         item = self[index]
         del self._list[index]
-        if not item in self._list:
+        if item not in self._list:
             glyph = item["_glyph"]
             del self._wrappedListItems[glyph]
             self._unsubscribeFromGlyph(glyph)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
 
     def append(self, glyph):
-        # list
         item = self._wrapGlyphForList(glyph)
-        self._list.append(item)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        self.getArrayController().addObject_(item)
+        self.getArrayController().rearrangeObjects()
 
     def remove(self, glyph):
-        # list
-        item = self._wrappedListItems[glyph]
-        self._list.remove(item)
-        if not item in self._list:
-            glyph = item["_glyph"]
-            del self._wrappedListItems[glyph]
-            self._unsubscribeFromGlyph(glyph)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        toRemove = self._wrappedListItems[glyph]
+        self.getArrayController().removeObject_(toRemove)
+        self.getArrayController().rearrangeObjects()
+        self._unsubscribeFromGlyph(glyph)
 
     def index(self, glyph):
         item = self._wrappedListItems[glyph]
         return self._list.index(item)
 
     def insert(self, index, glyph):
-        # list
         item = self._wrapGlyphForList(glyph)
-        self._list.insert(index, item)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        self.getArrayController().insertObject_atArrangedObjectIndex_(item, index)
+        self.getArrayController().rearrangeObjects()
 
     def extend(self, glyphs):
-        # list
         items = [self._wrapGlyphForList(glyph) for glyph in glyphs]
-        self._list.extend(items)
-        # cell view
-        self._glyphCellView.setGlyphs_(self._unwrapListItems())
+        self.getArrayController().addObjects_(items)
+        self.getArrayController().rearrangeObjects()
 
     def set(self, glyphs):
         """
         Set the glyphs in the view.
         """
+        self._list._selectionCallback = None
+        # remove sort descriptors
+        self._arrayController.setSortDescriptors_([])
         # remove removed wrapped items
         removedGlyphs = set(self._wrappedListItems) - set(glyphs)
         for glyph in removedGlyphs:
@@ -568,10 +566,9 @@ class GlyphCollectionView(vanilla.Group):
             self._unsubscribeFromGlyph(glyph)
         # wrap the glyphs for the list
         wrappedGlyphs = [self._wrapGlyphForList(glyph) for glyph in glyphs]
-        # set the cell view
-        self._glyphCellView.setGlyphs_(glyphs)
-        # set the list
-        self._list.set(wrappedGlyphs)
+        items = NSMutableArray.arrayWithArray_(wrappedGlyphs)
+        self._arrayController.setContent_(items)
+        self._list._selectionCallback = self._selectionCallback
 
     def get(self):
         """
