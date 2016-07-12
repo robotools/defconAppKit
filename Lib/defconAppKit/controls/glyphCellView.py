@@ -647,7 +647,9 @@ class DefconAppKitGlyphCellNSView(NSView):
             NSUpArrowFunctionKey,
             NSDownArrowFunctionKey,
             NSLeftArrowFunctionKey,
-            NSRightArrowFunctionKey
+            NSRightArrowFunctionKey,
+            NSHomeFunctionKey,
+            NSBeginFunctionKey
         ]
         nonCharacters = [
             NSPageUpFunctionKey,
@@ -675,7 +677,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         elif characters in arrowCharacters:
             self._lastKeyInputTime = None
             fieldEditor.setString_(u"")
-            self._arrowKeyDown(characters, shiftDown)
+            self._arrowKeyDown(characters, shiftDown, commandDown)
         else:
             # get the current time
             rightNow = time.time()
@@ -744,7 +746,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 self.scrollToCell_(newSelection)
                 self.setNeedsDisplay_(True)
 
-    def _arrowKeyDown(self, character, haveShiftKey):
+    def _arrowKeyDown(self, character, haveShiftKey, haveCommandKey):
         selection = NSMutableIndexSet.alloc().initWithIndexSet_(self._arrayController.selectionIndexes())
         if not selection.count():
             currentSelection = None
@@ -780,10 +782,20 @@ class DefconAppKitGlyphCellNSView(NSView):
             else:
                 newSelection = currentSelection + 1
 
+        elif character == NSHomeFunctionKey:
+            newSelection = 0
+
+        elif character == NSBeginFunctionKey:
+            newSelection = 0
+
+        elif character == NSEndFunctionKey:
+            newSelection = len(self._glyphs) - 1
+
         if haveShiftKey:
             self._linearSelection(newSelection, selection)
         else:
-            selection.removeAllIndexes()
+            if not haveCommandKey:
+                selection.removeAllIndexes()
             selection.addIndex_(newSelection)
 
         self._lastSelectionFound = newSelection
