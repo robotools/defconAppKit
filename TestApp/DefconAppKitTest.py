@@ -20,8 +20,6 @@ registerAllFactories()
 import objc
 objc.setVerbose(True)
 
-NibClassBuilder.extractClasses("MainMenu")
-
 
 class DefconAppKitTestAppDelegate(NSObject):
 
