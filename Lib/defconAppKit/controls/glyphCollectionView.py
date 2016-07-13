@@ -253,9 +253,10 @@ class GlyphCollectionView(vanilla.Group):
             self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
-            if placard is not None:
-                placard.button.set(0)
+#             if placard is not None:
+#                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
+        self._list.getNSTableView().sizeToFit()
         self._mode = mode
         self.setSelection(selection)
         if mode == "cell":

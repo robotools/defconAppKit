@@ -1,9 +1,6 @@
-from distutils.core import setup
-import py2app
-import os
-import sys
+from setuptools import setup
 
-plist = dict(
+PLIST = dict(
         CFBundleDocumentTypes = [
         dict(
             CFBundleTypeExtensions = ["ufo"],
@@ -20,14 +17,18 @@ plist = dict(
     NSHumanReadableCopyright = "Copyright 2007 Tal Leming. All rights reserved."
     )
 
-dataFiles = [
+DATAFILES = [
         "Resources/English.lproj",
         ]
-frameworks = []
-if "-A" not in sys.argv:
-    dataFiles += frameworks
+
+OPTIONS = {
+    'plist': PLIST,
+   }
 
 setup(
-    data_files=dataFiles,
-    app=[dict(script="DefconAppKitTest.py", plist=plist)]
+    app = ["DefconAppKitTest.py"],
+    name = "DefconAppKit Test",
+    options = {'py2app': OPTIONS},
+    setup_requires = ['py2app'],
+    data_files = DATAFILES,
     )

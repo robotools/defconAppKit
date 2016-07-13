@@ -1,5 +1,13 @@
+from setuptools import __version__ as setuptoolsVersion
+if setuptoolsVersion > '19.2':
+	import six
+	import packaging
+	import packaging.version
+	import packaging.specifiers
+	import packaging.requirements
+
 import time
-from PyObjCTools import NibClassBuilder, AppHelper
+from PyObjCTools import AppHelper
 from AppKit import *
 import vanilla
 from defcon import Font
@@ -19,8 +27,6 @@ registerAllFactories()
 
 import objc
 objc.setVerbose(True)
-
-NibClassBuilder.extractClasses("MainMenu")
 
 
 class DefconAppKitTestAppDelegate(NSObject):
