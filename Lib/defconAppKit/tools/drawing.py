@@ -119,14 +119,17 @@ def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="botto
         width *= scale
         height *= scale
         x, y = pt
+        f = 1
+        if flipped:
+            f = -1
         if xAlign == "center":
             x -= width / 2
         elif xAlign == "right":
             x -= width
         if yAlign == "center":
-            y -= height / 2
+            y -= height / 2 * f
         elif yAlign == "top":
-            y -= height
+            y -= height * f
         pt = (x, y)
     context = NSGraphicsContext.currentContext()
     context.saveGraphicsState()
@@ -163,7 +166,7 @@ def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, c
         ("Cap Height", "capHeight"),
         ("Ascender", "ascender")
     )
-    toDraw = [(name, getattr(font.info, attr)) for name, attr in toDraw if getattr(font.info, attr) is not None]    
+    toDraw = [(name, getattr(font.info, attr)) for name, attr in toDraw if getattr(font.info, attr) is not None]
     toDraw.append(("Baseline", 0))
     positions = {}
     for name, position in toDraw:
