@@ -87,7 +87,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         
     def initWithFrame_cellRepresentationName_detailWindowClass_(self,
         frame, cellRepresentationName, detailWindowClass):
-        self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
+        self = DefconAppKitGlyphCellNSView.alloc().initWithFrame_(frame)
         self._cellWidth = 50
         self._cellHeight = 50
         self._glyphs = []
