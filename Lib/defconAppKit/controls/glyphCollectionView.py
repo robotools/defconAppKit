@@ -105,8 +105,8 @@ class GlyphCollectionView(vanilla.Group):
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"
     ):
         super(GlyphCollectionView, self).__init__(posSize)
-        if showModePlacard or placardActionItems is not None:
-            showPlacard = True
+        if not showPlacard:
+            showModePlacard = False
         bottom = 0
         if showPlacard:
             bottom = -19
@@ -256,13 +256,13 @@ class GlyphCollectionView(vanilla.Group):
         placard = self._placard
         if mode == "list":
             documentView = self._list.getNSTableView()
-            if placard is not None:
+            if placard is not None and hasattr(placard, "button"):
                 placard.button.set(1)
             # the cell view needs to be told to stop paying attention to the window
             self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
-            if placard is not None:
+            if placard is not None and hasattr(placard, "button"):
                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode
