@@ -138,6 +138,9 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._glyphs = [item["_glyph"]() for item in obj.arrangedObjects()]
             self.recalculateFrame()
 
+    def setGlyphsFromArrayController(self):
+        self.setNeedsDisplay_(True)
+
     # --------------
     # custom methods
     # --------------
