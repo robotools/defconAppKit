@@ -323,6 +323,27 @@ class GlyphCollectionView(vanilla.Group):
     # drag and drop
     # -------------
 
+    def _get_selfDropSettings(self):
+        return self._list._selfDropSettings
+
+    def _get_selfWindowDropSettings(self):
+        return self._list._selfWindowDropSettings
+
+    def _get_selfDocumentDropSettings(self):
+        return self._list._selfDocumentDropSettings
+
+    def _get_selfApplicationDropSettings(self):
+        return self._list._selfApplicationDropSettings
+
+    def _get_otherApplicationDropSettings(self):
+        return self._list._otherApplicationDropSettings
+
+    _selfDropSettings = property(_get_selfDropSettings)
+    _selfWindowDropSettings = property(_get_selfWindowDropSettings)
+    _selfDocumentDropSettings = property(_get_selfDocumentDropSettings)
+    _selfApplicationDropSettings = property(_get_selfApplicationDropSettings)
+    _otherApplicationDropSettings = property(_get_otherApplicationDropSettings)
+
     def _packListRowsForDrag(self, sender, indexes):
         return indexes
 
