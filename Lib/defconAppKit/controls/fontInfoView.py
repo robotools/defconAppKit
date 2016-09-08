@@ -1229,7 +1229,7 @@ openTypeGaspRangeRecordsItem = inputItemDict(
             dict(key="gridfit", title="", width=60, editable=True, cell=vanilla.CheckBoxListCell(title="Gridfit")),
             dict(key="doGray", title="", width=77, editable=True, cell=vanilla.CheckBoxListCell(title="Grayscale")),
             dict(key="symmSmoothing", title="", width=143, editable=True, cell=vanilla.CheckBoxListCell(title="Symmetric Smoothing")),
-            dict(key="symmGridfit", title="", width=100, editable=True, cell=vanilla.CheckBoxListCell(title="Symmetric Gridfit")),
+            dict(key="symmGridfit", title="", editable=True, cell=vanilla.CheckBoxListCell(title="Symmetric Gridfit")),
         ],
         itemPrototype=dict(ppem=65535, gridfit=False, doGray=False, symmSmoothing=False, symmGridfit=False),
         validator=openTypeGaspRangeRecordsInputValidator
@@ -2056,7 +2056,7 @@ def woffMetadataCreditsFromUFO(value):
         item["class"] = item.get("class", "")
         item["dir"] = item.get("dir", "Default")
         items.append(item)
-    return items    
+    return items
 
 def woffMetadataCreditsToUFO(value):
     items = []
@@ -2105,7 +2105,7 @@ def woffMetadataGenericTextFromUFO(value):
         item["class"] = item.get("class", "")
         item["dir"] = item.get("dir", "Default")
         items.append(item)
-    return items    
+    return items
 
 def woffMetadataGenericTextToUFO(value):
     items = []
