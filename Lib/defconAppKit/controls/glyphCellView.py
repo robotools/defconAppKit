@@ -138,9 +138,6 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._glyphs = [item["_glyph"]() for item in obj.arrangedObjects()]
             self.recalculateFrame()
 
-    def setGlyphsFromArrayController(self):
-        self.setNeedsDisplay_(True)
-
     # --------------
     # custom methods
     # --------------
@@ -350,7 +347,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                     NSColor.whiteColor().set()
 
             left += cellWidth
-            if left + cellWidth > width:
+            if left + cellWidth >= width:
                 left = 0
                 top += cellHeight
         # lines
@@ -616,9 +613,11 @@ class DefconAppKitGlyphCellNSView(NSView):
             if found is None:
                 selection.removeAllIndexes()
             elif mouseDown or controlDown:
-                selection.removeAllIndexes()
+                if not containsFound:
+                    selection.removeAllIndexes()
                 selection.addIndex_(found)
             else:
+                selection.removeAllIndexes()
                 selection.addIndex_(found)
 
         if not selection.isEqualToIndexSet_(self._currentSelection):
@@ -925,11 +924,28 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._dropTargetOn = None
         self._dropTargetSelf = False
         # get some settings
-        allowDropOnRow = settings.get("allowDropOnRow", False)
-        allowDropBetweenRows = settings.get("allowDropBetweenRows", True)
+        allowDropOnRow = settings.get("allowsDropOnRows", False)
+        allowDropBetweenRows = settings.get("allowsDropBetweenRows", True)
         rowIndex = dropInformation["rowIndex"]
         # drop on a specific cell
-        if allowDropOnRow and rowIndex is not None:
+        if allowDropOnRow and allowDropBetweenRows and rowIndex is not None:
+            mouseLocation = self._getMouseLocation()
+            (x, y), (w, h) = self._indexToClickRects[rowIndex]
+            _s = .35
+            left = ((x, y), (w * _s, h))
+            right = ((x + w * (1 - _s), y), (w * _s, h))
+            if NSPointInRect(mouseLocation, left):
+                target = (rowIndex - 1, rowIndex)
+                self._dropTargetBetween = target
+                dropInformation["dropOnRow"] = False
+            elif NSPointInRect(mouseLocation, right):
+                target = (rowIndex, rowIndex + 1)
+                dropInformation["rowIndex"] += 1
+                self._dropTargetBetween = target
+                dropInformation["dropOnRow"] = False
+            else:
+                self._dropTargetOn = rowIndex
+        elif allowDropOnRow and rowIndex is not None:
             self._dropTargetOn = rowIndex
         # drop between cells
         elif allowDropBetweenRows and rowIndex is not None:
