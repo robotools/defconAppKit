@@ -105,8 +105,8 @@ class GlyphCollectionView(vanilla.Group):
         otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"
     ):
         super(GlyphCollectionView, self).__init__(posSize)
-        if not showPlacard:
-            showModePlacard = False
+        if showModePlacard or placardActionItems is not None:
+            showPlacard = True
         bottom = 0
         if showPlacard:
             bottom = -19
@@ -256,13 +256,13 @@ class GlyphCollectionView(vanilla.Group):
         placard = self._placard
         if mode == "list":
             documentView = self._list.getNSTableView()
-            if placard is not None and hasattr(placard, "button"):
+            if placard is not None:
                 placard.button.set(1)
             # the cell view needs to be told to stop paying attention to the window
             self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
-            if placard is not None and hasattr(placard, "button"):
+            if placard is not None:
                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode
@@ -326,23 +326,7 @@ class GlyphCollectionView(vanilla.Group):
     def _get_selfDropSettings(self):
         return self._list._selfDropSettings
 
-    def _get_selfWindowDropSettings(self):
-        return self._list._selfWindowDropSettings
-
-    def _get_selfDocumentDropSettings(self):
-        return self._list._selfDocumentDropSettings
-
-    def _get_selfApplicationDropSettings(self):
-        return self._list._selfApplicationDropSettings
-
-    def _get_otherApplicationDropSettings(self):
-        return self._list._otherApplicationDropSettings
-
     _selfDropSettings = property(_get_selfDropSettings)
-    _selfWindowDropSettings = property(_get_selfWindowDropSettings)
-    _selfDocumentDropSettings = property(_get_selfDocumentDropSettings)
-    _selfApplicationDropSettings = property(_get_selfApplicationDropSettings)
-    _otherApplicationDropSettings = property(_get_otherApplicationDropSettings)
 
     def _packListRowsForDrag(self, sender, indexes):
         return indexes
@@ -546,6 +530,9 @@ class GlyphCollectionView(vanilla.Group):
             glyph = item["_glyph"]
             del self._wrappedListItems[glyph]
             self._unsubscribeFromGlyph(glyph)
+
+    def __len__(self):
+        return self.getArrayController().arrangedObjects().count()
 
     def append(self, glyph):
         item = self._wrapGlyphForList(glyph)
