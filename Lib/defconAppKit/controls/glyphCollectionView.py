@@ -305,6 +305,8 @@ class GlyphCollectionView(vanilla.Group):
         should be a list of indexes.
         """
         self._list.setSelection(selection)
+        if self.getMode() == "cell":
+            self._glyphCellView.setNeedsDisplay_(True)
 
     def scrollToSelection(self):
         """
