@@ -1105,7 +1105,7 @@ italicAngleItem = inputItemDict(
     title="Italic Angle",
     hasDefault=False,
     controlClass=NumberEditText,
-    controlOptions=dict(style="number")
+    controlOptions=dict(style="number", decimals=10)
 )
 
 ## Basic Legal
