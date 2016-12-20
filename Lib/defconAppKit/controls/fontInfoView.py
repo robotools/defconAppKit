@@ -2618,6 +2618,7 @@ class DefconAppKitFontInfoSectionView(NSView):
     def viewDidMoveToWindow(self):
         if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
             v = self.vanillaWrapper()
+            v.buildUI()
             v._scrollView.setPosSize(v._scrollView._posSize)
             v._adjustControlSizes()
 
@@ -2668,8 +2669,9 @@ class FontInfoSection(vanilla.Group):
     def __init__(self, posSize, groupOrganization, controlDescriptions, font):
         super(FontInfoSection, self).__init__(posSize)
         self._finishedSetup = False
+        self._groupOrganization = groupOrganization
+        self._controlDescriptions = controlDescriptions
         self._font = font
-        left, top, width, height = posSize
         ## reference storage
         self._jumpButtons = {}
         self._groupTitlePositions = {}
@@ -2677,6 +2679,13 @@ class FontInfoSection(vanilla.Group):
         self._attributeToControl = {}
         self._defaultControlToAttribute = {}
         self._attributeToDefaultControl = {}
+
+    def buildUI(self):
+        if self._finishedSetup:
+            return
+        groupOrganization = self._groupOrganization
+        controlDescriptions = self._controlDescriptions
+        left, top, width, height = self._posSize
         ## top navigation
         self._buttonBar = FontInfoToolbar((0, 12, -0, 60))
         groupTitles = [group[0] for group in groupOrganization]
@@ -2893,11 +2902,17 @@ class FontInfoSection(vanilla.Group):
         # observe
         self._font.info.addObserver(self, "_infoChanged", "Info.Changed")
 
-
     def _breakCycles(self):
-        if self._font.info.hasObserver(self, "Info.Changed"):
+        if self._font is not None and self._font.info.hasObserver(self, "Info.Changed"):
             self._font.info.removeObserver(self, "Info.Changed")
-        self._jumpButtons = []
+        self._font = None
+        ## reference storage
+        self._jumpButtons = None
+        self._groupTitlePositions = None
+        self._controlToAttributeData = None
+        self._attributeToControl = None
+        self._defaultControlToAttribute = None
+        self._attributeToDefaultControl = None
         super(FontInfoSection, self)._breakCycles()
 
     def _loadInfo(self):
@@ -3018,7 +3033,6 @@ class FontInfoSection(vanilla.Group):
                 if not attributeData["hasDefault"]:
                     continue
                 attribute = attributeData["fontAttribute"]
-                conversionFunction = attributeData["conversionToUFO"]
                 value = getAttrWithFallback(self._font.info, attribute)
                 if value is None:
                     value = ""
