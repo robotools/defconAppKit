@@ -2618,7 +2618,6 @@ class DefconAppKitFontInfoSectionView(NSView):
     def viewDidMoveToWindow(self):
         if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
             v = self.vanillaWrapper()
-            v.buildUI()
             v._scrollView.setPosSize(v._scrollView._posSize)
             v._adjustControlSizes()
 
@@ -2679,13 +2678,7 @@ class FontInfoSection(vanilla.Group):
         self._attributeToControl = {}
         self._defaultControlToAttribute = {}
         self._attributeToDefaultControl = {}
-
-    def buildUI(self):
-        if self._finishedSetup:
-            return
-        groupOrganization = self._groupOrganization
-        controlDescriptions = self._controlDescriptions
-        left, top, width, height = self._posSize
+        left, top, width, height = posSize
         ## top navigation
         self._buttonBar = FontInfoToolbar((0, 12, -0, 60))
         groupTitles = [group[0] for group in groupOrganization]
@@ -2974,13 +2967,11 @@ class FontInfoSection(vanilla.Group):
         index = self._jumpButtons[sender]
         viewH = documentView.bounds().size[1]
         clipViewH = clipView.bounds().size[1]
-        y = clipViewH - self._groupTitlePositions[index]
-        y -= 10
+        y = -self._groupTitlePositions[index] - 10
         if y > viewH:
             y = NSMaxY(documentView.frame()) - clipViewH
         pt = (0, y)
-        clipView.scrollToPoint_(pt)
-        scrollView.reflectScrolledClipView_(clipView)
+        documentView.scrollPoint_(pt)
 
     # callbacks
 
@@ -3040,39 +3031,59 @@ class FontInfoSection(vanilla.Group):
                     value = str(value)
                 control.setPlaceholder(value)
 
+
 # ---------
 # main view
 # ---------
 
+class DefconAppKitFontInfoViewTabView(NSTabView):
+
+    def viewDidMoveToWindow(self):
+        if self.window() is None:
+            return
+        if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
+            v = self.vanillaWrapper()
+            v.buildUI()
+
 
 class FontInfoView(vanilla.Tabs):
 
+    nsTabViewClass = DefconAppKitFontInfoViewTabView
+
     def __init__(self, posSize, font, controlAdditions=None):
+        self._font = font
         if controlAdditions is None:
             controlAdditions = []
-        allControlOrganization = controlOrganization + controlAdditions
-        sectionNames = [section["title"] for section in allControlOrganization]
-        super(FontInfoView, self).__init__(posSize, sectionNames)
+        self._allControlOrganization = controlOrganization + controlAdditions
+        self._sectionNames = [section["title"] for section in self._allControlOrganization]
+        super(FontInfoView, self).__init__(posSize, self._sectionNames)
         self._nsObject.setTabViewType_(NSNoTabsNoBorder)
-        left, top, width, height = posSize
+
+    def buildUI(self):
+        left, top, width, height = self._posSize
         assert width > 0
         # controls
-        buttonWidth = 85 * len(allControlOrganization)
-        buttonLeft = (posSize[2] - buttonWidth) / 2
-        segments = [dict(title=sectionName) for sectionName in sectionNames]
+        buttonWidth = 85 * len(self._allControlOrganization)
+        buttonLeft = (width - buttonWidth) / 2
+        segments = [dict(title=sectionName) for sectionName in self._sectionNames]
         self._segmentedButton = vanilla.SegmentedButton((buttonLeft, -26, buttonWidth, 24), segments, callback=self._tabSelectionCallback, sizeStyle="regular")
         self._segmentedButton.set(0)
         # sections
-        for index, sectionData in enumerate(allControlOrganization):
+        for index, sectionData in enumerate(self._allControlOrganization):
             viewClass = sectionData.get("customView")
             if viewClass is not None:
-                self[index].section = viewClass((0, 0, width, 0), font)
+                self[index].section = viewClass((0, 0, width, 0), self._font)
             else:
                 controlDescriptions = sectionData.get("controlDescriptions")
                 if controlDescriptions is None:
                     controlDescriptions = allControlDescriptions
-                self[index].section = FontInfoSection((0, 0, width, 0), sectionData["groups"], controlDescriptions, font)
+                self[index].section = FontInfoSection((0, 0, width, 0), sectionData["groups"], controlDescriptions, self._font)
 
     def _tabSelectionCallback(self, sender):
         self.set(sender.get())
 
+    def _breakCycles(self):
+        self._font = None
+        self._allControlOrganization = None
+        self._sectionNames = None
+        super(FontInfoView, self)._breakCycles()
