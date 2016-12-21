@@ -2616,8 +2616,11 @@ class FontInfoToolbarButton(vanilla.Button):
 class DefconAppKitFontInfoSectionView(NSView):
 
     def viewDidMoveToWindow(self):
+        if self.window() is None:
+            return
         if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
             v = self.vanillaWrapper()
+            v.buildUI()
             v._scrollView.setPosSize(v._scrollView._posSize)
             v._adjustControlSizes()
 
@@ -2628,6 +2631,8 @@ class DefconAppKitFontInfoCategoryControlsGroup(NSView):
         return True
 
     def viewDidMoveToWindow(self):
+        if self.window() is None:
+            return
         if hasattr(self, "_haveMovedToWindow"):
             return
         self._haveMovedToWindow = True
@@ -2678,7 +2683,13 @@ class FontInfoSection(vanilla.Group):
         self._attributeToControl = {}
         self._defaultControlToAttribute = {}
         self._attributeToDefaultControl = {}
-        left, top, width, height = posSize
+
+    def buildUI(self):
+        if self._finishedSetup:
+            return
+        groupOrganization = self._groupOrganization
+        controlDescriptions = self._controlDescriptions
+        left, top, width, height = self._posSize
         ## top navigation
         self._buttonBar = FontInfoToolbar((0, 12, -0, 60))
         groupTitles = [group[0] for group in groupOrganization]
@@ -3036,16 +3047,6 @@ class FontInfoSection(vanilla.Group):
 # main view
 # ---------
 
-class DefconAppKitFontInfoViewTabView(NSTabView):
-
-    def viewDidMoveToWindow(self):
-        if self.window() is None:
-            return
-        if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
-            v = self.vanillaWrapper()
-            v.buildUI()
-
-
 class FontInfoView(vanilla.Tabs):
 
     nsTabViewClass = DefconAppKitFontInfoViewTabView
@@ -3055,17 +3056,15 @@ class FontInfoView(vanilla.Tabs):
         if controlAdditions is None:
             controlAdditions = []
         self._allControlOrganization = controlOrganization + controlAdditions
-        self._sectionNames = [section["title"] for section in self._allControlOrganization]
-        super(FontInfoView, self).__init__(posSize, self._sectionNames)
+        sectionNames = [section["title"] for section in self._allControlOrganization]
+        super(FontInfoView, self).__init__(posSize, sectionNames)
         self._nsObject.setTabViewType_(NSNoTabsNoBorder)
-
-    def buildUI(self):
-        left, top, width, height = self._posSize
+        left, top, width, height = posSize
         assert width > 0
         # controls
         buttonWidth = 85 * len(self._allControlOrganization)
         buttonLeft = (width - buttonWidth) / 2
-        segments = [dict(title=sectionName) for sectionName in self._sectionNames]
+        segments = [dict(title=sectionName) for sectionName in sectionNames]
         self._segmentedButton = vanilla.SegmentedButton((buttonLeft, -26, buttonWidth, 24), segments, callback=self._tabSelectionCallback, sizeStyle="regular")
         self._segmentedButton.set(0)
         # sections
@@ -3085,5 +3084,4 @@ class FontInfoView(vanilla.Tabs):
     def _breakCycles(self):
         self._font = None
         self._allControlOrganization = None
-        self._sectionNames = None
         super(FontInfoView, self)._breakCycles()
