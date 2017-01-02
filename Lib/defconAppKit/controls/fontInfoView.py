@@ -3049,8 +3049,6 @@ class FontInfoSection(vanilla.Group):
 
 class FontInfoView(vanilla.Tabs):
 
-    nsTabViewClass = DefconAppKitFontInfoViewTabView
-
     def __init__(self, posSize, font, controlAdditions=None):
         self._font = font
         if controlAdditions is None:
