@@ -200,11 +200,10 @@ class DefconAppKitGlyphCellNSView(NSView):
             columnCount = 0
             rowCount = 0
             newWidth = newHeight = 0
-        if not self.inLiveResize():
-            if width > newWidth:
-                newWidth = width
-            if height > newHeight:
-                newHeight = height
+        if width > newWidth:
+            newWidth = width
+        if height > newHeight:
+            newHeight = height
         self.setFrame_(((0, 0), (newWidth, newHeight)))
         self._columnCount = columnCount
         self._rowCount = rowCount
