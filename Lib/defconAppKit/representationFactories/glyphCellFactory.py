@@ -4,6 +4,7 @@ from defconAppKit.tools.drawing import colorToNSColor
 GlyphCellHeaderHeight = 14
 GlyphCellMinHeightForHeader = 40
 
+cellBackgroundColor = NSColor.whiteColor()
 cellHeaderBaseColor = NSColor.colorWithCalibratedWhite_alpha_(0.968, 1.0)
 cellHeaderHighlightColor = NSColor.colorWithCalibratedWhite_alpha_(0.98, 1.0)
 cellHeaderLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .2)
@@ -66,6 +67,9 @@ class GlyphCellFactoryDrawingController(object):
         context = NSGraphicsContext.currentContext()
         bodyRect = ((0, 0), (self.width, self.height-self.headerHeight))
         headerRect = ((0, -self.height+self.headerHeight), (self.width, self.headerHeight))
+        # draw a background color
+        cellBackgroundColor.set()
+        NSRectFill(((0, 0), (self.width, self.height)))
         # background
         context.saveGraphicsState()
         bodyTransform = NSAffineTransform.transform()
