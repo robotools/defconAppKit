@@ -285,13 +285,8 @@ class GlyphCollectionView(vanilla.Group):
         self.setGlyphNames([glyph.name for glyph in glyphs])
 
     def get(self):
-        self._holdCallbacks = True
-        self._glyphCellView.unSubscribeGlyphs()
-        items = [self._wrapItem(glyph.name, glyph=glyph) for glyph in glyphs]
-        self.getArrayController().setContent_(None)
-        self.getArrayController().addObjects_(items)
-        self._holdCallbacks = False
-        self._glyphCellView.recalculateFrame()
+        font = self._glyphCellView.getFont()
+        return [font[glyphName] for glyphName in self._glyphCellView._glyphNames if glyphName in font]
 
     def setGlyphNames(self, glyphNames):
         self._holdCallbacks = True
@@ -423,6 +418,26 @@ class GlyphCollectionView(vanilla.Group):
         return self._list._selfDropSettings
 
     _selfDropSettings = property(_get_selfDropSettings)
+
+    def _get_selfWindowDropSettings(self):
+        return self._list._selfWindowDropSettings
+
+    _selfWindowDropSettings = property(_get_selfWindowDropSettings)
+
+    def _get_selfDocumentDropSettings(self):
+        return self._list._selfDocumentDropSettings
+
+    _selfDocumentDropSettings = property(_get_selfDocumentDropSettings)
+
+    def _get_selfApplicationDropSettings(self):
+        return self._list._selfApplicationDropSettings
+
+    _selfApplicationDropSettings = property(_get_selfApplicationDropSettings)
+
+    def _get_otherApplicationDropSettings(self):
+        return self._list._otherApplicationDropSettings
+
+    _otherApplicationDropSettings = property(_get_otherApplicationDropSettings)
 
     def _packListRowsForDrag(self, sender, indexes):
         return indexes
