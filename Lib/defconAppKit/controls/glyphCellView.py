@@ -340,6 +340,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def dealloc(self):
         self.unSubscribeFont()
         self.unSubscribeGlyphs()
+        self.unsubscribeFromWindow()
         self._glyphNames = None
         self._subscribedGlyphs = None
         self._font = None
