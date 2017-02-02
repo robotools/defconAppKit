@@ -292,11 +292,12 @@ class DefconAppKitGlyphCellNSView(NSView):
             del self.__fontInfoCallbackWrapper
 
     def subscribeGlyph(self, glyph):
-        glyphNameChangedCallbackWrapper = nsCallbackWrapper(self._glyphNameChanged)
-        glyphChangedCallbackWrapper = nsCallbackWrapper(self._glyphChanged)
-        self._subscribedGlyphs[glyph] = (glyphNameChangedCallbackWrapper, glyphChangedCallbackWrapper)
-        glyph.addObserver(glyphNameChangedCallbackWrapper, "action", "Glyph.NameChanged")
-        glyph.addObserver(glyphChangedCallbackWrapper, "action", "Glyph.Changed")
+        if glyph not in self._subscribedGlyphs:
+            glyphNameChangedCallbackWrapper = nsCallbackWrapper(self._glyphNameChanged)
+            glyphChangedCallbackWrapper = nsCallbackWrapper(self._glyphChanged)
+            self._subscribedGlyphs[glyph] = (glyphNameChangedCallbackWrapper, glyphChangedCallbackWrapper)
+            glyph.addObserver(glyphNameChangedCallbackWrapper, "action", "Glyph.NameChanged")
+            glyph.addObserver(glyphChangedCallbackWrapper, "action", "Glyph.Changed")
 
     def unSubscribeGlyph(self, glyph):
         if glyph in self._subscribedGlyphs:
