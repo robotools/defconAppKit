@@ -27,9 +27,11 @@ class DefconAppKitTextField(NSTextField):
             view.scrollControlToVisible_(self)
         return result
 
+
 class InfoEditText(vanilla.EditText):
 
     nsTextFieldClass = DefconAppKitTextField
+
 
 # TextEditor
 
@@ -42,6 +44,7 @@ class DefconAppKitTextView(NSTextView):
             view = scrollView.superview()
             view.scrollControlToVisible_(scrollView)
         return result
+
 
 class InfoTextEditor(vanilla.TextEditor):
 
