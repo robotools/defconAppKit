@@ -150,7 +150,7 @@ def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="botto
 
 # Vertical Metrics
 
-def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, color=None, backgroundColor=None):
+def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, color=None, backgroundColor=None, flipped=False):
     font = glyph.font
     if font is None:
         return
