@@ -793,6 +793,12 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     # key
 
+    def setLastFoundSelection(self, selection):
+        if selection:
+            self._lastSelectionFound = max(selection)
+        else:
+            self._lastSelectionFound = None
+
     def selectAll_(self, sender):
         selection = NSIndexSet.indexSetWithIndexesInRange_((0, len(self._glyphNames)))
         self.arrayController.setSelectionIndexes_(selection)
@@ -1161,6 +1167,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._dropTargetOn = None
         self._dropTargetSelf = False
         self.setNeedsDisplay_(True)
+        return None
 
     def prepareForDragOperation_(self, sender):
         return self._handleDrop(sender, isProposal=True, callCallback=True)

@@ -393,6 +393,7 @@ class GlyphCollectionView(vanilla.Group):
         """
         self._list.setSelection(selection)
         if self.getMode() == "cell":
+            self._glyphCellView.setLastFoundSelection(selection)
             self._glyphCellView.setNeedsDisplay_(True)
 
     def scrollToSelection(self):
@@ -407,6 +408,7 @@ class GlyphCollectionView(vanilla.Group):
     def _listSelectionCallback(self, sender):
         if self._holdCallbacks:
             return
+        self._glyphCellView.setLastFoundSelection(self.getSelection())
         if self._selectionCallback is not None:
             self._selectionCallback(self)
 
