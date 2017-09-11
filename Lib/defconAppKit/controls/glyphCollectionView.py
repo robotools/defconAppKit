@@ -384,7 +384,11 @@ class GlyphCollectionView(vanilla.Group):
         """
         Get the selection in the view as a list of indexes.
         """
-        return self._list.getSelection()
+        selection = self._arrayController.selectionIndexes()
+        # if nothing is selected return an empty list
+        if not selection:
+            return []
+        return list(self._list._iterIndexSet(selection))
 
     def setSelection(self, selection):
         """
