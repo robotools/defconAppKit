@@ -165,6 +165,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._cellHeight = 60
         self._columnCount = 0
         self._rowCount = 0
+        self._currentSelection = None
 
         self._clickRectsToIndex = {}
         self._indexToClickRects = {}
@@ -647,7 +648,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             found = self._findGlyphForEvent(event)
             self._mouseSelection(event, found, mouseUp=True)
             self._handleDetailWindow(event, found, mouseUp=True)
-            del self._currentSelection
+            self._currentSelection = None
             self._havePreviousMouseDown = False
 
     def _findGlyphForEvent(self, event):
@@ -733,7 +734,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         selection = NSMutableIndexSet.alloc().initWithIndexSet_(self.arrayController.selectionIndexes())
         if found is None:
             selection.removeAllIndexes()
-            if not selection.isEqualToIndexSet_(self._currentSelection):
+            if self._currentSelection is not None and not selection.isEqualToIndexSet_(self._currentSelection):
                 self.arrayController.setSelectionIndexes_(selection)
                 self.setNeedsDisplay_(True)
             return
@@ -767,9 +768,9 @@ class DefconAppKitGlyphCellNSView(NSView):
             elif mouseDragged and found == self._lastSelectionFound:
                 pass
             else:
-                if containsFound and self._currentSelection.containsIndex_(found):
+                if containsFound and self._currentSelection is not None and self._currentSelection.containsIndex_(found):
                     selection.removeIndex_(found)
-                elif not containsFound and not self._currentSelection.containsIndex_(found):
+                elif not containsFound and self._currentSelection is not None and not self._currentSelection.containsIndex_(found):
                     selection.addIndex_(found)
         elif shiftDown:
             if found is None:
@@ -787,7 +788,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 selection.removeAllIndexes()
                 selection.addIndex_(found)
 
-        if not selection.isEqualToIndexSet_(self._currentSelection):
+        if self._currentSelection is not None and not selection.isEqualToIndexSet_(self._currentSelection):
             self.arrayController.setSelectionIndexes_(selection)
             self.setNeedsDisplay_(True)
 
