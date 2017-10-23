@@ -5,6 +5,7 @@ from Foundation import *
 from AppKit import *
 from math import ceil, floor
 import vanilla
+from vanilla.py23 import python_method
 from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox, HUDHorizontalLine
 
@@ -292,6 +293,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._font.info.removeObserver(self.__fontInfoCallbackWrapper, "Info.Changed")
             del self.__fontInfoCallbackWrapper
 
+    @python_method
     def subscribeGlyph(self, glyph):
         if glyph not in self._subscribedGlyphs:
             glyphNameChangedCallbackWrapper = nsCallbackWrapper(self._glyphNameChanged)
@@ -300,6 +302,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             glyph.addObserver(glyphNameChangedCallbackWrapper, "action", "Glyph.NameChanged")
             glyph.addObserver(glyphChangedCallbackWrapper, "action", "Glyph.Changed")
 
+    @python_method
     def unSubscribeGlyph(self, glyph):
         if glyph in self._subscribedGlyphs:
             glyphNameChangedCallbackWrapper, glyphChangedCallbackWrapper = self._subscribedGlyphs[glyph]
@@ -312,6 +315,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         for glyph in glyphs:
             self.unSubscribeGlyph(glyph)
 
+    @python_method
     def _fontInfoChanged(self, notification):
         repWidth, repHeight = self.getCellSize()
         repArgs = self.getCellRepresentationArguments()
@@ -322,6 +326,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             glyph.destroyRepresentation(repName, **repArgs)
         self.setNeedsDisplay_(True)
 
+    @python_method
     def _glyphNameChanged(self, notification):
         data = notification.data
         oldName = data["oldValue"]
@@ -330,6 +335,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphNames[index] = newName
         self.setNeedsDisplay_(True)
 
+    @python_method
     def _glyphChanged(self, notification):
         glyph = notification.object
         if glyph.name not in self._glyphNames:
@@ -569,6 +575,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     # Selection
     # ---------
 
+    @python_method
     def _linearSelection(self, index, selection=None):
         if selection is None:
             selection = NSMutableIndexSet.alloc().initWithIndexSet_(self.arrayController.selectionIndexes())
@@ -597,6 +604,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             rect = self._indexToClickRects[index]
         self.scrollRectToVisible_(rect)
 
+    @python_method
     def rectForIndex(self, index):
         top = (index // self._columnCount) * self._cellHeight
         left = (index % self._columnCount) * self._cellWidth
@@ -651,11 +659,13 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._currentSelection = None
             self._havePreviousMouseDown = False
 
+    @python_method
     def _findGlyphForEvent(self, event):
         eventLocation = event.locationInWindow()
         mouseLocation = self.convertPoint_fromView_(eventLocation, None)
         return self._findGlyphForLocation(mouseLocation)
 
+    @python_method
     def _findGlyphForLocation(self, location):
         found = None
         for rect, index in self._clickRectsToIndex.items():
@@ -664,6 +674,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 break
         return found
 
+    @python_method
     def _handleDetailWindow(self, event, found, mouseDown=False, mouseMoved=False, mouseDragged=False, mouseUp=False, inDragAndDrop=False):
         # no window
         if self._windowIsClosed:
@@ -730,6 +741,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         else:
             glyphDetailWindow.hide()
 
+    @python_method
     def _mouseSelection(self, event, found, mouseDown=False, mouseDragged=False, mouseUp=False, mouseMoved=False):
         selection = NSMutableIndexSet.alloc().initWithIndexSet_(self.arrayController.selectionIndexes())
         if found is None:
@@ -793,7 +805,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self.setNeedsDisplay_(True)
 
     # key
-
+    @python_method
     def setLastFoundSelection(self, selection):
         if selection:
             self._lastSelectionFound = max(selection)
@@ -921,6 +933,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 self.scrollToCell_(newSelection)
                 self.setNeedsDisplay_(True)
 
+    @python_method
     def _arrowKeyDown(self, character, haveShiftKey, haveCommandKey):
         selection = NSMutableIndexSet.alloc().initWithIndexSet_(self.arrayController.selectionIndexes())
         if not selection.count():
@@ -990,6 +1003,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def draggingSourceOperationMaskForLocal_(self, isLocal):
         return NSDragOperationGeneric
 
+    @python_method
     def _beginDrag(self, event):
         # hide the detail window
         self._handleDetailWindow(event=event, found=None, inDragAndDrop=True)
@@ -1031,6 +1045,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         mouseLocation = self.convertPoint_fromView_(mouseLocation, None)
         return mouseLocation
 
+    @python_method
     def _handleDrop(self, draggingInfo, isProposal=False, callCallback=False):
         vanillaWrapper = self.vanillaWrapper()
         # quickly determine if a drop is even possible
@@ -1091,6 +1106,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         settings = vanillaWrapper._otherApplicationDropSettings
         return self._handleDropBasedOnSettings(settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback)
 
+    @python_method
     def _handleDropBasedOnSettings(self, settings, vanillaWrapper, dropOnRow, draggingInfo, dropInformation, callCallback):
         # rest the insertion positions
         self._dropTargetBetween = None
@@ -1150,6 +1166,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             return settings.get("operation", NSDragOperationCopy)
         return NSDragOperationNone
 
+    @python_method
     def _unpackPboard(self, settings, draggingInfo):
         pboard = draggingInfo.draggingPasteboard()
         data = pboard.propertyListForType_(settings["type"])
@@ -1209,6 +1226,7 @@ class GlyphInformationPopUpWindow(InformationPopUpWindow):
         self.rightMarginTitle = HUDTextBox((0, 250, titleWidth, 17), "Right Margin:", alignment="right")
         self.rightMargin = HUDTextBox((entryLeft, 250, -5, 17), "")
 
+    @python_method
     def set(self, glyph):
         # name
         name = glyph.name

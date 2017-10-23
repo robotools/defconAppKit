@@ -2,6 +2,7 @@ from Foundation import *
 from AppKit import *
 from ufoLib.pointPen import AbstractPointPen
 import vanilla
+from vanilla.py23 import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
 from defconAppKit.tools import drawing
 
@@ -314,27 +315,34 @@ class DefconAppKitGlyphNSView(NSView):
         self._backgroundColor.set()
         NSRectFill(self.bounds())
 
+    @python_method
     def drawImage(self, glyph, layerName):
         drawing.drawGlyphImage(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawBlues(self, glyph, layerName):
         drawing.drawFontPostscriptBlues(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawFamilyBlues(self, glyph, layerName):
         drawing.drawFontPostscriptFamilyBlues(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawVerticalMetrics(self, glyph, layerName):
         drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > 150
         drawing.drawFontVerticalMetrics(glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawMargins(self, glyph, layerName):
         drawing.drawGlyphMargins(glyph, self._inverseScale, self._drawingRect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawFillAndStroke(self, glyph, layerName):
         showFill = self.getDrawingAttribute_layerName_("showGlyphFill", layerName)
         showStroke = self.getDrawingAttribute_layerName_("showGlyphStroke", layerName)
         drawing.drawGlyphFillAndStroke(glyph, self._inverseScale, self._drawingRect, drawFill=showFill, drawStroke=showStroke, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawPoints(self, glyph, layerName):
         drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", layerName) and self._impliedPointSize > 175
         drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) and self._impliedPointSize > 175
@@ -344,6 +352,7 @@ class DefconAppKitGlyphNSView(NSView):
             drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
             backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawAnchors(self, glyph, layerName):
         drawText = self._impliedPointSize > 50
         drawing.drawGlyphAnchors(glyph, self._inverseScale, self._drawingRect, drawText=drawText, backgroundColor=self._backgroundColor)

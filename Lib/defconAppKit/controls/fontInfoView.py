@@ -3,6 +3,7 @@ from copy import deepcopy
 from Foundation import *
 from AppKit import *
 import vanilla
+from vanilla.py23 import python_method
 from vanilla import dialogs
 from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
@@ -50,6 +51,7 @@ class InfoTextEditor(vanilla.TextEditor):
 
     nsTextViewClass = DefconAppKitTextView
 
+
 # List
 
 class DefconAppKitTableView(VanillaTableViewSubclass):
@@ -68,6 +70,7 @@ class DefconAppKitTableView(VanillaTableViewSubclass):
             if view is not None:
                 view.scrollControlToVisible_(scrollView)
         return result
+
 
 class InfoList(vanilla.List):
 
@@ -162,7 +165,6 @@ class NumberEditText(InfoEditText):
         super(NumberEditText, self).set(value)
 
 
-
 class NumberSequenceFormatter(NSFormatter):
 
     def initWithMaxValuesCount_requiresEvenCount_(self, maxValuesCount, requiresEvenCount):
@@ -195,6 +197,7 @@ class NumberSequenceFormatter(NSFormatter):
     #    string = NSAttributedString.alloc().initWithString_attributes_(value, attrs)
     #    return string
 
+    @python_method
     def _parseString(self, string):
         isValid = True
         isPartiallyValid = True

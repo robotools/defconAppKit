@@ -3,6 +3,7 @@ import time
 from Foundation import *
 from AppKit import *
 import vanilla
+from vanilla.py23 import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton, DefconAppKitPlacardNSScrollView
 from defconAppKit.tools import drawing
 
@@ -217,6 +218,7 @@ class DefconAppKitGlyphLineNSView(NSView):
     # NSMenu creation and retrieval
     # -----------------------------
 
+    @python_method
     def _makeMenuForGlyphRecord(self, index):
         glyphRecord = self._glyphRecords[index]
         glyph = glyphRecord.glyph
@@ -230,6 +232,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             menu.addItem_(item)
         return menu
 
+    @python_method
     def _getGlyphMenuItem(self, glyph):
         name = glyph.name
         menuItem = NSMenuItem.alloc().init()
@@ -247,6 +250,7 @@ class DefconAppKitGlyphLineNSView(NSView):
     # glyph drawing
     # -------------
 
+    @python_method
     def drawGlyph(self, glyph, rect, alternate=False):
         # gather the layers
         layerSet = glyph.layerSet
@@ -291,6 +295,7 @@ class DefconAppKitGlyphLineNSView(NSView):
 
         self.drawGlyphForeground(glyph, rect, alternate=alternate)
 
+    @python_method
     def drawGlyphBackground(self, glyph, rect, alternate=False):
         if self.needsToDrawRectInGlyphSpace_scale_(rect):
             if glyph.name == ".notdef":
@@ -300,22 +305,28 @@ class DefconAppKitGlyphLineNSView(NSView):
                 self._alternateHighlightColor.set()
                 NSRectFillUsingOperation(rect, NSCompositeSourceOver)
 
+    @python_method
     def drawImage(self, glyph, layerName, rect):
         drawing.drawGlyphImage(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawBlues(self, glyph, layerName, rect):
         drawing.drawFontPostscriptBlues(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawFamilyBlues(self, glyph, layerName, rect):
         drawing.drawFontPostscriptFamilyBlues(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawVerticalMetrics(self, glyph, layerName, rect):
         drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > 150
         drawing.drawFontVerticalMetrics(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
 
+    @python_method
     def drawMargins(self, glyph, layerName, rect):
         drawing.drawGlyphMargins(glyph, self._inverseScale, rect, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawFillAndStroke(self, glyph, layerName, rect):
         showFill = self.getDrawingAttribute_layerName_("showGlyphFill", layerName)
         showStroke = self.getDrawingAttribute_layerName_("showGlyphStroke", layerName)
@@ -324,6 +335,7 @@ class DefconAppKitGlyphLineNSView(NSView):
             fillColor = self._glyphColor
         drawing.drawGlyphFillAndStroke(glyph, self._inverseScale, rect, drawFill=showFill, drawStroke=showStroke, contourFillColor=fillColor, componentFillColor=fillColor, backgroundColor=self._backgroundColor)
 
+    @python_method
     def drawPoints(self, glyph, layerName, rect):
         drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", layerName) and self._impliedPointSize > 175
         drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) and self._impliedPointSize > 175
@@ -333,10 +345,12 @@ class DefconAppKitGlyphLineNSView(NSView):
             drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
             backgroundColor=self._backgroundColor, flipped=True)
 
+    @python_method
     def drawAnchors(self, glyph, layerName, rect):
         drawText = self._impliedPointSize > 50
         drawing.drawGlyphAnchors(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
 
+    @python_method
     def drawGlyphForeground(self, glyph, rect, alternate=False):
         pass
 

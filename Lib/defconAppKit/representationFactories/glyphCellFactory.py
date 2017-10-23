@@ -12,7 +12,6 @@ cellMetricsLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
 cellMetricsFillColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
 
 
-
 def GlyphCellFactory(glyph, width, height, drawHeader=False, drawMetrics=False):
     obj = GlyphCellFactoryDrawingController(glyph=glyph, font=glyph.font, width=width, height=height, drawHeader=drawHeader, drawMetrics=drawMetrics)
     return obj.getImage()

@@ -2,6 +2,7 @@ import time
 from AppKit import *
 from Foundation import *
 import vanilla
+from vanilla.py23 import python_method
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
 
 
@@ -94,7 +95,7 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
     # --------------------------
     # special positioning method
     # --------------------------
-
+    @python_method
     def setPositionNearCursor(self, (x, y)):
         screen = self._window.screen()
         if screen is None:
@@ -188,10 +189,10 @@ class InteractivePopUpWindow(vanilla.Window):
         self._window.setBackgroundColor_(NSColor.clearColor())
 
         # set up the window to close when it loses focus
-        self.bind("resigned key", self.windowDeselectCallback)
+        self.bind("resigned key", self.windowDeselectCallback_)
         self._closing = False
 
-    def windowDeselectCallback(self, sender):
+    def windowDeselectCallback_(self, sender):
         if self._closing:
             return
         self.close()

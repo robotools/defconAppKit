@@ -63,6 +63,7 @@ class OpenTypeControlsView(vanilla.ScrollView):
         self._dynamicTop = top
         self._gsubAttributes = {}
         self._gposAttributes = {}
+        self._featureNames = {}
 
     def _breakCycles(self):
         self._callback = None
@@ -95,6 +96,8 @@ class OpenTypeControlsView(vanilla.ScrollView):
         # teardown existing controls
         for attr in self._gsubAttributes.keys() + self._gposAttributes.keys():
             delattr(self._controlGroup, attr)
+        for attr in self._featureNames.keys():
+            delattr(self._controlGroup, attr)
         if hasattr(self._controlGroup, "gposTitle"):
             del self._controlGroup.gposTitle
         if hasattr(self._controlGroup, "gsubTitle"):
@@ -114,6 +117,7 @@ class OpenTypeControlsView(vanilla.ScrollView):
         else:
             gsubFeatureList = gsub.getFeatureList()
         self._gsubAttributes = {}
+        self._featureNames = {}
         if gsubFeatureList:
             self._controlGroup.gsubTitle = vanilla.TextBox((10, top, -10, 14),
                 NSAttributedString.alloc().initWithString_attributes_("GSUB", titleControlAttributes), sizeStyle="small")
@@ -131,6 +135,7 @@ class OpenTypeControlsView(vanilla.ScrollView):
                     setName = stylisticSetNames[tag]
                     obj = vanilla.TextBox((26, top, -10, 13), setName, sizeStyle="mini")
                     setattr(self._controlGroup, attr, obj)
+                    self._featureNames[attr] = setName
                     top += 13
             top += 10
         # GPOS
@@ -647,4 +652,3 @@ for i in _languageTags:
     if len(i) < 4:
         i += " " * (4 - len(i))
     languageTags.append(i)
-
