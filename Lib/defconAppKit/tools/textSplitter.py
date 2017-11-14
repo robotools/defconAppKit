@@ -21,6 +21,10 @@ def splitText(text, cmap, fallback=".notdef"):
     ['aacute', 'bbreve']
     >>> splitText("/aacute /bbreve", {})
     ['aacute', 'bbreve']
+    >>> splitText("/cmb:dieresis /cmb:acute", {})
+    ['cmb:dieresis', 'cmb:acute']
+    >>> splitText("/cmb-dieresis /cmb-acute", {})
+    ['cmb-dieresis', 'cmb-acute']
 
     - Test character input
     >>> splitText("*.", {})
