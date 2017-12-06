@@ -2899,6 +2899,7 @@ class FontInfoSection(vanilla.Group):
         # scroll view
         height = abs(currentTop)
         self._scrollView = vanilla.ScrollView((0, 62, -0, -0), controlView.getNSView(), backgroundColor=backgroundColor, hasHorizontalScroller=False)
+        self._scrollView.getNSScrollView().setFrame_(((0, 0), (0, 0)))
         controlView.setPosSize((0, 0, width, height))
         controlView._setFrame(((0, 0), (width, height)))
         size = controlView.getNSView().frame().size
