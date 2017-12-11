@@ -1988,13 +1988,13 @@ postscriptWindowsCharacterSetItem = inputItemDict(
 
 woffMajorVersionItem = inputItemDict(
     title="Major Version",
-    hasDefault=False,
+    hasDefault=True,
     controlClass=NumberEditText,
     controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
 woffMinorVersionItem = inputItemDict(
     title="Minor Version",
-    hasDefault=False,
+    hasDefault=True,
     controlClass=NumberEditText,
     controlOptions=dict(style="number", allowFloat=False, allowNegative=False)
 )
