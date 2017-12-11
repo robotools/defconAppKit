@@ -56,11 +56,19 @@ class InfoTextEditor(vanilla.TextEditor):
 
 class DefconAppKitTableView(VanillaTableViewSubclass):
 
+    def setIsWrappedList_(self, value):
+        self._isWrappedList = value
+
+    def isWrappedList(self):
+        return getattr(self, "_isWrappedList", False)
+
     def becomeFirstResponder(self):
         result = super(DefconAppKitTableView, self).becomeFirstResponder()
         if result:
-            scrollView = self.enclosingScrollView()
-            view = scrollView
+            parentView = self.enclosingScrollView()
+            if self.isWrappedList():
+                parentView = parentView.superview()
+            view = parentView
             while 1:
                 view = view.superview()
                 if view is None:
@@ -68,13 +76,16 @@ class DefconAppKitTableView(VanillaTableViewSubclass):
                 if hasattr(view, "scrollControlToVisible_"):
                     break
             if view is not None:
-                view.scrollControlToVisible_(scrollView)
+                view.scrollControlToVisible_(parentView)
         return result
 
 
 class InfoList(vanilla.List):
 
     nsTableViewClass = DefconAppKitTableView
+
+    def setIsWrappedList(self, value):
+        self.getNSTableView().setIsWrappedList_(value)
 
 
 # -----------------------------------
@@ -913,6 +924,7 @@ class DictList(vanilla.Group):
             listClass = InfoList
         self._list = listClass((0, 0, -0, -20), [], columnDescriptions=columnDescriptions,
             editCallback=self._listEditCallback, drawFocusRing=False, showColumnTitles=showColumnTitles)
+        self._list.setIsWrappedList(True)
         self._buttonBar = GradientButtonBar((0, -22, -0, 22))
         self._addButton = vanilla.GradientButton((0, -22, 22, 22), imageNamed="NSAddTemplate", callback=self._addButtonCallback)
         self._removeButton = vanilla.GradientButton((21, -22, 22, 22), imageNamed="NSRemoveTemplate", callback=self._removeButtonCallback)
