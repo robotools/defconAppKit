@@ -1202,7 +1202,9 @@ def openTypeGaspRangeRecordsToUFO(value):
         sorter[ppem] = item
     records = []
     for ppem, item in sorted(sorter.items()):
-        if isinstance(ppem, NSDecimalNumber):
+        if isinstance(ppem, long):
+            ppem = int(ppem)
+        elif isinstance(ppem, NSDecimalNumber):
             ppem = int(ppem.intValue())
         behavior = []
         if item["gridfit"]:
@@ -1222,7 +1224,9 @@ def openTypeGaspRangeRecordsInputValidator(records):
     ppems = []
     for record in records:
         ppem = record["ppem"]
-        if isinstance(ppem, NSDecimalNumber):
+        if isinstance(ppem, long):
+            ppem = int(ppem)
+        elif isinstance(ppem, NSDecimalNumber):
             ppem = int(ppem.intValue())
         if ppem in ppems:
             return False, "A duplicate PPEM %d record has been created." % ppem, "Duplicate PPEM records aren't allowed. Only the final PPEM %d record will be stored in the font." % ppem
@@ -1343,7 +1347,9 @@ def openTypeNameRecordsToUFO(value):
         record = dict(record)
         for key in intKeys:
             v = record[key]
-            if isinstance(v, NSDecimalNumber):
+            if isinstance(v, long):
+                record[key] = int(v)
+            elif isinstance(v, NSDecimalNumber):
                 record[key] = int(v.intValue())
         key = tuple([record[k] for k in intKeys])
         records[key] = record
@@ -1358,7 +1364,9 @@ def openTypeNameRecordsInputValidator(records):
         key = []
         for k in combinationKeys:
             v = record[k]
-            if isinstance(v, NSDecimalNumber):
+            if isinstance(v, long):
+                v = int(v)
+            elif isinstance(v, NSDecimalNumber):
                 v = int(v.intValue())
             key.append(v)
         if key in seen:
