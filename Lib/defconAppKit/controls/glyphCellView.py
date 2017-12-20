@@ -1188,7 +1188,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         return None
 
     def prepareForDragOperation_(self, sender):
-        return self._handleDrop(sender, isProposal=True, callCallback=True)
+        result = self._handleDrop(sender, isProposal=True, callCallback=True)
+        if not result:
+            # turn off the insertion location display
+            self._dropTargetBetween = None
+            self._dropTargetOn = None
+            self._dropTargetSelf = False
+            self.setNeedsDisplay_(True)
+        return result
 
     def performDragOperation_(self, sender):
         result = self._handleDrop(sender, isProposal=False, callCallback=True)
