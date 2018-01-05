@@ -260,7 +260,7 @@ class GlyphCollectionView(vanilla.Group):
             self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
-            if placard is not None:
+            if placard is not None and hasattr(placard, "button"):
                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode

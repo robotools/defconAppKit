@@ -51,7 +51,7 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
         stepValue = .2
         current = self._window.alphaValue()
         steps = int((1.0 - current) / stepValue)
-        for i in xrange(steps):
+        for i in range(steps):
             a = self._window.alphaValue() + stepValue
             if a > 1.0:
                 a = 1.0
@@ -66,7 +66,7 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
         stepValue = .2
         current = self._window.alphaValue()
         steps = int(current / stepValue)
-        for i in xrange(steps):
+        for i in range(steps):
             a = self._window.alphaValue() - stepValue
             if a < 0:
                 a = 0
@@ -205,7 +205,7 @@ class InteractivePopUpWindow(vanilla.Window):
         stepValue = .2
         current = self._window.alphaValue()
         steps = int((1.0 - current) / stepValue)
-        for i in xrange(steps):
+        for i in range(steps):
             a = self._window.alphaValue() + stepValue
             if a > 1.0:
                 a = 1.0
@@ -220,7 +220,7 @@ class InteractivePopUpWindow(vanilla.Window):
         stepValue = .2
         current = self._window.alphaValue()
         steps = int(current / stepValue)
-        for i in xrange(steps):
+        for i in range(steps):
             a = self._window.alphaValue() - stepValue
             if a < 0:
                 a = 0

@@ -1,5 +1,6 @@
 import time
 import objc
+from objc import super
 from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, NSAffineTransform, \
     NSObject, NSInsetRect, NSView, NSNotificationCenter, NSViewFrameDidChangeNotification, NSIndexSet, \
     NSPasteboard, NSUpArrowFunctionKey, NSLeftArrowFunctionKey, NSDownArrowFunctionKey, NSShiftKeyMask, \
@@ -320,7 +321,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     def unSubscribeGlyphs(self):
         glyphs = self._subscribedGlyphs.keys()
-        for glyph in glyphs:
+        for glyph in list(glyphs):
             self.unSubscribeGlyph(glyph)
 
     @python_method
@@ -519,11 +520,11 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         # lines
         path = NSBezierPath.bezierPath()
-        for i in xrange(1, self._rowCount + 1):
+        for i in range(1, int(self._rowCount) + 1):
             top = (i * cellHeight) - .5
             path.moveToPoint_((0, top))
             path.lineToPoint_((width, top))
-        for i in xrange(1, self._columnCount + 1):
+        for i in range(1, int(self._columnCount) + 1):
             left = (i * cellWidth) - .5
             path.moveToPoint_((left, 0))
             path.lineToPoint_((left, height))

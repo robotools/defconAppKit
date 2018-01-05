@@ -14,6 +14,8 @@ from defconAppKit.controls.glyphNameComboBox import GlyphNameComboBox
 from defconAppKit.controls.glyphSequenceEditText import GlyphSequenceEditText
 from defconAppKit.controls.featureTextEditor import FeatureTextEditor
 
+from objc import super
+
 registerAllFactories()
 
 
@@ -108,14 +110,14 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     def windowProgress1(self, sender):
         progress = self.startProgress("Progress", 30)
-        for i in xrange(30):
+        for i in range(30):
             progress.update("Progress: %d" % (i + 1))
             time.sleep(.1)
         progress.close()
 
     def windowProgress2(self, sender):
         progress = self.startProgress("Progress")
-        for i in xrange(30):
+        for i in range(30):
             time.sleep(.1)
         progress.close()
 
@@ -214,4 +216,7 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
 
 if __name__ == "__main__":
-    AppHelper.runEventLoop()
+    from vanilla.test.testTools import executeVanillaTest
+
+    executeVanillaTest(DefconAppKitTestDocumentWindow, font=Font(u"/Users/frederik/Desktop/Lyon Display-Bold_normalized.ufo"))
+    #AppHelper.runEventLoop()
