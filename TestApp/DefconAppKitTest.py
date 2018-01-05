@@ -216,7 +216,4 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
 
 if __name__ == "__main__":
-    from vanilla.test.testTools import executeVanillaTest
-
-    executeVanillaTest(DefconAppKitTestDocumentWindow, font=Font(u"/Users/frederik/Desktop/Lyon Display-Bold_normalized.ufo"))
-    #AppHelper.runEventLoop()
+    AppHelper.runEventLoop()
