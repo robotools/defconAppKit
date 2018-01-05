@@ -1,6 +1,7 @@
 import vanilla
 from defconAppKit.windows.baseWindow import BaseWindowController
 
+
 class ProgressWindow(BaseWindowController):
 
     def __init__(self, text="", tickCount=None, parentWindow=None):

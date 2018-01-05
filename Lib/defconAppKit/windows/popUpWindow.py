@@ -95,7 +95,8 @@ class InformationPopUpWindow(vanilla.FloatingWindow):
     # special positioning method
     # --------------------------
     @python_method
-    def setPositionNearCursor(self, (x, y)):
+    def setPositionNearCursor(self, xy):
+        x, y = xy
         screen = self._window.screen()
         if screen is None:
             return

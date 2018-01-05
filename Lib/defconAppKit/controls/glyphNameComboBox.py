@@ -43,10 +43,10 @@ def _search(text, font, deleting):
     >>> from defcon import Font
     >>> font = Font()
     >>> for glyphName, value in AGL2UV.items():
-    ...     font.newGlyph(glyphName)
+    ...     _ = font.newGlyph(glyphName)
     ...     font[glyphName].unicodes = [value]
-    ...     font.newGlyph(glyphName + ".alt")
-    ...     font.newGlyph(glyphName + ".xxx")
+    ...     _ = font.newGlyph(glyphName + ".alt")
+    ...     _ = font.newGlyph(glyphName + ".xxx")
 
     >>> _search("e", font, False)
     ('e', 'e')

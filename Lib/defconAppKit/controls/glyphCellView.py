@@ -134,7 +134,7 @@ class GlyphCellItem(NSObject):
     def __getitem__(self, key):
         # fallback when the vanilla list is thinking this object is a dict
         if key == "_glyph":
-            print "GlyphCollection item '_glyph' is deprecated use item.glyph()"
+            print("GlyphCollection item '_glyph' is deprecated use item.glyph()")
             return self.glyph()
         raise NotImplementedError
 
@@ -226,9 +226,10 @@ class DefconAppKitGlyphCellNSView(NSView):
             return self._font[glyphName]
         return None
 
-    def setCellSize_(self, (width, height)):
-        self._cellWidth = width
-        self._cellHeight = height
+    def setCellSize_(self, wh):
+        w, h = wh
+        self._cellWidth = w
+        self._cellHeight = h
         self.recalculateFrame()
 
     def getCellSize(self):

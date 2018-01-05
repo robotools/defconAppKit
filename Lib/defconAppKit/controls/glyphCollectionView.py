@@ -489,11 +489,11 @@ class GlyphCollectionView(vanilla.Group):
         """
         return self._glyphCellView
 
-    def setCellSize(self, (width, height)):
+    def setCellSize(self, wh):
         """
         Set the size of the cells.
         """
-        self._glyphCellView.setCellSize_((width, height))
+        self._glyphCellView.setCellSize_(wh)
 
     def getCellSize(self):
         """

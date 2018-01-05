@@ -1,3 +1,6 @@
+from fontTools.misc.py23 import *
+
+
 def characterToGlyphName(c, cmap):
     try:
         c = unicode(c)
@@ -8,6 +11,7 @@ def characterToGlyphName(c, cmap):
         return v
     except UnicodeDecodeError:
         return None
+
 
 def splitText(text, cmap, fallback=".notdef"):
     """
@@ -86,6 +90,7 @@ def splitText(text, cmap, fallback=".notdef"):
     if compileStack is not None and compileStack:
         glyphNames.append("".join(compileStack))
     return glyphNames
+
 
 if __name__ =="__main__":
     import doctest

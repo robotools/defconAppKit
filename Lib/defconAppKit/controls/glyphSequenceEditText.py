@@ -24,4 +24,3 @@ class GlyphSequenceEditText(vanilla.EditText):
         glyphNames = splitText(text, self._font.unicodeData)
         glyphs = [self._font[glyphName] for glyphName in glyphNames if glyphName in self._font]
         return glyphs
-

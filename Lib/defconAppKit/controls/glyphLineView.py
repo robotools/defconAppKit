@@ -193,7 +193,8 @@ class DefconAppKitGlyphLineNSView(NSView):
         y -= h
         return self.needsToDrawRect_(((x, y), (w, h)))
 
-    def needsToDrawPointInGlyphSpace_scale_(self, (x, y), scale=None):
+    def needsToDrawPointInGlyphSpace_scale_(self, xy, scale=None):
+        x, y = xy
         if scale is None:
             scale = self._scale
         b = 20

@@ -3,7 +3,6 @@ from AppKit import NSFontAttributeName, NSFont, NSForegroundColorAttributeName, 
 
 
 pillTextAttributes = {
-
     NSFontAttributeName: NSFont.fontWithName_size_("Helvetica Bold", 12.0),
     NSForegroundColorAttributeName: NSColor.whiteColor()
 }
