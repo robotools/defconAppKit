@@ -1,8 +1,11 @@
-from AppKit import *
+from AppKit import NSFontAttributeName, NSFont, NSForegroundColorAttributeName, NSColor, NSActionCell, \
+    NSBezierPath, NSAttributedString
+
 
 pillTextAttributes = {
-        NSFontAttributeName : NSFont.fontWithName_size_("Helvetica Bold", 12.0),
-        NSForegroundColorAttributeName : NSColor.whiteColor()
+
+    NSFontAttributeName: NSFont.fontWithName_size_("Helvetica Bold", 12.0),
+    NSForegroundColorAttributeName: NSColor.whiteColor()
 }
 
 pillColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.75, .75, .8, 1.0)
@@ -51,4 +54,3 @@ def PillListCell(color=None):
         color = pillColor
     cell.setColor_(color)
     return cell
-

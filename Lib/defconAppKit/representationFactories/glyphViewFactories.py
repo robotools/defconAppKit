@@ -3,7 +3,8 @@ from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.cocoaPen import CocoaPen
 from ufoLib.pointPen import AbstractPointPen
-from Quartz import *
+from AppKit import NSImage, NSGraphicsContext, NSData, NSCompositeSourceOver
+from Quartz import CIColor, CIImage, CIFilter
 
 
 # -------------
@@ -14,6 +15,7 @@ def NoComponentsNSBezierPathFactory(glyph):
     pen = NoComponentsCocoaPen(glyph.layer)
     glyph.draw(pen)
     return pen.path
+
 
 class NoComponentsCocoaPen(CocoaPen):
 
@@ -29,6 +31,7 @@ def OnlyComponentsNSBezierPathFactory(glyph):
     pen = OnlyComponentsCocoaPen(glyph.layer)
     glyph.draw(pen)
     return pen.path
+
 
 class OnlyComponentsCocoaPen(BasePen):
 
@@ -103,7 +106,7 @@ class OutlineInformationPen(AbstractPointPen):
                             haveFirst = True
                             nextOn = None
                             for nextPoint in contour[pointIndex:] + contour[:pointIndex]:
-                                #if nextPoint["segmentType"] is None:
+                                # if nextPoint["segmentType"] is None:
                                 #    continue
                                 if nextPoint["point"] == point["point"]:
                                     continue
@@ -119,7 +122,7 @@ class OutlineInformationPen(AbstractPointPen):
                             data["startPoints"].append((point["point"], angle))
         return data
 
-    def beginPath(self):
+    def beginPath(self, identifier=None):
         self._rawPointData.append([])
 
     def endPath(self):
@@ -129,8 +132,7 @@ class OutlineInformationPen(AbstractPointPen):
         d = dict(point=pt, segmentType=segmentType, smooth=smooth, name=name)
         self._rawPointData[-1].append(d)
 
-    def addComponent(self, baseGlyphName, transformation):
-        d = dict(baseGlyphName=baseGlyphName, transformation=transformation)
+    def addComponent(self, baseGlyphName, transformation, identifier=None):
         self._rawComponentData.append((baseGlyphName, transformation))
 
 
@@ -138,6 +140,7 @@ def OutlineInformationFactory(glyph):
     pen = OutlineInformationPen()
     glyph.drawPoints(pen)
     return pen.getData()
+
 
 # -----
 # image
@@ -184,5 +187,3 @@ def NSImageFactory(image):
     )
     finalImage.unlockFocus()
     return finalImage
-
-

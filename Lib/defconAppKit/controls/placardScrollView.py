@@ -1,4 +1,5 @@
-from AppKit import *
+from AppKit import NSColor, NSScrollView, NSRectFill, NSRectFillUsingOperation, NSBezierPath, \
+    NSCompositeSourceOver, NSPopUpButtonCell, NSSegmentedCell, NSGradientConvexStrong
 import vanilla
 import platform
 
@@ -156,4 +157,3 @@ class PlacardPopUpButton(vanilla.PopUpButton):
         super(PlacardPopUpButton, self).__init__(posSize, items, **kwargs)
         self._nsObject.setBordered_(False)
         self._nsObject.cell().setGradientType_(NSGradientConvexStrong)
-

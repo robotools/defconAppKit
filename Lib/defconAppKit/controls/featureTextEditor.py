@@ -1,6 +1,8 @@
 import re
 import weakref
-from AppKit import *
+from AppKit import NSTextView, NSColor, NSFont, NSMiniControlSize, NSOnState, NSOffState, NSFontAttributeName, \
+    NSIntersectsRect, NSRulerView, NSNotificationCenter, NSNotFound, NSFontNameAttribute, NSString, NSTextStorageDidProcessEditingNotification, \
+    NSNumberFormatter, NSNumber, NSFocusRingTypeNone, NSUnionRect
 import vanilla
 from vanilla.vanillaTextEditor import VanillaTextEditorDelegate
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton

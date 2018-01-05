@@ -1,5 +1,9 @@
-from AppKit import *
+from AppKit import NSImage, NSColor, NSBezierPath, NSShadow, NSMutableParagraphStyle, NSCenterTextAlignment, \
+    NSLineBreakByCharWrapping, NSAttributedString, NSString, NSFontAttributeName, NSForegroundColorAttributeName, \
+    NSShadowAttributeName, NSParagraphStyleAttributeName, NSFont, NSGraphicsContext, NSCompositeSourceOver, \
+    NSAffineTransform
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
+
 
 def addCountBadgeToIcon(count, iconImage=None):
     if iconImage is None:
@@ -21,19 +25,17 @@ def addCountBadgeToIcon(count, iconImage=None):
     paragraph.setAlignment_(NSCenterTextAlignment)
     paragraph.setLineBreakMode_(NSLineBreakByCharWrapping)
     attributes = {
-        NSFontAttributeName : NSFont.boldSystemFontOfSize_(12.0),
-        NSForegroundColorAttributeName : NSColor.whiteColor(),
-        NSParagraphStyleAttributeName : paragraph,
-        NSShadowAttributeName : textShadow
+        NSFontAttributeName: NSFont.boldSystemFontOfSize_(12.0),
+        NSForegroundColorAttributeName: NSColor.whiteColor(),
+        NSParagraphStyleAttributeName: paragraph,
+        NSShadowAttributeName: textShadow
     }
     text = NSAttributedString.alloc().initWithString_attributes_(str(count), attributes)
     rectWidth, rectHeight = NSString.stringWithString_(str(count)).sizeWithAttributes_(attributes)
     rectWidth = int(round(rectWidth + 8))
     rectHeight = int(round(rectHeight + 4))
     rectLeft = 0
-    rectRight = rectWidth
     rectBottom = 0
-    rectTop = int(rectBottom + rectHeight)
 
     # badge shadow
     badgeShadow = NSShadow.alloc().init()
@@ -86,4 +88,3 @@ def addCountBadgeToIcon(count, iconImage=None):
     # done
     image.unlockFocus()
     return image
-

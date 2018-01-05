@@ -1,5 +1,6 @@
-from Foundation import *
-from AppKit import *
+from AppKit import NSColor, NSGraphicsContext, NSForegroundColorAttributeName, NSFont, NSFontAttributeName, \
+    NSStrokeColorAttributeName, NSStrokeWidthAttributeName, NSShadowAttributeName, NSAffineTransform, \
+    NSShadow, NSCompositeSourceOver, NSBezierPath, NSRectFillUsingOperation, NSAttributedString
 
 """
 Common glyph drawing functions for all views. Notes:
@@ -73,12 +74,15 @@ defaultColors = dict(
 
 )
 
+
 def colorToNSColor(color):
     r, g, b, a = color
     return NSColor.colorWithCalibratedRed_green_blue_alpha_(r, g, b, a)
 
+
 def getDefaultColor(name):
     return defaultColors[name]
+
 
 # ----------
 # Primitives
@@ -90,10 +94,12 @@ def drawFilledRect(rect):
     NSRectFillUsingOperation(rect, NSCompositeSourceOver)
     context.setShouldAntialias_(True)
 
+
 def drawFilledOval(rect):
     path = NSBezierPath.bezierPath()
     path.appendBezierPathWithOvalInRect_(rect)
     path.fill()
+
 
 def drawLine((x1, y1), (x2, y2), lineWidth=1.0):
     turnOffAntiAliasing = False
@@ -111,6 +117,7 @@ def drawLine((x1, y1), (x2, y2), lineWidth=1.0):
     path.stroke()
     if turnOffAntiAliasing:
         context.setShouldAntialias_(True)
+
 
 def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="bottom", flipped=False):
     text = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
@@ -144,13 +151,14 @@ def drawTextAtPoint(text, pt, scale, attributes={}, xAlign="left", yAlign="botto
     text.drawAtPoint_((0, 0))
     context.restoreGraphicsState()
 
+
 # ----
 # Font
 # ----
 
 # Vertical Metrics
 
-def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, color=None, backgroundColor=None):
+def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, color=None, backgroundColor=None, flipped=False):
     font = glyph.font
     if font is None:
         return
@@ -193,15 +201,15 @@ def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, c
         shadow.setShadowBlurRadius_(5)
         shadow.setShadowOffset_((0, 0))
         attributes = {
-            NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-            NSForegroundColorAttributeName : color
+            NSFontAttributeName: NSFont.systemFontOfSize_(fontSize),
+            NSForegroundColorAttributeName: color
         }
         glowAttributes = {
-            NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-            NSForegroundColorAttributeName : color,
-            NSStrokeColorAttributeName : backgroundColor,
-            NSStrokeWidthAttributeName : 25,
-            NSShadowAttributeName : shadow
+            NSFontAttributeName: NSFont.systemFontOfSize_(fontSize),
+            NSForegroundColorAttributeName: color,
+            NSStrokeColorAttributeName: backgroundColor,
+            NSStrokeWidthAttributeName: 25,
+            NSShadowAttributeName: shadow
         }
         for pt1, pt2, names in lines:
             x, y = pt1
@@ -209,6 +217,7 @@ def drawFontVerticalMetrics(glyph, scale, rect, drawLines=True, drawText=True, c
             y -= (fontSize / 2.0) * scale
             drawTextAtPoint(names, (x, y), scale, glowAttributes, flipped=flipped)
             drawTextAtPoint(names, (x, y), scale, attributes, flipped=flipped)
+
 
 # Blues
 
@@ -228,6 +237,7 @@ def drawFontPostscriptBlues(glyph, scale, rect, color=None, backgroundColor=None
     color.set()
     _drawBlues(blues, rect)
 
+
 def drawFontPostscriptFamilyBlues(glyph, scale, rect, color=None, backgroundColor=None):
     font = glyph.font
     if font is None:
@@ -244,6 +254,7 @@ def drawFontPostscriptFamilyBlues(glyph, scale, rect, color=None, backgroundColo
     color.set()
     _drawBlues(blues, rect)
 
+
 def _drawBlues(blues, rect):
     yMins = [i for index, i in enumerate(blues) if not index % 2]
     yMaxs = [i for index, i in enumerate(blues) if index % 2]
@@ -252,6 +263,7 @@ def _drawBlues(blues, rect):
     w = rect[1][0]
     for yMin, yMax in blues:
         drawFilledRect(((x, yMin), (w, yMax - yMin)))
+
 
 # Image
 
@@ -268,6 +280,7 @@ def drawGlyphImage(glyph, scale, rect, backgroundColor=None):
         (0, 0), ((0, 0), image.size()), NSCompositeSourceOver, 1.0
     )
     context.restoreGraphicsState()
+
 
 # Margins
 
@@ -288,12 +301,13 @@ def drawGlyphMargins(glyph, scale, rect, drawFill=True, drawStroke=True, fillCol
         drawLine((0, y), (0, y + h))
         drawLine((glyph.width, y), (glyph.width, y + h))
 
+
 # Fill and Stroke
 
 def drawGlyphFillAndStroke(glyph, scale, rect,
-    drawFill=True, drawStroke=True,
-    contourFillColor=None, contourStrokeColor=None, componentFillColor=None, backgroundColor=None,
-    contourStrokeWidth=1.0):
+        drawFill=True, drawStroke=True,
+        contourFillColor=None, contourStrokeColor=None, componentFillColor=None, backgroundColor=None,
+        contourStrokeWidth=1.0):
     # get the layer color
     layer = glyph.layer
     layerColor = None
@@ -345,11 +359,11 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
         contourStrokeColor.set()
         contourPath.stroke()
 
+
 # points
 
 def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, drawOffCurves=True, drawCoordinates=True, color=None, backgroundColor=None, flipped=False):
     layer = glyph.layer
-    layerColor = None
     if layer is not None:
         if layer.color is not None:
             color = colorToNSColor(layer.color)
@@ -438,8 +452,8 @@ def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, 
         color = NSColor.colorWithCalibratedRed_green_blue_alpha_(r, g, b, a)
         fontSize = 9
         attributes = {
-            NSFontAttributeName : NSFont.systemFontOfSize_(fontSize),
-            NSForegroundColorAttributeName : color
+            NSFontAttributeName: NSFont.systemFontOfSize_(fontSize),
+            NSForegroundColorAttributeName: color
         }
         for x, y in points:
             posX = x
@@ -452,6 +466,7 @@ def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, 
                 y = int(y)
             text = "%d  %d" % (x, y)
             drawTextAtPoint(text, (posX, posY), scale, attributes=attributes, xAlign="center", yAlign="top", flipped=flipped)
+
 
 # Anchors
 
@@ -486,8 +501,8 @@ def drawGlyphAnchors(glyph, scale, rect, drawAnchor=True, drawText=True, color=N
             drawFilledOval(r)
         if drawText and name:
             attributes = {
-                NSFontAttributeName : NSFont.systemFontOfSize_(9),
-                NSForegroundColorAttributeName : color,
+                NSFontAttributeName: NSFont.systemFontOfSize_(9),
+                NSForegroundColorAttributeName: color,
             }
             y -= 2 * scale
             drawTextAtPoint(name, (x, y), scale, attributes, xAlign="center", yAlign="top", flipped=flipped)

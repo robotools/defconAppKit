@@ -1,7 +1,10 @@
-from AppKit import *
+from AppKit import NSColor, NSImage, NSAffineTransform, NSCompositeSourceOver, \
+    NSRectFillUsingOperation
+
 
 MenuImageBackgroundColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.35, 0.37, 1.0)
 MenuImageGlyphColor = NSColor.whiteColor()
+
 
 def MenuImageRepresentationFactory(glyph):
     font = glyph.font

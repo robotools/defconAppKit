@@ -1,5 +1,9 @@
-from AppKit import *
+from AppKit import NSColor, NSMutableParagraphStyle, NSBezierPath, NSRightTextAlignment, NSLineBreakByCharWrapping, \
+    NSFont, NSFontAttributeName, NSForegroundColorAttributeName, NSParagraphStyleAttributeName, \
+    NSLeftTextAlignment, NSLineBreakByTruncatingMiddle, NSAffineTransform, NSGraphicsContext, NSAttributedString, \
+    NSImage
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
+
 
 def GlyphCellDetailFactory(glyph):
     font = glyph.font
@@ -17,12 +21,12 @@ def GlyphCellDetailFactory(glyph):
 
     line1Path = NSBezierPath.bezierPath()
     line1Path.moveToPoint_((1, 120.5))
-    line1Path.lineToPoint_((imageWidth-1, 120.5))
+    line1Path.lineToPoint_((imageWidth - 1, 120.5))
     line1Path.setLineWidth_(1.0)
 
     line2Path = NSBezierPath.bezierPath()
     line2Path.moveToPoint_((1, 121.5))
-    line2Path.lineToPoint_((imageWidth-1, 121.5))
+    line2Path.lineToPoint_((imageWidth - 1, 121.5))
     line2Path.setLineWidth_(1.0)
 
     lineColor = NSColor.colorWithCalibratedWhite_alpha_(.5, 1.0)
@@ -31,18 +35,18 @@ def GlyphCellDetailFactory(glyph):
     paragraph.setAlignment_(NSRightTextAlignment)
     paragraph.setLineBreakMode_(NSLineBreakByCharWrapping)
     leftAttributes = {
-        NSFontAttributeName : NSFont.systemFontOfSize_(12.0),
-        NSForegroundColorAttributeName : NSColor.whiteColor(),
-        NSParagraphStyleAttributeName : paragraph
+        NSFontAttributeName: NSFont.systemFontOfSize_(12.0),
+        NSForegroundColorAttributeName: NSColor.whiteColor(),
+        NSParagraphStyleAttributeName: paragraph
     }
 
     paragraph = NSMutableParagraphStyle.alloc().init()
     paragraph.setAlignment_(NSLeftTextAlignment)
     paragraph.setLineBreakMode_(NSLineBreakByTruncatingMiddle)
     rightAttributes = {
-        NSFontAttributeName : NSFont.systemFontOfSize_(12.0),
-        NSForegroundColorAttributeName : NSColor.whiteColor(),
-        NSParagraphStyleAttributeName : paragraph
+        NSFontAttributeName: NSFont.systemFontOfSize_(12.0),
+        NSForegroundColorAttributeName: NSColor.whiteColor(),
+        NSParagraphStyleAttributeName: paragraph
     }
 
     nameTitle = NSAttributedString.alloc().initWithString_attributes_("Name", leftAttributes)
@@ -133,4 +137,3 @@ def GlyphCellDetailFactory(glyph):
 
     image.unlockFocus()
     return image
-
