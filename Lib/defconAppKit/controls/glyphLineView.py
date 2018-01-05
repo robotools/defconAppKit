@@ -1,7 +1,6 @@
 import weakref
-import time
-from Foundation import *
-from AppKit import *
+from AppKit import NSView, NSGraphicsContext, NSColor, NSAffineTransform, NSMenu, NSPoint, NSRectFill, \
+    NSRectFillUsingOperation, NSPointInRect, NSCompositeSourceOver, NSMenuItem
 import vanilla
 from vanilla.py23 import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton, DefconAppKitPlacardNSScrollView
@@ -171,7 +170,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         width += self._bufferLeft + self._bufferRight
 
         if scrollHeight is None:
-            height = (self._unitsPerEm - self._descender) * scale
+            height = (self._unitsPerEm - self._descender) * self._scale
         else:
             height = scrollHeight
         if scrollWidth > width:
@@ -577,8 +576,8 @@ class GlyphLineView(PlacardScrollView):
     glyphLineViewClass = DefconAppKitGlyphLineNSView
 
     def __init__(self, posSize, pointSize=100, rightToLeft=False, applyKerning=False,
-        glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
-        autohideScrollers=True, showPointSizePlacard=False):
+            glyphColor=None, backgroundColor=None, alternateHighlightColor=None,
+            autohideScrollers=True, showPointSizePlacard=False):
         if glyphColor is None:
             glyphColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1)
         if backgroundColor is None:
@@ -779,4 +778,3 @@ class GlyphRecord(object):
         self.advanceWidth = 0
         self.advanceHeight = 0
         self.alternates = []
-

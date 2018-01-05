@@ -1,5 +1,5 @@
 import weakref
-from AppKit import *
+from AppKit import NSView, NSSegmentStyleSmallSquare, NSSmallSquareBezelStyle
 import vanilla
 from defconAppKit.controls.glyphCellView import DefconAppKitGlyphCellNSView, gridColor, GlyphInformationPopUpWindow, GlyphCellItem
 from defconAppKit.controls.fontInfoView import GradientButtonBar
@@ -97,12 +97,12 @@ class GlyphCollectionView(vanilla.Group):
     glyphCellItemClass = GlyphCellItem
 
     def __init__(self, posSize, font=None, initialMode="cell", listColumnDescriptions=None, listShowColumnTitles=False,
-        showPlacard=True, showModePlacard=True, placardActionItems=None,
-        cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
-        selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
-        enableDelete=False,
-        selfDropSettings=None, selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
-        otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
+            showPlacard=True, showModePlacard=True, placardActionItems=None,
+            cellRepresentationName="defconAppKit.GlyphCell", glyphDetailWindowClass=GlyphInformationPopUpWindow,
+            selectionCallback=None, doubleClickCallback=None, deleteCallback=None, editCallback=None,
+            enableDelete=False,
+            selfDropSettings=None, selfWindowDropSettings=None, selfDocumentDropSettings=None, selfApplicationDropSettings=None,
+            otherApplicationDropSettings=None, allowDrag=False, dragAndDropType="DefconAppKitSelectedGlyphIndexesPboardType"):
 
         self._holdCallbacks = True
         super(GlyphCollectionView, self).__init__(posSize)
@@ -117,7 +117,7 @@ class GlyphCollectionView(vanilla.Group):
         self._deleteCallback = deleteCallback
         self._dragAndDropType = dragAndDropType
         self._enableDelete = enableDelete
-        ## set up the list
+        # set up the list
         self._listEditChangingAttribute = None
         self._listEditChangingGlyph = None
         enableDelete = deleteCallback is not None
@@ -163,7 +163,8 @@ class GlyphCollectionView(vanilla.Group):
                 dropTypes.append(d["type"])
         self._glyphCellView.registerForDraggedTypes_(dropTypes)
 
-        self._list = self.glyphListViewVanillaClass((0, 0, 0, bottom), None,
+        self._list = self.glyphListViewVanillaClass(
+            (0, 0, 0, bottom), None,
             dataSource=self._arrayController,
             columnDescriptions=listColumnDescriptions,
             editCallback=editCallback,
@@ -179,9 +180,9 @@ class GlyphCollectionView(vanilla.Group):
             selfApplicationDropSettings=selfApplicationDropSettings,
             otherApplicationDropSettings=otherApplicationDropSettings,
             dragSettings=dragSettings
-            )
+        )
 
-        ## set up the placard
+        # set up the placard
         if showPlacard:
             self._placard = vanilla.Group((0, -21, 0, 21))
             self._placard.base = GradientButtonBar((0, 0, 0, 0))
@@ -219,9 +220,9 @@ class GlyphCollectionView(vanilla.Group):
             self._placard.extension = vanilla.Group((extensionLeft, 0, extensionWidth, 0))
         else:
             self._placard = None
-        ## tweak the scroll view
+        # tweak the scroll view
         self._list.getNSScrollView().setBackgroundColor_(gridColor)
-        ## set the mode
+        # set the mode
         self._mode = None
         self.setMode(initialMode)
         self._holdCallbacks = False

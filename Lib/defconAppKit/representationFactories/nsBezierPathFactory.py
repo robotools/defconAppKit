@@ -1,4 +1,3 @@
-from AppKit import *
 from fontTools.pens.cocoaPen import CocoaPen
 
 

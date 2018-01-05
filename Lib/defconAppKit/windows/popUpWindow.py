@@ -1,6 +1,5 @@
 import time
-from AppKit import *
-from Foundation import *
+from AppKit import NSColor, NSView, NSBorderlessWindowMask, NSTornOffMenuWindowLevel, NSInsetRect, NSPanel, NSRectFill
 import vanilla
 from vanilla.py23 import python_method
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath

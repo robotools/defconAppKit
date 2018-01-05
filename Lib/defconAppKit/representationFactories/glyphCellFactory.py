@@ -1,4 +1,6 @@
-from AppKit import *
+from AppKit import NSColor, NSGraphicsContext, NSForegroundColorAttributeName, NSAttributedString, NSFont, \
+    NSFontAttributeName, NSAffineTransform, NSRectFill, NSRectFillListUsingOperation, NSImage, NSParagraphStyleAttributeName, \
+    NSBezierPath, NSMutableParagraphStyle, NSCenterTextAlignment, NSLineBreakByTruncatingMiddle, NSCompositeSourceOver
 from defconAppKit.tools.drawing import colorToNSColor
 
 GlyphCellHeaderHeight = 14
@@ -64,15 +66,15 @@ class GlyphCellFactoryDrawingController(object):
         image.setFlipped_(True)
         image.lockFocus()
         context = NSGraphicsContext.currentContext()
-        bodyRect = ((0, 0), (self.width, self.height-self.headerHeight))
-        headerRect = ((0, -self.height+self.headerHeight), (self.width, self.headerHeight))
+        bodyRect = ((0, 0), (self.width, self.height - self.headerHeight))
+        headerRect = ((0, -self.height + self.headerHeight), (self.width, self.headerHeight))
         # draw a background color
         cellBackgroundColor.set()
         NSRectFill(((0, 0), (self.width, self.height)))
         # background
         context.saveGraphicsState()
         bodyTransform = NSAffineTransform.transform()
-        bodyTransform.translateXBy_yBy_(0, self.height-self.headerHeight)
+        bodyTransform.translateXBy_yBy_(0, self.height - self.headerHeight)
         bodyTransform.scaleXBy_yBy_(1.0, -1.0)
         bodyTransform.concat()
         self.drawCellBackground(bodyRect)
@@ -82,7 +84,7 @@ class GlyphCellFactoryDrawingController(object):
             self.drawCellHorizontalMetrics(bodyRect)
             self.drawCellVerticalMetrics(bodyRect)
         context.saveGraphicsState()
-        NSBezierPath.clipRect_(((0, 0), (self.width, self.height-self.headerHeight)))
+        NSBezierPath.clipRect_(((0, 0), (self.width, self.height - self.headerHeight)))
         glyphTransform = NSAffineTransform.transform()
         glyphTransform.translateXBy_yBy_(self.xOffset, self.yOffset)
         glyphTransform.scaleBy_(self.scale)
@@ -113,7 +115,6 @@ class GlyphCellFactoryDrawingController(object):
 
     def drawCellHorizontalMetrics(self, rect):
         (xMin, yMin), (width, height) = rect
-        glyph = self.glyph
         font = self.font
         scale = self.scale
         yOffset = self.yOffset
@@ -187,10 +188,9 @@ class GlyphCellFactoryDrawingController(object):
         paragraph.setAlignment_(NSCenterTextAlignment)
         paragraph.setLineBreakMode_(NSLineBreakByTruncatingMiddle)
         attributes = {
-            NSFontAttributeName : NSFont.systemFontOfSize_(10.0),
-            NSForegroundColorAttributeName : NSColor.colorWithCalibratedRed_green_blue_alpha_(.22, .22, .27, 1.0),
-            NSParagraphStyleAttributeName : paragraph,
+            NSFontAttributeName: NSFont.systemFontOfSize_(10.0),
+            NSForegroundColorAttributeName: NSColor.colorWithCalibratedRed_green_blue_alpha_(.22, .22, .27, 1.0),
+            NSParagraphStyleAttributeName: paragraph,
         }
         text = NSAttributedString.alloc().initWithString_attributes_(self.glyph.name, attributes)
         text.drawInRect_(rect)
-

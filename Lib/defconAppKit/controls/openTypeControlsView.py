@@ -1,4 +1,5 @@
-from AppKit import *
+from AppKit import NSScroller, NSColor, NSAttributedString, NSMenuItem, NSShadowAttributeName, NSShadow, \
+    NSForegroundColorAttributeName, NSFont, NSFontAttributeName, NSSmallControlSize, NSView
 import vanilla
 
 
@@ -105,7 +106,8 @@ class OpenTypeControlsView(vanilla.ScrollView):
         # stylistic set names
         if hasattr(font, "stylisticSetNames"):
             stylisticSetNames = font.stylisticSetNames
-        else: stylisticSetNames = {}
+        else:
+            stylisticSetNames = {}
         # GSUB
         top = self._dynamicTop
         if font is None:
@@ -216,9 +218,9 @@ shadow.setShadowColor_(NSColor.colorWithCalibratedWhite_alpha_(1, 1))
 shadow.setShadowBlurRadius_(1.0)
 shadow.setShadowOffset_((1.0, -1.0))
 titleControlAttributes = {
-    NSForegroundColorAttributeName : NSColor.colorWithCalibratedWhite_alpha_(.4, 1),
-    NSShadowAttributeName : shadow,
-    NSFontAttributeName : NSFont.boldSystemFontOfSize_(NSFont.systemFontSizeForControlSize_(NSSmallControlSize))
+    NSForegroundColorAttributeName: NSColor.colorWithCalibratedWhite_alpha_(.4, 1),
+    NSShadowAttributeName: shadow,
+    NSFontAttributeName: NSFont.boldSystemFontOfSize_(NSFont.systemFontSizeForControlSize_(NSSmallControlSize))
 }
 
 

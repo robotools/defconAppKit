@@ -1,5 +1,8 @@
 import os
-from AppKit import *
+from AppKit import NSMenuItem, NSImage, NSBezierPath, NSColor, NSCompositeSourceOver, NSGradient, NSNull, \
+    NSMutableDictionary, NSMutableParagraphStyle, NSParagraphStyleAttributeName, NSFormatter, \
+    NSLineBreakByTruncatingHead, NSActionCell, NSAttributedString
+
 import vanilla
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton
 
@@ -183,7 +186,7 @@ class FontList(vanilla.List):
 
     def setSortMode(self, mode):
         """
-        Set the sort mode in the popup. 
+        Set the sort mode in the popup.
         """
         self._sortMode = mode
         self._updateSort()

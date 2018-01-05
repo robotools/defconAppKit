@@ -1,4 +1,3 @@
-from AppKit import *
 import vanilla
 
 

@@ -1,6 +1,6 @@
 import time
 from PyObjCTools import NibClassBuilder, AppHelper
-from AppKit import *
+from AppKit import NSObject, NSDocument
 import vanilla
 from defcon import Font
 from defconAppKit.windows.baseWindow import BaseWindowController
@@ -15,7 +15,6 @@ from defconAppKit.controls.glyphSequenceEditText import GlyphSequenceEditText
 from defconAppKit.controls.featureTextEditor import FeatureTextEditor
 
 registerAllFactories()
-
 
 import objc
 objc.setVerbose(True)
@@ -218,7 +217,6 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     def lineViewResize(self, sender):
         self.lineViewTab.lineView.setPointSize(sender.get())
-
 
 
 if __name__ == "__main__":

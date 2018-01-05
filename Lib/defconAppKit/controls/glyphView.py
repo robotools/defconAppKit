@@ -1,6 +1,4 @@
-from Foundation import *
-from AppKit import *
-from ufoLib.pointPen import AbstractPointPen
+from AppKit import NSView, NSMenuItem, NSAffineTransform, NSRectFill, NSColor
 import vanilla
 from vanilla.py23 import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
@@ -382,7 +380,7 @@ class GlyphView(PlacardScrollView):
         if not hasattr(self, "placard"):
             return
         options = self._placardOptions = [
-            (None, None, None), # Display...
+            (None, None, None),  # Display...
             ("Fill", "showGlyphFill", None),
             ("Stroke", "showGlyphStroke", None),
             ("Image", "showGlyphImage", None),
@@ -393,7 +391,7 @@ class GlyphView(PlacardScrollView):
             ("Anchors", "showGlyphAnchors", None),
             ("Blues", "showFontPostscriptBlues", None),
             ("Family Blues", "showFontPostscriptFamilyBlues", None),
-            (None, None, None), # layer divider
+            (None, None, None),  # layer divider
         ]
         if not hasattr(self, "_placardLayerOptions"):
             self._placardLayerOptions = {}

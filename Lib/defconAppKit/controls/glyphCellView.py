@@ -1,8 +1,14 @@
-import weakref
 import time
 import objc
-from Foundation import *
-from AppKit import *
+from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, NSAffineTransform, \
+    NSObject, NSInsetRect, NSView, NSNotificationCenter, NSViewFrameDidChangeNotification, NSIndexSet, \
+    NSPasteboard, NSUpArrowFunctionKey, NSLeftArrowFunctionKey, NSDownArrowFunctionKey, NSShiftKeyMask, \
+    NSDragOperationGeneric, NSCommandKeyMask, NSControlKeyMask, NSPointInRect, NSDragOperationCopy, NSWindowDidResignKeyNotification, \
+    NSDragOperationNone, NSString, NSBackspaceCharacter, NSDeleteFunctionKey, NSDeleteCharacter, NSKeyValueObservingOptionNew, \
+    NSMutableIndexSet, NSWindowWillCloseNotification, NSDragPboard, NSRectFill, NSEvent, NSApp, NSRightArrowFunctionKey, \
+    NSHomeFunctionKey, NSBeginFunctionKey, NSPageUpFunctionKey, NSPageDownFunctionKey, NSIntersectsRect, \
+    NSCompositeSourceOver, NSCompositePlusDarker, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
+
 from math import ceil, floor
 import vanilla
 from vanilla.py23 import python_method
@@ -17,6 +23,7 @@ insertionLocationShadow = NSShadow.shadow()
 insertionLocationShadow.setShadowColor_(NSColor.whiteColor())
 insertionLocationShadow.setShadowBlurRadius_(10)
 insertionLocationShadow.setShadowOffset_((0, 0))
+
 
 def _makeGlyphCellDragIcon(glyphs):
     font = None
@@ -250,7 +257,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
 
     def setGlyphDetailModifiers_mouseDown_mouseUp_mouseDragged_mouseMoved_(self,
-        modifiers=[], mouseDown=False, mouseUp=False, mouseDragged=False, mouseMoved=False):
+            modifiers=[], mouseDown=False, mouseUp=False, mouseDragged=False, mouseMoved=False):
         """
         Set the conditions that will be used to determine the visibility of the detail window.
         This is subject to change, so use it at your own risk.
@@ -497,7 +504,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                     image = self.getRepresentationForGlyph_cellRepresentationName_cellRepresentationArguments_(glyph, representationName, representationArguments)
                     image.drawAtPoint_fromRect_operation_fraction_(
                         (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
-                        )
+                    )
                 if selection.containsIndex_(index):
                     selectionColor.set()
                     r = ((left, t), (cellWidth, cellHeight))
@@ -684,31 +691,31 @@ class DefconAppKitGlyphCellNSView(NSView):
             return
         # determine show/hide
         shouldBeVisible = True
-        ## event is None
+        # event is None
         if event is None:
             shouldBeVisible = False
-        ## window is not key
+        # window is not key
         elif NSApp().keyWindow() != self.window():
             shouldBeVisible = False
-        ## XXX work around an issue that causes mouseDragged
-        ## to be called after a drop from the view has occurred
-        ## outside of the view.
+        # XXX work around an issue that causes mouseDragged
+        # to be called after a drop from the view has occurred
+        # outside of the view.
         elif mouseDragged and not glyphDetailWindow.isVisible():
             shouldBeVisible = False
-        ## event requirements
+        # event requirements
         else:
             eventLocation = event.locationInWindow()
             mouseLocation = self.convertPoint_fromView_(eventLocation, None)
-            ## drag and drop
+            # drag and drop
             if inDragAndDrop:
                 shouldBeVisible = False
-            ## modifiers
+            # modifiers
             modifiers = event.modifierFlags()
             for modifier in self._glyphDetailRequiredModifiers:
                 if not modifiers & modifier:
                     shouldBeVisible = False
                     break
-            ## mouse conditions
+            # mouse conditions
             haveMouseCondition = False
             requireMouseCondition = True in (self._glyphDetailOnMouseDown, self._glyphDetailOnMouseUp, self._glyphDetailOnMouseMoved, self._glyphDetailOnMouseDragged)
             if not requireMouseCondition:
@@ -724,10 +731,10 @@ class DefconAppKitGlyphCellNSView(NSView):
                     haveMouseCondition = True
             if not haveMouseCondition:
                 shouldBeVisible = False
-            ## glyph hit
+            # glyph hit
             if found is None:
                 shouldBeVisible = False
-            ## mouse position is visible
+            # mouse position is visible
             if not NSPointInRect(mouseLocation, self.visibleRect()):
                 shouldBeVisible = False
         # set the position
@@ -843,7 +850,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             NSPageUpFunctionKey,
             NSPageDownFunctionKey,
             unichr(0x0003),
-            u"\033", # esc
+            u"\033",  # esc
             u"\r",
             u"\t",
         ]
@@ -882,12 +889,10 @@ class DefconAppKitGlyphCellNSView(NSView):
             fieldEditor.interpretKeyEvents_([event])
             # get the input string
             inputString = fieldEditor.string()
-
             match = None
             matchIndex = None
             lastResort = None
             lastResortIndex = None
-            inputLength = len(inputString)
 
             for index, glyphName in enumerate(self._glyphNames):
                 # if the item starts with the input string, it is considered a match
@@ -1300,7 +1305,7 @@ class DefconAppKitGlyphInformationNSView(NSView):
         scale = vHeight / upm
         centerOffset = (vWidth - (glyph.width * scale)) / 2
         transform = NSAffineTransform.transform()
-        transform.translateXBy_yBy_(centerOffset+inset, inset)
+        transform.translateXBy_yBy_(centerOffset + inset, inset)
         transform.scaleBy_(scale)
         transform.translateXBy_yBy_(0, -descender)
         transform.concat()
@@ -1316,4 +1321,3 @@ class GlyphInformationGlyphView(vanilla.VanillaBaseObject):
 
     def set(self, glyph):
         self._nsObject.setGlyph_(glyph)
-
