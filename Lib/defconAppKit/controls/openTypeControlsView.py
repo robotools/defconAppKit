@@ -135,8 +135,12 @@ class OpenTypeControlsView(vanilla.ScrollView):
                 if tag in stylisticSetNames:
                     attr = "ssName_%s" % tag
                     setName = stylisticSetNames[tag]
-                    obj = vanilla.TextBox((26, top, -10, 13), setName, sizeStyle="mini")
-                    setattr(self._controlGroup, attr, obj)
+                    if hasattr(self._controlGroup, attr):
+                        obj = getattr(self._controlGroup, attr)
+                        obj.set(setName)
+                    else:
+                        obj = vanilla.TextBox((26, top, -10, 13), setName, sizeStyle="mini")
+                        setattr(self._controlGroup, attr, obj)
                     self._featureNames[attr] = setName
                     top += 13
             top += 10
