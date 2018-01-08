@@ -87,7 +87,7 @@ class DefconAppKitPlacardNSSegmentedCell(NSSegmentedCell):
         # draw segments
         x, y = frame.origin
         h = frame.size[1]
-        for index in xrange(self.segmentCount()):
+        for index in range(self.segmentCount()):
             w = self.widthForSegment_(index)
             self.drawSegment_inFrame_withView_(index, ((x, y), (w, h)), view)
             x += w

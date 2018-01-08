@@ -7,16 +7,16 @@ from defconAppKit.representationFactories.glyphViewFactories import NoComponents
 from defconAppKit.representationFactories.menuImageFactory import MenuImageRepresentationFactory
 
 _glyphFactories = {
-    "defconAppKit.NSBezierPath" : (NSBezierPathFactory, None),
-    "defconAppKit.NoComponentsNSBezierPath" : (NoComponentsNSBezierPathFactory, None),
-    "defconAppKit.OnlyComponentsNSBezierPath" : (OnlyComponentsNSBezierPathFactory, None),
-    "defconAppKit.GlyphCell" : (GlyphCellFactory, None),
-    "defconAppKit.GlyphCellDetail" : (GlyphCellDetailFactory, None),
-    "defconAppKit.OutlineInformation" : (OutlineInformationFactory, None),
-    "defconAppKit.MenuImage" : (MenuImageRepresentationFactory, None),
+    "defconAppKit.NSBezierPath": (NSBezierPathFactory, None),
+    "defconAppKit.NoComponentsNSBezierPath": (NoComponentsNSBezierPathFactory, None),
+    "defconAppKit.OnlyComponentsNSBezierPath": (OnlyComponentsNSBezierPathFactory, None),
+    "defconAppKit.GlyphCell": (GlyphCellFactory, None),
+    "defconAppKit.GlyphCellDetail": (GlyphCellDetailFactory, None),
+    "defconAppKit.OutlineInformation": (OutlineInformationFactory, None),
+    "defconAppKit.MenuImage": (MenuImageRepresentationFactory, None),
 }
 _imageFactories = {
-    "defconAppKit.NSImage" : (NSImageFactory, ["Image.FileNameChanged", "Image.ColorChanged", "Image.ImageDataChanged"])
+    "defconAppKit.NSImage": (NSImageFactory, ["Image.FileNameChanged", "Image.ColorChanged", "Image.ImageDataChanged"])
 }
 
 def registerAllFactories():
@@ -24,4 +24,3 @@ def registerAllFactories():
         registerRepresentationFactory(Glyph, name, factory, destructiveNotifications=destructiveNotifications)
     for name, (factory, destructiveNotifications) in _imageFactories.items():
         registerRepresentationFactory(Image, name, factory, destructiveNotifications=destructiveNotifications)
-

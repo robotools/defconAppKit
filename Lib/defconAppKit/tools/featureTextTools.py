@@ -117,11 +117,11 @@ _tokenRE = re.compile(
 _commentRE = re.compile(
     "(#.*$)",
     re.MULTILINE
-    )
+)
 
 _classNameRE = re.compile(
     "(@[a-zA-Z0-9_.]*)"
-    )
+)
 
 _includeRE = re.compile(
     "include\s*\("
@@ -132,6 +132,7 @@ _includeRE = re.compile(
 _stringRE = re.compile(
     "(\".*\")"
 )
+
 
 def breakFeatureTextIntoRuns(text):
     runs = []
@@ -149,6 +150,7 @@ def breakFeatureTextIntoRuns(text):
     runs.append(("comments", _findRuns(text, _commentRE)))
     return runs
 
+
 def _findRuns(text, pattern):
     runs = []
     offset = 0
@@ -165,6 +167,7 @@ def _findRuns(text, pattern):
                 break
     return runs
 
+
 # ---------------
 # Block Searching
 # ---------------
@@ -172,7 +175,7 @@ def _findRuns(text, pattern):
 _commentSubRE = re.compile(
     "(#.*)$",
     re.MULTILINE
-    )
+)
 
 _blockOpenScanRE = re.compile(
     "([\s;]+)"
@@ -185,6 +188,7 @@ _blockOpenScanRE = re.compile(
 
 _lineEndRE = re.compile("([\r\n]+)", re.MULTILINE)
 _notLineEndRE = re.compile("(.*$)")
+
 
 def findBlockOpenLineStarts(text):
     # remove all comments
@@ -216,4 +220,3 @@ def findBlockOpenLineStarts(text):
             # store
             found.append((m.group(3), characterIndex))
     return found
-

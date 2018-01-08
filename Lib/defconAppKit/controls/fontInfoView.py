@@ -2951,7 +2951,7 @@ class FontInfoSection(vanilla.Group):
                     itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, itemPrototype=itemPrototype, callback=self._controlEditCallback, validator=validator, variableRowHeights=variableRowHeights, showColumnTitles=showColumnTitles)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
-                    print itemClass
+                    print(itemClass)
                     continue
                 # default
                 if item["hasDefault"]:

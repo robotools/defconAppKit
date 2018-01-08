@@ -101,7 +101,9 @@ def drawFilledOval(rect):
     path.fill()
 
 
-def drawLine((x1, y1), (x2, y2), lineWidth=1.0):
+def drawLine(xy1, xy2, lineWidth=1.0):
+    x1, y1 = xy1
+    x2, y2 = xy2
     turnOffAntiAliasing = False
     if x1 == x2 or y1 == y2:
         turnOffAntiAliasing = True

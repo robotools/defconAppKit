@@ -1,5 +1,5 @@
 import time
-from PyObjCTools import NibClassBuilder, AppHelper
+from PyObjCTools import AppHelper
 from AppKit import NSObject, NSDocument
 import vanilla
 from defcon import Font
@@ -14,16 +14,12 @@ from defconAppKit.controls.glyphNameComboBox import GlyphNameComboBox
 from defconAppKit.controls.glyphSequenceEditText import GlyphSequenceEditText
 from defconAppKit.controls.featureTextEditor import FeatureTextEditor
 
+from objc import super
+
 registerAllFactories()
-
-import objc
-objc.setVerbose(True)
-
-NibClassBuilder.extractClasses("MainMenu")
 
 
 class DefconAppKitTestAppDelegate(NSObject):
-
     pass
 
 
@@ -114,14 +110,14 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
 
     def windowProgress1(self, sender):
         progress = self.startProgress("Progress", 30)
-        for i in xrange(30):
+        for i in range(30):
             progress.update("Progress: %d" % (i + 1))
             time.sleep(.1)
         progress.close()
 
     def windowProgress2(self, sender):
         progress = self.startProgress("Progress")
-        for i in xrange(30):
+        for i in range(30):
             time.sleep(.1)
         progress.close()
 
@@ -129,27 +125,27 @@ class DefconAppKitTestDocumentWindow(BaseWindowController):
         self.showAskYesNo("Message text.", "Informative text.", self._windowAskYesNoResult)
 
     def _windowAskYesNoResult(self, result):
-        print "Ask Yes No:", result
+        print("Ask Yes No:", result)
 
     def windowPutFile(self, sender):
         self.showPutFile(["txt"], self._windowPutFileResult)
 
     def _windowPutFileResult(self, result):
-        print "Put File:", result
+        print("Put File:", result)
 
     def windowGetFile(self, sender):
         self.showGetFile(["ufo"], self._windowGetFileResult)
 
     def _windowGetFileResult(self, result):
-        print "Get File:", result
+        print("Get File:", result)
 
     # cell view
 
     def collectionViewDoubleClickCallback(self, sender):
-        print "double click"
+        print("double click")
 
     def collectionViewDeleteCallback(self, sender):
-        print "delete", sender.getSelection()
+        print("delete", sender.getSelection())
 
     def collectionViewSelfDropCallback(self, sender, dropInfo):
         isProposal = dropInfo["isProposal"]

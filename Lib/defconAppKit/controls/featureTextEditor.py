@@ -5,6 +5,7 @@ from AppKit import NSTextView, NSColor, NSFont, NSMiniControlSize, NSOnState, NS
     NSNumberFormatter, NSNumber, NSFocusRingTypeNone, NSUnionRect
 import vanilla
 from vanilla.vanillaTextEditor import VanillaTextEditorDelegate
+from vanilla.py23 import python_method
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton
 from defconAppKit.windows.popUpWindow import InteractivePopUpWindow
 from defconAppKit.tools.featureTextTools import breakFeatureTextIntoRuns, findBlockOpenLineStarts
@@ -15,6 +16,7 @@ from defconAppKit.tools.featureTextTools import breakFeatureTextIntoRuns, findBl
 # -------------------
 
 _whitespaceRE = re.compile("([ \t]+)")
+
 
 def _guessMinWhitespace(text):
     # gather all whitespace at the beginning of a line
@@ -55,7 +57,7 @@ class DefconAppKitFeatureTextView(NSTextView):
             self.insertText_(vanillaWrapper._whitespace)
 
     def viewDidMoveToWindow(self):
-        self._setWrapLines(False)
+        self._setWrapLines_(False)
         ruler = self.enclosingScrollView().verticalRulerView()
         if ruler is not None:
             ruler.clientViewSelectionChanged_(None)
@@ -87,6 +89,7 @@ class DefconAppKitFeatureTextView(NSTextView):
         (x, y) = self.window().convertBaseToScreen_((x, y))
         JumpToLinePopUpWindow(((x, y), (w, h)), self.window().screen(), self._jumpToLineInterfaceCallback_)
 
+    @python_method
     def _jumpToLineInterfaceCallback_(self, lineNumber):
         self.jumpToLine_(lineNumber)
 
@@ -115,9 +118,10 @@ class DefconAppKitFeatureTextView(NSTextView):
     def setWrapLines_(self, value):
         if value == self.getWrapLines():
             return
-        self._setWrapLines(value)
+        self._setWrapLines_(value)
 
-    def _setWrapLines(self, value):
+    @python_method
+    def _setWrapLines_(self, value):
         scrollView = self.enclosingScrollView()
         height = height = self.maxSize()[1]
         if value:
@@ -132,7 +136,7 @@ class DefconAppKitFeatureTextView(NSTextView):
 
 class DefconAppKitFeatureTextEditorDelegate(VanillaTextEditorDelegate):
 
-    def textStorageDidProcessEditing(self, notification):
+    def textStorageDidProcessEditing_(self, notification):
         self.vanillaWrapper()._highlightSyntaxAsAResultOfEditing()
 
     def textViewDidChangeSelection_(self, notification):
@@ -334,7 +338,7 @@ class FeatureTextEditor(vanilla.TextEditor):
         delegate.vanillaWrapper = weakref.ref(self)
         notificationCenter = NSNotificationCenter.defaultCenter()
         notificationCenter.addObserver_selector_name_object_(
-            self._textViewDelegate, "textStorageDidProcessEditing", NSTextStorageDidProcessEditingNotification, self._textView.textStorage())
+            self._textViewDelegate, "textStorageDidProcessEditing:", NSTextStorageDidProcessEditingNotification, self._textView.textStorage())
         # set the text
         self.set(text)
 
@@ -472,4 +476,3 @@ class FeatureTextEditor(vanilla.TextEditor):
 
     def getIncludeColor(self):
         return self._includeColor
-

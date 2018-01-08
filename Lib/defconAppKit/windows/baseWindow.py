@@ -2,6 +2,7 @@ from AppKit import NSColor
 import vanilla
 import vanilla.dialogs
 
+
 class BaseWindowController(object):
 
     def setUpBaseWindowBehavior(self):
@@ -52,4 +53,3 @@ class BaseWindowController(object):
             accessoryView = accessoryView._nsObject
         vanilla.dialogs.putFile(fileTypes=fileTypes,
             parentWindow=self.w.getNSWindow(), resultCallback=callback, fileName=fileName, directory=directory, accessoryView=accessoryView)
-

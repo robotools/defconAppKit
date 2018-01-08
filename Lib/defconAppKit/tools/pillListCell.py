@@ -3,7 +3,6 @@ from AppKit import NSFontAttributeName, NSFont, NSForegroundColorAttributeName, 
 
 
 pillTextAttributes = {
-
     NSFontAttributeName: NSFont.fontWithName_size_("Helvetica Bold", 12.0),
     NSForegroundColorAttributeName: NSColor.whiteColor()
 }
@@ -19,7 +18,7 @@ class DefconAppKitPillCell(NSActionCell):
     def drawWithFrame_inView_(self, frame, view):
         row = view.selectedRow()
         columnCount = len(view.tableColumns())
-        frames = [view.frameOfCellAtColumn_row_(i, row) for i in xrange(columnCount)]
+        frames = [view.frameOfCellAtColumn_row_(i, row) for i in range(columnCount)]
         selected = frame in frames
 
         (x, y), (w, h) = frame

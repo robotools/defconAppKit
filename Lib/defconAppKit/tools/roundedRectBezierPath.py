@@ -1,5 +1,6 @@
 from AppKit import NSBezierPath
 
+
 def roundedRectBezierPath(rect, radius,
         roundUpperLeft=True, roundUpperRight=True, roundLowerLeft=True, roundLowerRight=True,
         closeTop=True, closeBottom=True, closeLeft=True, closeRight=True):
@@ -11,17 +12,17 @@ def roundedRectBezierPath(rect, radius,
     path = NSBezierPath.bezierPath()
 
     if roundUpperLeft:
-        path.moveToPoint_((rectLeft, rectHeight-radius))
-        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectLeft, rectTop), (rectLeft+radius, rectTop), radius)
+        path.moveToPoint_((rectLeft, rectHeight - radius))
+        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectLeft, rectTop), (rectLeft + radius, rectTop), radius)
     else:
         path.moveToPoint_((rectLeft, rectTop))
 
     if roundUpperRight:
         if closeTop:
-            path.lineToPoint_((rectRight-radius, rectTop))
+            path.lineToPoint_((rectRight - radius, rectTop))
         else:
-            path.moveToPoint_((rectRight-radius, rectTop))
-        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectRight, rectTop), (rectRight, rectTop-radius), radius)
+            path.moveToPoint_((rectRight - radius, rectTop))
+        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectRight, rectTop), (rectRight, rectTop - radius), radius)
     else:
         if closeTop:
             path.lineToPoint_((rectRight, rectTop))
@@ -30,10 +31,10 @@ def roundedRectBezierPath(rect, radius,
 
     if roundLowerRight:
         if closeRight:
-            path.lineToPoint_((rectRight, rectBottom+radius))
+            path.lineToPoint_((rectRight, rectBottom + radius))
         else:
-            path.moveToPoint_((rectRight, rectBottom+radius))
-        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectRight, rectBottom), (rectRight-radius, rectBottom), radius)
+            path.moveToPoint_((rectRight, rectBottom + radius))
+        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectRight, rectBottom), (rectRight - radius, rectBottom), radius)
     else:
         if closeRight:
             path.lineToPoint_((rectRight, rectBottom))
@@ -42,10 +43,10 @@ def roundedRectBezierPath(rect, radius,
 
     if roundLowerLeft:
         if closeBottom:
-            path.lineToPoint_((rectLeft+radius, rectBottom))
+            path.lineToPoint_((rectLeft + radius, rectBottom))
         else:
-            path.moveToPoint_((rectLeft+radius, rectBottom))
-        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectLeft, rectBottom), (rectLeft, rectBottom+radius), radius)
+            path.moveToPoint_((rectLeft + radius, rectBottom))
+        path.appendBezierPathWithArcFromPoint_toPoint_radius_((rectLeft, rectBottom), (rectLeft, rectBottom + radius), radius)
     else:
         if closeBottom:
             path.lineToPoint_((rectLeft, rectBottom))
@@ -54,7 +55,7 @@ def roundedRectBezierPath(rect, radius,
 
     if closeLeft:
         if roundUpperLeft:
-            path.lineToPoint_((rectLeft, rectHeight-radius))
+            path.lineToPoint_((rectLeft, rectHeight - radius))
         else:
             path.lineToPoint_((rectLeft, rectTop))
 

@@ -260,7 +260,7 @@ class GlyphCollectionView(vanilla.Group):
             self._glyphCellView.unsubscribeFromWindow()
         elif mode == "cell":
             documentView = self._glyphCellView
-            if placard is not None:
+            if placard is not None and hasattr(placard, "button"):
                 placard.button.set(0)
         self._list.getNSScrollView().setDocumentView_(documentView)
         self._mode = mode
@@ -489,11 +489,11 @@ class GlyphCollectionView(vanilla.Group):
         """
         return self._glyphCellView
 
-    def setCellSize(self, (width, height)):
+    def setCellSize(self, wh):
         """
         Set the size of the cells.
         """
-        self._glyphCellView.setCellSize_((width, height))
+        self._glyphCellView.setCellSize_(wh)
 
     def getCellSize(self):
         """

@@ -40,13 +40,13 @@ class OnlyComponentsCocoaPen(BasePen):
         self.pen = CocoaPen(glyphSet)
         self.path = self.pen.path
 
-    def _moveTo(self, (x, y)):
+    def _moveTo(self, xy):
         pass
 
-    def _lineTo(self, (x, y)):
+    def _lineTo(self, xy):
         pass
 
-    def _curveToOne(self, (x1, y1), (x2, y2), (x3, y3)):
+    def _curveToOne(self, xy1, xy2, xy3):
         pass
 
     def _closePath(self):
