@@ -142,13 +142,16 @@ class GlyphCellItem(NSObject):
 
     def item(self):
         # fallback when no column descriptions are given
-        return self._glyphName
+        return self.Name()
 
     def Name(self):
         return self._glyphName
 
     def setName_(self, value):
-        self.glyph().name = value
+        self.glyph().name = self._glyphName = value
+
+    def renameGlyphName_(self, glyphName):
+        self._glyphName = glyphName
 
 
 class DefconAppKitGlyphCellNSView(NSView):
@@ -343,6 +346,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         newName = data["newValue"]
         index = self._glyphNames.index(oldName)
         self._glyphNames[index] = newName
+        items = self.arrayController.arrangedObjects()
+        items[index].renameGlyphName_(newName)
         self.setNeedsDisplay_(True)
 
     @python_method
