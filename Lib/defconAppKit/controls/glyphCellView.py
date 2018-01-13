@@ -11,6 +11,7 @@ from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, 
     NSCompositeSourceOver, NSCompositePlusDarker, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
 
 from math import ceil, floor
+from fontTools.misc.py23 import unichr
 import vanilla
 from vanilla.py23 import python_method
 from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
