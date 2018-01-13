@@ -1,3 +1,9 @@
+from fontTools.misc.py23 import *
+try:
+    long
+except:
+    # py3 has no long
+    long = int
 import time
 from copy import deepcopy
 from Foundation import NSArray
