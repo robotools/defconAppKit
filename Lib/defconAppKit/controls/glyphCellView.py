@@ -451,7 +451,8 @@ class DefconAppKitGlyphCellNSView(NSView):
             columnCount = int(width / self._cellWidth)
             if columnCount == 0:
                 columnCount = 1
-            rowCount = len(self._glyphNames) / columnCount
+            rowCount = len(self._glyphNames) / float(columnCount)
+            rowCount = int(ceil(rowCount))
             if columnCount * rowCount < len(self._glyphNames):
                 rowCount += 1
             newWidth = self._cellWidth * columnCount
