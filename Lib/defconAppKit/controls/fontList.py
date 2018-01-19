@@ -178,8 +178,8 @@ class FontList(vanilla.List):
 
     def _breakCycles(self):
         for font in self._wrappedListItems.keys():
-            del self._wrappedListItems[font]
             self._unsubscribeFromFont(font)
+        self._wrappedListItems.clear()
         self._placard = None
         self._placardSortOptions = {}
         super(FontList, self)._breakCycles()
