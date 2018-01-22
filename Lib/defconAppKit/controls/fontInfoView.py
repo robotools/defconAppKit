@@ -2714,7 +2714,7 @@ def woffMetadataCreditsToUFO(value):
         direction = item.get("dir")
         if direction == "Default":
             item["dir"] = None
-        for key, value in item.items():
+        for key, value in list(item.items()):
             if value is None or value == "":
                 del item[key]
         if item:
