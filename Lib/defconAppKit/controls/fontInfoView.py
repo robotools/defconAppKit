@@ -1374,9 +1374,11 @@ class OpenTypeNameRecordDict(dict):
         self._revesersedDict = None
 
     def __setitem__(self, key, value):
+        # make immutable
         pass
 
     def update(self, other):
+        # make immutable
         pass
 
     def sortedKeys(self):
