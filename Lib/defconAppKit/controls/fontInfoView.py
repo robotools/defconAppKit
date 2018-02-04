@@ -233,7 +233,10 @@ class NumberSequenceFormatter(NSFormatter):
                         continue
                     if i == "-":
                         continue
-                    tempValues.append(int(i))
+                    i = float(i)
+                    if i.is_integer():
+                        i = int(i)
+                    tempValues.append(i)
                 values = tempValues
             except ValueError:
                 isValid = False
@@ -2425,7 +2428,13 @@ def _postscriptBluesToUFO(string, maxCount):
     if not string:
         return []
     try:
-        values = [int(i) for i in string.split(" ") if i]
+        values = []
+        for i in string.split(" "):
+            if i:
+                i = float(i)
+                if i.is_integer():
+                    i = int(i)
+                values.append(i)
     except ValueError:
         values = []
     values = sorted(values)
