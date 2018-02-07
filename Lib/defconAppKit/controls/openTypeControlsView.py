@@ -95,7 +95,9 @@ class OpenTypeControlsView(vanilla.ScrollView):
             languageList += unsupportedLanguages
         self._controlGroup.languagePopUpButton.setItems(languageList)
         # teardown existing controls
-        for attr in self._gsubAttributes.keys() + self._gposAttributes.keys():
+        for attr in self._gsubAttributes.keys():
+            delattr(self._controlGroup, attr)
+        for attr in self._gposAttributes.keys():
             delattr(self._controlGroup, attr)
         for attr in self._featureNames.keys():
             delattr(self._controlGroup, attr)
