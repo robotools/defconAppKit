@@ -1403,7 +1403,7 @@ nameIDs = OpenTypeNameRecordDict({
     0 : '[0] Copyright Notice',
     1 : '[1] Font Family Name',
     2 : '[2] Font Subfamily name',
-    # 3 : '[3] Unique font identifier',
+    3 : '[3] Unique font identifier',
     4 : '[4] Full font name',
     5 : '[5] Version string',
     6 : '[6] PostScript name',
