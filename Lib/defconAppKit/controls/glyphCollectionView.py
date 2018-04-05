@@ -413,7 +413,8 @@ class GlyphCollectionView(vanilla.Group):
     def _listSelectionCallback(self, sender):
         if self._holdCallbacks:
             return
-        self._glyphCellView.setLastFoundSelection(self.getSelection())
+        if self.getMode() == "list":
+            self._glyphCellView.setLastFoundSelection(self.getSelection())
         if self._selectionCallback is not None:
             self._selectionCallback(self)
 
