@@ -961,6 +961,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         if character == NSUpArrowFunctionKey:
             if currentSelection is None:
                 currentSelection = 0
+            elif haveShiftKey:
+                currentSelection = selection.firstIndex()
             newSelection = currentSelection - self._columnCount
             if newSelection < 0:
                 newSelection = 0
@@ -968,6 +970,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         elif character == NSDownArrowFunctionKey:
             if currentSelection is None:
                 currentSelection = len(self._glyphNames) - 1
+            elif haveShiftKey:
+                currentSelection = selection.lastIndex()
             newSelection = currentSelection + self._columnCount
             if currentSelection is None or newSelection >= len(self._glyphNames):
                 newSelection = len(self._glyphNames) - 1
@@ -976,12 +980,16 @@ class DefconAppKitGlyphCellNSView(NSView):
             if currentSelection is None or currentSelection == 0:
                 newSelection = len(self._glyphNames) - 1
             else:
+                if haveShiftKey:
+                    currentSelection = selection.firstIndex()
                 newSelection = currentSelection - 1
 
         elif character == NSRightArrowFunctionKey:
             if currentSelection is None or currentSelection == len(self._glyphNames) - 1:
                 newSelection = 0
             else:
+                if haveShiftKey:
+                    currentSelection = selection.lastIndex()
                 newSelection = currentSelection + 1
 
         elif character == NSHomeFunctionKey:
@@ -999,7 +1007,6 @@ class DefconAppKitGlyphCellNSView(NSView):
             if not haveCommandKey:
                 selection.removeAllIndexes()
             selection.addIndex_(newSelection)
-
         self._lastSelectionFound = newSelection
         self.arrayController.setSelectionIndexes_(selection)
         self.setNeedsDisplay_(True)
