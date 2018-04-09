@@ -17,9 +17,6 @@ from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
 
-import objc
-objc.setVerbose(True)
-
 
 # --------------------------
 # First Responder Subclasses
