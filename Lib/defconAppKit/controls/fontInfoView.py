@@ -9,7 +9,8 @@ from copy import deepcopy
 from Foundation import NSArray
 from AppKit import NSOnOffButton, NSRoundRectBezelStyle, NSDate, NSColor, NSFontNameAttribute, \
     NSFormatter, NSTextField, NSTextView, NSTextFieldCell, NSView, NSNoTabsNoBorder, NSButton, NSObject, \
-    NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle
+    NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle, \
+    NSMutableIndexSet
 import vanilla
 from vanilla.py23 import python_method
 from vanilla import dialogs
@@ -229,7 +230,10 @@ class NumberSequenceFormatter(NSFormatter):
                         continue
                     if i == "-":
                         continue
-                    tempValues.append(int(i))
+                    i = float(i)
+                    if i.is_integer():
+                        i = int(i)
+                    tempValues.append(i)
                 values = tempValues
             except ValueError:
                 isValid = False
@@ -924,15 +928,16 @@ class CheckList(InfoList):
 
 class DictList(vanilla.Group):
 
-    def __init__(self, posSize, columnDescriptions, itemPrototype=None, callback=None, validator=None, variableRowHeights=False, showColumnTitles=True):
+    def __init__(self, posSize, columnDescriptions, listClass=None, itemPrototype=None, callback=None, validator=None, variableRowHeights=False, showColumnTitles=True):
         self._prototype = itemPrototype
         self._callback = callback
         self._validator = validator
         super(DictList, self).__init__(posSize)
-        if variableRowHeights:
-            listClass = VariableRowHeightList
-        else:
-            listClass = InfoList
+        if listClass is None:
+            if variableRowHeights:
+                listClass = VariableRowHeightList
+            else:
+                listClass = InfoList
         self._list = listClass((0, 0, -0, -20), [], columnDescriptions=columnDescriptions,
             editCallback=self._listEditCallback, drawFocusRing=False, showColumnTitles=showColumnTitles)
         self._list.setIsWrappedList(True)
@@ -1359,46 +1364,617 @@ openTypeNameSampleTextItem = inputItemDict(
 )
 
 
-def openTypeNameRecordsFromUFO(value):
-    if value is None:
+class OpenTypeNameRecordDict(dict):
+
+    def __init__(self, other=None):
+        if other is None:
+            other = dict()
+        super(OpenTypeNameRecordDict, self).__init__(other)
+        self._sortedKeys = None
+        self._revesersedDict = None
+
+    def __setitem__(self, key, value):
+        # make immutable
+        pass
+
+    def update(self, other):
+        # make immutable
+        pass
+
+    def sortedKeys(self):
+        if self._sortedKeys is None:
+            self._sortedKeys = [self[k] for k in sorted(self)]
+        return self._sortedKeys
+
+    def _get_reversed(self):
+        if self._revesersedDict is None:
+            self._revesersedDict = {v: k for k, v in self.items()}
+        return self._revesersedDict
+
+    reversed = property(_get_reversed)
+
+
+# name recored data taken from https://www.microsoft.com/typography/otspec/name.htm
+
+nameIDs = OpenTypeNameRecordDict({
+    0 : '[0] Copyright Notice',
+    1 : '[1] Font Family Name',
+    2 : '[2] Font Subfamily name',
+    3 : '[3] Unique font identifier',
+    4 : '[4] Full font name',
+    5 : '[5] Version string',
+    6 : '[6] PostScript name',
+    7 : '[7] Trademark',
+    8 : '[8] Manufacturer Name',
+    9 : '[9] Designer',
+    10 : '[10] Description',
+    11 : '[11] URL Vendor',
+    12 :  '[12] URL Designer',
+    13 : '[13] License Description',
+    14 : '[14] License Info URL',
+    # 15 : '[15] Reserved',
+    16 : '[16] Typographic Family name',
+    17 : '[17] Typographic Subfamily name',
+    18 : '[18] Compatible Full',
+    19 : '[19] Sample text',
+    20 : '[20] PostScript CID name',
+    21 : '[21] WWS Family Name',
+    22 : '[22] WWS Subfamily Name',
+    # 23 : '[23] Light Background Palette',
+    # 24 : '[24] Dark Background Palette',
+    # 25 : '[25] Variations PostScript Name Prefix'
+})
+
+
+platformIDs = OpenTypeNameRecordDict({
+    0 : "Unicode",
+    1 : "Macintosh",
+    2 : "ISO (deprecated)",
+    3 : "Windows",
+    # 4 : "Custom"
+})
+
+
+# platform unicode encoding
+encodingIDsplatform0 = OpenTypeNameRecordDict({
+    0 : "Unicode 1.0",
+    1 : "Unicode 1.1",
+    2 : "ISO/IEC 10646",
+    3 : "BMP Unicode",
+    4 : "Full Unicode",
+    5 : "Unicode Variation Sequences",
+    6 : "Unicode full",
+})
+
+
+# platform Macintosh encoding
+encodingIDsplatform1 = OpenTypeNameRecordDict({
+    0 : 'Roman',
+    1 : 'Japanese',
+    2 : 'Chinese',
+    3 : 'Korean',
+    4 : 'Arabic',
+    5 : 'Hebrew',
+    6 : 'Greek',
+    7 : 'Russian',
+    8 : 'RSymbol',
+    9 : 'Devanagari',
+    10 : 'Gurmukhi',
+    11 : 'Gujarati',
+    12 : 'Oriya',
+    13 : 'Bengali',
+    14 : 'Tamil',
+    15 : 'Telugu',
+    16 : 'Kannada',
+    17 : 'Malayalam',
+    18 : 'Sinhalese (Traditional)',
+    19 : 'Burmese',
+    20 : 'Khmer',
+    21 : 'Thai',
+    22 : 'Laotian',
+    23 : 'Georgian',
+    24 : 'Armenian',
+    25 : 'Chinese (Simplified)',
+    26 : 'Tibetan',
+    27 : 'Mongolian',
+    28 : 'Geez',
+    29 : 'Slavic',
+    30 : 'Vietnamese',
+    31 : 'Sindhi',
+    32 : 'Uninterpreted'
+})
+
+
+# platform iso encoding
+encodingIDsplatform2 = OpenTypeNameRecordDict({
+    0 : '7-bit ASCII  (deprecated)',
+    1 : 'ISO 10646  (deprecated)',
+    2 : 'ISO 8859-1  (deprecated)'
+})
+
+
+# platform windows encoding
+encodingIDsplatform3 = OpenTypeNameRecordDict({
+    0 : 'Symbol',
+    1 : 'Unicode BMP (UCS-2)',
+    2 : 'ShiftJIS',
+    3 : 'PRC',
+    4 : 'Big5',
+    5 : 'Wansung',
+    6 : 'Johab',
+    # 7 : 'Reserved',
+    # 8 : 'Reserved',
+    # 9 : 'Reserved',
+    10 : 'Unicode UCS-4',
+})
+
+
+# platform Macintosh language
+languageIDsplatform1 = OpenTypeNameRecordDict({
+   0: 'English',
+   1: 'French',
+   2: 'German',
+   3: 'Italian',
+   4: 'Dutch',
+   5: 'Swedish',
+   6: 'Spanish',
+   7: 'Danish',
+   8: 'Portuguese',
+   9: 'Norwegian',
+   10: 'Hebrew',
+   11: 'Japanese',
+   12: 'Arabic',
+   13: 'Finnish',
+   14: 'Armenian Inuktitut',
+   15: 'Icelandic',
+   16: 'Maltese',
+   17: 'Turkish',
+   18: 'Croatian',
+   19: 'Chinese (Traditional)',
+   20: 'Urdu',
+   21: 'Hindi',
+   22: 'Thai',
+   23: 'Korean',
+   24: 'Lithuanian',
+   25: 'Polish',
+   26: 'Hungarian',
+   27: 'Estonian',
+   28: 'Latvian',
+   29: 'Sami',
+   30: 'Faroese',
+   31: 'Farsi/Persian',
+   32: 'Russian',
+   33: 'Chinese (Simplified)',
+   34: 'Flemish',
+   35: 'Irish Gaelic',
+   36: 'Albanian',
+   37: 'Romanian',
+   38: 'Czech',
+   39: 'Slovak',
+   40: 'Slovenian',
+   41: 'Yiddish',
+   42: 'Serbian',
+   43: 'Macedonian',
+   44: 'Bulgarian',
+   45: 'Ukrainian',
+   46: 'Byelorussian',
+   47: 'Uzbek',
+   48: 'Kazakh',
+   49: 'Azerbaijani (Cyrillic script)',
+   50: 'Azerbaijani (Arabic script)',
+   51: 'Armenian',
+   52: 'Georgian',
+   53: 'Moldavian',
+   54: 'Kirghiz',
+   55: 'Tajiki',
+   56: 'Turkmen',
+   57: 'Mongolian (Mongolian script)',
+   58: 'Mongolian (Cyrillic script)',
+   59: 'English Pashto',
+   60: 'French Kurdish',
+   61: 'German Kashmiri',
+   62: 'Italian Sindhi',
+   63: 'Dutch Tibetan',
+   64: 'Swedish Nepali',
+   65: 'Spanish Sanskrit',
+   66: 'Danish Marathi',
+   67: 'Portuguese Bengali',
+   68: 'Norwegian Assamese',
+   69: 'Hebrew Gujarati',
+   70: 'Japanese Punjabi',
+   71: 'Arabic Oriya',
+   72: 'Finnish Malayalam',
+   73: 'Greek Kannada',
+   74: 'Icelandic Tamil',
+   75: 'Maltese Telugu',
+   76: 'Turkish Sinhalese',
+   77: 'Croatian Burmese',
+   78: 'Chinese (Traditional) Khmer',
+   79: 'Urdu Lao',
+   80: 'Hindi Vietnamese',
+   81: 'Thai Indonesian',
+   82: 'Korean Tagalong',
+   83: 'Lithuanian Malay (Roman script)',
+   84: 'Polish Malay (Arabic script)',
+   85: 'Hungarian Amharic',
+   86: 'Estonian Tigrinya',
+   87: 'Latvian Galla',
+   88: 'Sami Somali',
+   89: 'Faroese Swahili',
+   90: 'Farsi/Persian Kinyarwanda/Ruanda',
+   91: 'Russian Rundi',
+   92: 'Chinese (Simplified) Nyanja/Chewa',
+   93: 'Flemish Malagasy',
+   94: 'Irish Gaelic Esperanto',
+   128: 'Albanian Welsh',
+   129: 'Romanian Basque',
+   130: 'Czech Catalan',
+   131: 'Slovak Latin',
+   132: 'Slovenian Quenchua',
+   133: 'Yiddish Guarani',
+   134: 'Serbian Aymara',
+   135: 'Macedonian Tatar',
+   136: 'Bulgarian Uighur',
+   137: 'Ukrainian Dzongkha',
+   138: 'Byelorussian Javanese (Roman script)',
+   139: 'Uzbek Sundanese (Roman script)',
+   140: 'Kazakh Galician',
+   141: 'Azerbaijani (Cyrillic script) Afrikaans',
+   142: 'Azerbaijani (Arabic script) Breton',
+   144: 'Georgian Scottish Gaelic',
+   145: 'Moldavian Manx Gaelic',
+   146: 'Kirghiz Irish Gaelic (with dot above)',
+   147: 'Tajiki Tongan',
+   148: 'Turkmen Greek (polytonic)',
+   149: 'Mongolian (Mongolian script) Greenlandic',
+   150: 'Mongolian (Cyrillic script) Azerbaijani (Roman script)',
+})
+
+
+# platform Windows language
+languageIDsplatform3 = OpenTypeNameRecordDict({
+   1025: "Arabic (Saudi Arabia)",
+   1026: "Bulgarian (Bulgaria)",
+   1027: "Catalan (Catalan)",
+   1028: "Chinese (Taiwan)",
+   1029: "Czech (Czech Republic)",
+   1030: "Danish (Denmark)",
+   1031: "German (Germany)",
+   1032: "Greek (Greece)",
+   1033: "English (United States)",
+   1034: "Spanish (Traditional Sort) (Spain)",
+   1035: "Finnish (Finland)",
+   1036: "French (France)",
+   1037: "Hebrew (Israel)",
+   1038: "Hungarian (Hungary)",
+   1039: "Icelandic (Iceland)",
+   1040: "Italian (Italy)",
+   1041: "Japanese (Japan)",
+   1042: "Korean (Korea)",
+   1043: "Dutch (Netherlands)",
+   1044: "Norwegian (Bokmal) (Norway)",
+   1045: "Polish (Poland)",
+   1046: "Portuguese (Brazil)",
+   1047: "Romansh (Switzerland)",
+   1048: "Romanian (Romania)",
+   1049: "Russian (Russia)",
+   1050: "Croatian (Croatia)",
+   1051: "Slovak (Slovakia)",
+   1052: "Albanian (Albania)",
+   1053: "Swedish (Sweden)",
+   1054: "Thai (Thailand)",
+   1055: "Turkish (Turkey)",
+   1056: "Urdu (Islamic Republic of Pakistan)",
+   1057: "Indonesian (Indonesia)",
+   1058: "Ukrainian (Ukraine)",
+   1059: "Belarusian (Belarus)",
+   1060: "Slovenian (Slovenia)",
+   1061: "Estonian (Estonia)",
+   1062: "Latvian (Latvia)",
+   1063: "Lithuanian (Lithuania)",
+   1064: "Tajik (Cyrillic) (Tajikistan)",
+   1066: "Vietnamese (Vietnam)",
+   1067: "Armenian (Armenia)",
+   1068: "Azeri (Latin) (Azerbaijan)",
+   1069: "Basque (Basque)",
+   1070: "Upper Sorbian (Germany)",
+   1071: "Macedonian (FYROM) (Former Yugoslav Republic of Macedonia)",
+   1074: "Setswana (South Africa)",
+   1076: "isiXhosa (South Africa)",
+   1077: "isiZulu (South Africa)",
+   1078: "Afrikaans (South Africa)",
+   1079: "Georgian (Georgia)",
+   1080: "Faroese (Faroe Islands)",
+   1081: "Hindi (India)",
+   1082: "Maltese (Malta)",
+   1083: "Sami (Northern) (Norway)",
+   1086: "Malay (Malaysia)",
+   1087: "Kazakh (Kazakhstan)",
+   1088: "Kyrgyz (Kyrgyzstan)",
+   1089: "Kiswahili (Kenya)",
+   1090: "Turkmen (Turkmenistan)",
+   1091: "Uzbek (Latin) (Uzbekistan)",
+   1092: "Tatar (Russia)",
+   1093: "Bengali (India)",
+   1094: "Punjabi (India)",
+   1095: "Gujarati (India)",
+   1096: "Odia (formerly Oriya) (India)",
+   1097: "Tamil (India)",
+   1098: "Telugu (India)",
+   1099: "Kannada (India)",
+   1100: "Malayalam (India)",
+   1101: "Assamese (India)",
+   1102: "Marathi (India)",
+   1103: "Sanskrit (India)",
+   1104: "Mongolian (Cyrillic) (Mongolia)",
+   1105: "Tibetan (PRC)",
+   1106: "Welsh (United Kingdom)",
+   1107: "Khmer (Cambodia)",
+   1108: "Lao (Lao P.D.R.)",
+   1110: "Galician (Galician)",
+   1111: "Konkani (India)",
+   1114: "Syriac (Syria)",
+   1115: "Sinhala (Sri Lanka)",
+   1117: "Inuktitut (Canada)",
+   1118: "Amharic (Ethiopia)",
+   1121: "Nepali (Nepal)",
+   1122: "Frisian (Netherlands)",
+   1123: "Pashto (Afghanistan)",
+   1124: "Filipino (Philippines)",
+   1125: "Divehi (Maldives)",
+   1128: "Hausa (Latin) (Nigeria)",
+   1130: "Yoruba (Nigeria)",
+   1131: "Quechua (Bolivia)",
+   1132: "Sesotho sa Leboa (South Africa)",
+   1133: "Bashkir (Russia)",
+   1134: "Luxembourgish (Luxembourg)",
+   1135: "Greenlandic (Greenland)",
+   1136: "Igbo (Nigeria)",
+   1144: "Yi (PRC)",
+   1146: "Mapudungun (Chile)",
+   1148: "Mohawk (Mohawk)",
+   1150: "Breton (France)",
+   1152: "Uighur (PRC)",
+   1153: "Maori (New Zealand)",
+   1154: "Occitan (France)",
+   1155: "Corsican (France)",
+   1156: "Alsatian (France)",
+   1157: "Yakut (Russia)",
+   1158: "K'iche (Guatemala)",
+   1159: "Kinyarwanda (Rwanda)",
+   1160: "Wolof (Senegal)",
+   1164: "Dari (Afghanistan)",
+   2049: "Arabic (Iraq)",
+   2052: "Chinese (People's Republic of China)",
+   2055: "German (Switzerland)",
+   2057: "English (United Kingdom)",
+   2058: "Spanish (Mexico)",
+   2060: "French (Belgium)",
+   2064: "Italian (Switzerland)",
+   2067: "Dutch (Belgium)",
+   2068: "Norwegian (Nynorsk) (Norway)",
+   2070: "Portuguese (Portugal)",
+   2074: "Serbian (Latin) (Serbia)",
+   2077: "Sweden (Finland)",
+   2092: "Azeri (Cyrillic) (Azerbaijan)",
+   2094: "Lower Sorbian (Germany)",
+   2107: "Sami (Northern) (Sweden)",
+   2108: "Irish (Ireland)",
+   2110: "Malay (Brunei Darussalam)",
+   2115: "Uzbek (Cyrillic) (Uzbekistan)",
+   2117: "Bengali (Bangladesh)",
+   2128: "Mongolian (Traditional) (People's Republic of China)",
+   2141: "Inuktitut (Latin) (Canada)",
+   2143: "Tamazight (Latin) (Algeria)",
+   2155: "Quechua (Ecuador)",
+   3073: "Arabic (Egypt)",
+   3076: "Chinese (Hong Kong S.A.R.)",
+   3079: "German (Austria)",
+   3081: "English (Australia)",
+   3082: "Spanish (Modern Sort) (Spain)",
+   3084: "French (Canada)",
+   3098: "Serbian (Cyrillic) (Serbia)",
+   3131: "Sami (Northern) (Finland)",
+   3179: "Quechua (Peru)",
+   4097: "Arabic (Libya)",
+   4100: "Chinese (Singapore)",
+   4103: "German (Luxembourg)",
+   4105: "English (Canada)",
+   4106: "Spanish (Guatemala)",
+   4108: "French (Switzerland)",
+   4122: "Croatian (Latin) (Bosnia and Herzegovina)",
+   4155: "Sami (Lule) (Norway)",
+   5121: "Arabic (Algeria)",
+   5124: "Chinese (Macao S.A.R.)",
+   5127: "German (Liechtenstein)",
+   5129: "English (New Zealand)",
+   5130: "Spanish (Costa Rica)",
+   5132: "French (Luxembourg)",
+   5146: "Bosnian (Latin) (Bosnia and Herzegovina)",
+   5179: "Sami (Lule) (Sweden)",
+   6145: "Arabic (Morocco)",
+   6153: "English (Ireland)",
+   6154: "Spanish (Panama)",
+   6156: "French (Principality of Monaco)",
+   6170: "Serbian (Latin) (Bosnia and Herzegovina)",
+   6203: "Sami (Southern) (Norway)",
+   7169: "Arabic (Tunisia)",
+   7177: "English (South Africa)",
+   7178: "Spanish (Dominican Republic)",
+   7194: "Serbian (Cyrillic) (Bosnia and Herzegovina)",
+   7227: "Sami (Southern) (Sweden)",
+   8193: "Arabic (Oman)",
+   8201: "English (Jamaica)",
+   8202: "Spanish (Venezuela)",
+   8218: "Bosnian (Cyrillic) (Bosnia and Herzegovina)",
+   8251: "Sami (Skolt) (Finland)",
+   9217: "Arabic (Yemen)",
+   9225: "English (Caribbean)",
+   9226: "Spanish (Colombia)",
+   9275: "Sami (Inari) (Finland)",
+   10241: "Arabic (Syria)",
+   10249: "English (Belize)",
+   10250: "Spanish (Peru)",
+   11265: "Arabic (Jordan)",
+   11273: "English (Trinidad and Tobago)",
+   11274: "Spanish (Argentina)",
+   12289: "Arabic (Lebanon)",
+   12297: "English (Zimbabwe)",
+   12298: "Spanish (Ecuador)",
+   13313: "Arabic (Kuwait)",
+   13321: "English (Republic of the Philippines)",
+   13322: "Spanish (Chile)",
+   14337: "Arabic (U.A.E.)",
+   14346: "Spanish (Uruguay)",
+   15361: "Arabic (Bahrain)",
+   15370: "Spanish (Paraguay)",
+   16385: "Arabic (Qatar)",
+   16393: "English (India)",
+   16394: "Spanish (Bolivia)",
+   17417: "English (Malaysia)",
+   17418: "Spanish (El Salvador)",
+   18441: "English (Singapore)",
+   18442: "Spanish (Honduras)",
+   19466: "Spanish (Nicaragua)",
+   20490: "Spanish (Puerto Rico)",
+   21514: "Spanish (United States)"
+})
+
+
+platformEncodingIDsMap = {
+    platformIDs[0]: encodingIDsplatform0,
+    platformIDs[1]: encodingIDsplatform1,
+    platformIDs[2]: encodingIDsplatform2,
+    platformIDs[3]: encodingIDsplatform3,
+}
+
+
+platformLanguageIDsMap = {
+    platformIDs[1]: languageIDsplatform1,
+    platformIDs[3]: languageIDsplatform3,
+}
+
+
+identifierMap = {
+    "encodingID": platformEncodingIDsMap,
+    "languageID": platformLanguageIDsMap
+}
+
+openTypeNameRecordNotSetString = "-"
+
+openTypeNameRecordtooltipTemplate = """name ID: %(nameID)s
+platform ID: %(platformID)s
+encoding ID: %(encodingID)s
+language ID: %(languageID)s
+
+%(string)s"""
+
+
+class OpenTypeNameRecordTableView(DefconAppKitTableView):
+
+    def tableView_toolTipForCell_rect_tableColumn_row_mouseLocation_(self, tableview, cell, rect, column, row, location):
+        if row:
+            item = tableview.dataSource().content()[row]
+            if item["string"]:
+                tooltip = openTypeNameRecordtooltipTemplate % item
+                return tooltip, rect
+        return None, rect
+
+    def tableView_dataCellForTableColumn_row_(self, tableview, column, row):
+        if column is None:
+            return None
+        cell = column.dataCell()
+        if column.identifier() in identifierMap:
+            item = tableview.dataSource().content()[row]
+            data = identifierMap[column.identifier()]
+            options = data.get(item["platformID"], OpenTypeNameRecordDict())
+            options = options.sortedKeys()
+            cell.removeAllItems()
+            cell.addItemsWithTitles_(options)
+            if item[column.identifier()] not in options:
+                value = openTypeNameRecordNotSetString
+                if options:
+                    value = options[0]
+                item[column.identifier()] = value
+        return cell
+
+
+class OpenTypeNameRecordList(InfoList):
+
+    nsTableViewClass = OpenTypeNameRecordTableView
+
+    def __init__(self, *args, **kwargs):
+        self._superEditCallback = kwargs.get("editCallback")
+        kwargs["editCallback"] = self.editCallback
+        super(OpenTypeNameRecordList, self).__init__(*args, **kwargs)
+        self._tableView.setDelegate_(self._tableView)
+
+    def editCallback(self, sender):
+        # reload specific cells on change...
+        rowIndexes = self._tableView.selectedRowIndexes()
+        columnIndexes = NSMutableIndexSet.alloc().init()
+        for index, column in enumerate(self._tableView.tableColumns()):
+            if column.identifier() in ("encodingID", "languageID"):
+                columnIndexes.addIndex_(index)
+        self._tableView.reloadDataForRowIndexes_columnIndexes_(rowIndexes, columnIndexes)
+        if self._superEditCallback:
+            self._superEditCallback(sender)
+
+
+def openTypeNameRecordFromUFO(value):
+    converted = dict(value)
+    converted["nameID"] = nameIDs[value["nameID"]]
+    converted["platformID"] = platformIDs[value["platformID"]]
+    if converted["platformID"] in platformEncodingIDsMap:
+        data = platformEncodingIDsMap[converted["platformID"]]
+        converted["encodingID"] = data.get(value["encodingID"])
+    else:
+        converted["encodingID"] = ""
+    if converted["platformID"] in platformLanguageIDsMap:
+        data = platformLanguageIDsMap[converted["platformID"]]
+        converted["languageID"] = data.get(value["languageID"])
+    else:
+        converted["languageID"] = ""
+    return converted
+
+
+def openTypeNameRecordsFromUFO(values):
+    if values is None:
         return []
-    return value
+    items = []
+    for value in values:
+        item = openTypeNameRecordFromUFO(value)
+        items.append(item)
+    return items
 
 
 def openTypeNameRecordsToUFO(value):
     records = {}
-    intKeys = ["nameID", "platformID", "encodingID", "languageID"]
-    for record in value:
-        record = dict(record)
-        for key in intKeys:
-            v = record[key]
-            if isinstance(v, long):
-                record[key] = int(v)
-            elif isinstance(v, NSDecimalNumber):
-                record[key] = int(v.intValue())
-        key = tuple([record[k] for k in intKeys])
+    sortKeys = ["nameID", "platformID", "encodingID", "languageID"]
+    for item in value:
+        record = dict(item)
+        record["nameID"] = nameIDs.reversed[item["nameID"]]
+        record["platformID"] = platformIDs.reversed[item["platformID"]]
+        if record["encodingID"] == openTypeNameRecordNotSetString:
+            record["encodingID"] = 0
+        elif item["platformID"] in platformEncodingIDsMap:
+            data = platformEncodingIDsMap[item["platformID"]]
+            record["encodingID"] = data.reversed.get(item["encodingID"], 0)
+        else:
+            record["encodingID"] = 0
+
+        if record["languageID"] == openTypeNameRecordNotSetString:
+            record["languageID"] = 0
+        elif item["platformID"] in platformLanguageIDsMap:
+            data = platformLanguageIDsMap[item["platformID"]]
+            record["languageID"] = data.reversed.get(item["languageID"], 0)
+        else:
+            record["languageID"] = 0
+
+        key = tuple([record[k] for k in sortKeys])
         records[key] = record
     records = [value for key, value in sorted(records.items())]
     return records
-
-
-def openTypeNameRecordsInputValidator(records):
-    # look for duplicate keys
-    combinationKeys = ["nameID", "platformID", "encodingID", "languageID"]
-    seen = []
-    for record in records:
-        key = []
-        for k in combinationKeys:
-            v = record[k]
-            if isinstance(v, long):
-                v = int(v)
-            elif isinstance(v, NSDecimalNumber):
-                v = int(v.intValue())
-            key.append(v)
-        if key in seen:
-            return False, "A duplicate name id, platform id, encoding id and language id combination has been created.", "Duplicate name id, platform id, encoding id and language id combinations aren't allowed. Only the final name id, platform id, encoding id and language id combination will be stored in the font."
-        seen.append(key)
-    return True, None, None
 
 
 openTypeNameRecordFormatter = NSNumberFormatter.alloc().init()
@@ -1413,16 +1989,16 @@ openTypeNameRecordsItem = inputItemDict(
     hasDefault=False,
     controlClass=DictList,
     controlOptions=dict(
+        listClass=OpenTypeNameRecordList,
         showColumnTitles=True,
         columnDescriptions=[
-            dict(key="nameID", title="NID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
-            dict(key="platformID", title="PID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
-            dict(key="encodingID", title="EID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
-            dict(key="languageID", title="LID", width=40, editable=True, formatter=openTypeNameRecordFormatter),
-            dict(key="string", title="String", editable=True),
+            dict(key="nameID", title="Name ID", width=130, editable=True, cell=vanilla.PopUpButtonListCell(nameIDs.sortedKeys()), binding="selectedValue"),
+            dict(key="platformID", title="Platform ID", width=80, editable=True, cell=vanilla.PopUpButtonListCell(platformIDs.sortedKeys()), binding="selectedValue"),
+            dict(key="encodingID", title="Encoding ID", width=60, editable=True, cell=vanilla.PopUpButtonListCell([]), binding="selectedValue"),
+            dict(key="languageID", title="Language ID", width=60, editable=True, cell=vanilla.PopUpButtonListCell([]), binding="selectedValue"),
+            dict(key="string", title="String", width=500, editable=True),
         ],
-        itemPrototype=dict(nameID=0, platformID=0, encodingID=0, languageID=0, string=""),
-        validator=openTypeNameRecordsInputValidator
+        itemPrototype=openTypeNameRecordFromUFO(dict(nameID=0, platformID=1, encodingID=0, languageID=0, string="")),
     ),
     conversionFromUFO=openTypeNameRecordsFromUFO,
     conversionToUFO=openTypeNameRecordsToUFO,
@@ -1849,7 +2425,13 @@ def _postscriptBluesToUFO(string, maxCount):
     if not string:
         return []
     try:
-        values = [int(i) for i in string.split(" ") if i]
+        values = []
+        for i in string.split(" "):
+            if i:
+                i = float(i)
+                if i.is_integer():
+                    i = int(i)
+                values.append(i)
     except ValueError:
         values = []
     values = sorted(values)
@@ -2138,7 +2720,7 @@ def woffMetadataCreditsToUFO(value):
         direction = item.get("dir")
         if direction == "Default":
             item["dir"] = None
-        for key, value in item.items():
+        for key, value in list(item.items()):
             if value is None or value == "":
                 del item[key]
         if item:
@@ -2190,7 +2772,7 @@ def woffMetadataGenericTextToUFO(value):
         direction = item.get("dir")
         if direction == "Default":
             item["dir"] = None
-        for key, value in item.items():
+        for key, value in list(item.items()):
             if value is None or value == "":
                 del item[key]
         if item:
@@ -2948,10 +3530,11 @@ class FontInfoSection(vanilla.Group):
                     itemAttribute = "inputDictList_%s" % fontAttributeTag
                     columnDescriptions = itemOptions["columnDescriptions"]
                     itemPrototype = itemOptions["itemPrototype"]
+                    listClass = itemOptions.get("listClass")
                     validator = itemOptions.get("validator")
                     variableRowHeights = itemOptions.get("variableRowHeights", False)
                     showColumnTitles = itemOptions.get("showColumnTitles", True)
-                    itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, itemPrototype=itemPrototype, callback=self._controlEditCallback, validator=validator, variableRowHeights=variableRowHeights, showColumnTitles=showColumnTitles)
+                    itemControl = itemClass((groupTitleLeft, currentTop, groupTitleWidth, itemHeight), columnDescriptions=columnDescriptions, listClass=listClass, itemPrototype=itemPrototype, callback=self._controlEditCallback, validator=validator, variableRowHeights=variableRowHeights, showColumnTitles=showColumnTitles)
                     setattr(controlView, itemAttribute, itemControl)
                 else:
                     print(itemClass)

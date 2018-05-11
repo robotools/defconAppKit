@@ -29,7 +29,7 @@ def fontFileNameSort(fonts):
             else:
                 s += "-Untitled Style"
         sortable.append((s, font))
-    fonts = [item[-1] for item in sorted(sortable)]
+    fonts = [item[-1] for item in sorted(sortable, key=lambda x: x[:-1])]
     return fonts
 
 def _isItalic(font):
@@ -57,7 +57,7 @@ def fontWidthWeightSort(fonts):
             font
         )
         sortable.append(s)
-    fonts = [item[-1] for item in sorted(sortable)]
+    fonts = [item[-1] for item in sorted(sortable, key=lambda x: x[:-1])]
     return fonts
 
 
