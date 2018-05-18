@@ -898,43 +898,52 @@ class DefconAppKitGlyphCellNSView(NSView):
             fieldEditor.interpretKeyEvents_([event])
             # get the input string
             inputString = fieldEditor.string()
+            inputUnicode = None
+
             match = None
             matchIndex = None
             lastResort = None
             lastResortIndex = None
 
-            for index, glyphName in enumerate(self._glyphNames):
-                # if the item starts with the input string, it is considered a match
-                if glyphName.startswith(inputString):
-                    if match is None:
-                        match = glyphName
-                        matchIndex = index
-                        continue
-                    # only if the item is less than the previous match is it a more relevant match
+            if len(inputString) == 1:
+                inputUnicode = ord(inputString)
+                glyphName = self._font.unicodeData.glyphNameForUnicode(inputUnicode)
+                if glyphName and glyphName in self._glyphNames:
+                    matchIndex = self._glyphNames.index(glyphName)
+
+            if matchIndex is None:
+                for index, glyphName in enumerate(self._glyphNames):
+                    # if the item starts with the input string, it is considered a match
+                    if glyphName.startswith(inputString):
+                        if match is None:
+                            match = glyphName
+                            matchIndex = index
+                            continue
+                        # only if the item is less than the previous match is it a more relevant match
+                        # example:
+                        # given this order: sys, signal
+                        # and this input string: s
+                        # sys will be the first match, but signal is the more accurate match
+                        if glyphName < match:
+                            match = glyphName
+                            matchIndex = index
+                            continue
+                    # if the item is greater than the input string,it can be used as a last resort
                     # example:
-                    # given this order: sys, signal
-                    # and this input string: s
-                    # sys will be the first match, but signal is the more accurate match
-                    if glyphName < match:
-                        match = glyphName
-                        matchIndex = index
-                        continue
-                # if the item is greater than the input string,it can be used as a last resort
-                # example:
-                # given this order: vanilla, zipimport
-                # and this input string: x
-                # zipimport will be used as the last resort
-                if glyphName > inputString:
-                    if lastResort is None:
-                        lastResort = glyphName
-                        lastResortIndex = index
-                        continue
-                    # if existing the last resort is greater than the item
-                    # the item is a closer match to the input string
-                    if lastResort > glyphName:
-                        lastResort = glyphName
-                        lastResortIndex = index
-                        continue
+                    # given this order: vanilla, zipimport
+                    # and this input string: x
+                    # zipimport will be used as the last resort
+                    if glyphName > inputString:
+                        if lastResort is None:
+                            lastResort = glyphName
+                            lastResortIndex = index
+                            continue
+                        # if existing the last resort is greater than the item
+                        # the item is a closer match to the input string
+                        if lastResort > glyphName:
+                            lastResort = glyphName
+                            lastResortIndex = index
+                            continue
 
             if matchIndex is not None:
                 newSelection = matchIndex
@@ -1311,7 +1320,7 @@ class DefconAppKitGlyphInformationNSView(NSView):
         bounds = NSInsetRect(bounds, inset, inset)
         vWidth, vHeight = bounds.size
         glyph = self._glyph
-        font = glyph.getParent()
+        font = glyph.font
         if font is None:
             upm = 1000
             descender = -250
