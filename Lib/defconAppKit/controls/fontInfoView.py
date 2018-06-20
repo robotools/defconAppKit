@@ -94,6 +94,14 @@ class InfoList(vanilla.List):
         self.getNSTableView().setIsWrappedList_(value)
 
 
+class InfoCheckbox(vanilla.CheckBox):
+
+    def get(self):
+        # be sure to return a bool
+        value = super(InfoCheckbox, self).get()        
+        return bool(value)
+
+
 # -----------------------------------
 # Formatters
 # These will be used in the controls.
@@ -119,7 +127,8 @@ class NumberEditText(InfoEditText):
 
     def _numberToString(self, value):
         if self._allowFloat:
-            return self._floatFormat % value
+            if not float(value).is_integer():
+                return self._floatFormat % value
         return str(value)
 
     def _stringToNumber(self, string):
@@ -833,8 +842,8 @@ class EmbeddingControl(vanilla.Group):
         super(EmbeddingControl, self).__init__(posSize)
         self._callback = callback
         self.basicsPopUp = vanilla.PopUpButton((0, 0, -0, 20), embeddingPopUpOptions, callback=self._controlCallback)
-        self.subsettingCheckBox = vanilla.CheckBox((0, 30, -0, 20), "Allow Subsetting", callback=self._controlCallback)
-        self.bitmapCheckBox = vanilla.CheckBox((0, 55, -10, 20), "Allow Only Bitmap Embedding", callback=self._controlCallback)
+        self.subsettingCheckBox = InfoCheckbox((0, 30, -0, 20), "Allow Subsetting", callback=self._controlCallback)
+        self.bitmapCheckBox = InfoCheckbox((0, 55, -10, 20), "Allow Only Bitmap Embedding", callback=self._controlCallback)
         self.subsettingCheckBox.enable(False)
         self.bitmapCheckBox.enable(False)
 
@@ -2528,7 +2537,7 @@ postscriptBlueScaleItem = inputItemDict(
 )
 postscriptForceBoldItem = inputItemDict(
     title="ForceBold",
-    controlClass=vanilla.CheckBox
+    controlClass=InfoCheckbox
 )
 
 # Postscript Dimensions
@@ -2552,7 +2561,7 @@ postscriptUnderlinePositionItem = inputItemDict(
 )
 postscriptIsFixedPitchItem = inputItemDict(
     title="isFixedPitched",
-    controlClass=vanilla.CheckBox
+    controlClass=InfoCheckbox
 )
 postscriptDefaultWidthXItem = inputItemDict(
     title="DefaultWidthX",
@@ -2857,6 +2866,7 @@ macintoshFONDNameItem = inputItemDict(
 )
 macintoshFONDFamilyIDItem = inputItemDict(
     title="Family ID Number",
+    controlClass=NumberEditText,
     controlOptions=dict(style="idNumber", allowFloat=False, allowNegative=False)
 )
 
@@ -3391,6 +3401,7 @@ class FontInfoSection(vanilla.Group):
             CheckList: itemInputStringWidth,
             vanilla.DatePicker: itemInputStringWidth,
             vanilla.CheckBox: 22,
+            InfoCheckbox: 22,
             PanoseControl: controlViewWidth,
             EmbeddingControl: itemInputStringWidth,
             DictList: controlViewWidth,
@@ -3475,7 +3486,7 @@ class FontInfoSection(vanilla.Group):
                     itemControl = itemClass((itemInputLeft, currentTop - 2, itemWidth, itemHeight), radioOptions, callback=self._controlEditCallback)
                     setattr(controlView, itemAttribute, itemControl)
                 # CheckBox
-                elif itemClass == vanilla.CheckBox:
+                elif itemClass in (vanilla.CheckBox, InfoCheckbox):
                     itemHeight = 22
                     currentTop -= itemHeight
                     itemAttribute = "inputCheckBox_%s" % fontAttributeTag
@@ -3660,9 +3671,13 @@ class FontInfoSection(vanilla.Group):
         # get the value
         value = sender.get()
         # convert
-        if isinstance(value, NSArray):
+        if isinstance(value, bool):
+            # pass a bool
+            # seems like in py3 isinstance(True, int) is also True...
+            pass
+        elif isinstance(value, NSArray):
             value = list(value)
-        elif isinstance(value, long):
+        elif isinstance(value, long):        
             value = int(value)
         if conversionFunction is not None:
             value = conversionFunction(value)
