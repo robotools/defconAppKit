@@ -524,7 +524,6 @@ class DefconAppKitGlyphCellNSView(NSView):
             if left + cellWidth >= width:
                 left = 0
                 top += cellHeight
-
         # lines
         path = NSBezierPath.bezierPath()
         for i in range(1, int(self._rowCount) + 1):
