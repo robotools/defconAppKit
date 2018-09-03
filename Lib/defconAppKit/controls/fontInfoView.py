@@ -98,7 +98,7 @@ class InfoCheckbox(vanilla.CheckBox):
 
     def get(self):
         # be sure to return a bool
-        value = super(InfoCheckbox, self).get()        
+        value = super(InfoCheckbox, self).get()
         return bool(value)
 
 
@@ -1403,9 +1403,17 @@ class OpenTypeNameRecordDict(dict):
     reversed = property(_get_reversed)
 
 
+class OpenTypeNameNameIDsRecordDict(OpenTypeNameRecordDict):
+
+    def __getitem__(self, key):
+        if key not in self:
+            dict.__setitem__(self, key, "[%s]" % key)
+        return dict.__getitem__(self, key)
+
+
 # name recored data taken from https://www.microsoft.com/typography/otspec/name.htm
 
-nameIDs = OpenTypeNameRecordDict({
+nameIDs = OpenTypeNameNameIDsRecordDict({
     0 : '[0] Copyright Notice',
     1 : '[1] Font Family Name',
     2 : '[2] Font Subfamily name',
@@ -3677,7 +3685,7 @@ class FontInfoSection(vanilla.Group):
             pass
         elif isinstance(value, NSArray):
             value = list(value)
-        elif isinstance(value, long):        
+        elif isinstance(value, long):
             value = int(value)
         if conversionFunction is not None:
             value = conversionFunction(value)
