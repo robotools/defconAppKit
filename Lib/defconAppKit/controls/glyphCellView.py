@@ -448,7 +448,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         if width == 0 or height == 0:
             return
         if self._glyphNames:
-            columnCount = int(width / self._cellWidth)
+            columnCount = int(floor(width / self._cellWidth))
             if columnCount == 0:
                 columnCount = 1
             rowCount = len(self._glyphNames) / float(columnCount)
@@ -465,6 +465,8 @@ class DefconAppKitGlyphCellNSView(NSView):
             newWidth = width
         if height > newHeight:
             newHeight = height
+        self._clickRectsToIndex = {}
+        self._indexToClickRects = {}
         self.setFrame_(((0, 0), (newWidth, newHeight)))
         self._columnCount = columnCount
         self._rowCount = rowCount
@@ -474,7 +476,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         if self._font is None:
             return
         backgroundColor.set()
-        NSRectFill(self.frame())
+        NSRectFill(rect)
 
         cellWidth = self._cellWidth
         cellHeight = self._cellHeight
@@ -485,12 +487,8 @@ class DefconAppKitGlyphCellNSView(NSView):
         representationArguments["width"] = cellWidth
         representationArguments["height"] = cellHeight
 
-        self._clickRectsToIndex = {}
-        self._indexToClickRects = {}
-
-        visibleRect = self.visibleRect()
-        visibleStart = int(floor(visibleRect.origin.y / cellHeight))
-        visibleRows = int(ceil(visibleRect.size.height / cellHeight)) + 1
+        visibleStart = int(floor(rect.origin.y / cellHeight))
+        visibleRows = int(ceil(rect.size.height / cellHeight)) + 1
 
         startIndex = visibleStart * self._columnCount
         endIndex = startIndex + visibleRows * self._columnCount
@@ -502,11 +500,12 @@ class DefconAppKitGlyphCellNSView(NSView):
         index = startIndex
         for glyphName in self._glyphNames[startIndex:endIndex]:
             t = top - cellHeight
-            rect = ((left, t), (cellWidth, cellHeight))
+            cellRect = ((left, t), (cellWidth, cellHeight))
 
-            if NSIntersectsRect(visibleRect, rect):
-                self._clickRectsToIndex[rect] = index
-                self._indexToClickRects[index] = rect
+            self._clickRectsToIndex[cellRect] = index
+            self._indexToClickRects[index] = cellRect
+
+            if NSIntersectsRect(rect, cellRect):
                 glyph = self.getGlyph_(glyphName)
                 if glyph is not None:
                     self.subscribeGlyph(glyph)
@@ -521,19 +520,40 @@ class DefconAppKitGlyphCellNSView(NSView):
 
             index += 1
             left += cellWidth
-            if left + cellWidth >= width:
+            if left + cellWidth > width:
                 left = 0
                 top += cellHeight
+
         # lines
         path = NSBezierPath.bezierPath()
-        for i in range(1, int(self._rowCount) + 1):
+
+        startRow = floor(rect.origin.y / cellHeight)
+        endRow = ceil((rect.origin.y + rect.size.height) / cellHeight)
+        startColumn = floor(rect.origin.x / cellWidth)
+        endColumn = ceil((rect.origin.x + rect.size.width) / cellWidth)
+
+        for i in range(startRow, endRow + 1):
             top = (i * cellHeight) - .5
-            path.moveToPoint_((0, top))
-            path.lineToPoint_((width, top))
-        for i in range(1, int(self._columnCount) + 1):
+            path.moveToPoint_((startColumn * cellWidth, top))
+            path.lineToPoint_((endColumn * cellWidth, top))
+
+        for i in range(startColumn, endColumn + 1):
             left = (i * cellWidth) - .5
-            path.moveToPoint_((left, 0))
-            path.lineToPoint_((left, height))
+            path.moveToPoint_((left, startRow * cellHeight))
+            path.lineToPoint_((left, endRow * cellHeight))
+
+
+
+        # startRow = math.floor(r.origin.y / cellHeight)
+        # endRow = math.ceil((r.origin.y + r.size.height) / cellHeight)
+        # for i in range(startRow, endRow + 1):
+        #     top = (i * cellHeight) - .5
+        #     path.moveToPoint_((0, top))
+        #     path.lineToPoint_((width, top))
+        # for i in range(1, int(self._columnCount) + 1):
+        #     left = (i * cellWidth) - .5
+        #     path.moveToPoint_((left, 0))
+        #     path.lineToPoint_((left, height))
         gridColor.set()
         path.setLineWidth_(1.0)
         path.stroke()
@@ -542,9 +562,9 @@ class DefconAppKitGlyphCellNSView(NSView):
         if self._dropTargetBetween is not None or self._dropTargetOn is not None or self._dropTargetSelf:
             # drop on a cell
             if self._dropTargetOn:
-                rect = self._indexToClickRects[self._dropTargetOn]
-                rect = NSInsetRect(rect, 1, 1)
-                path = NSBezierPath.bezierPathWithRect_(rect)
+                cellRect = self._indexToClickRects[self._dropTargetOn]
+                cellRect = NSInsetRect(cellRect, 1, 1)
+                path = NSBezierPath.bezierPathWithRect_(cellRect)
                 path.setLineWidth_(2)
                 insertionLocationColor.set()
                 path.stroke()
@@ -579,8 +599,8 @@ class DefconAppKitGlyphCellNSView(NSView):
                     path.fill()
             # drop on view
             else:
-                rect = self.visibleRect()
-                path = NSBezierPath.bezierPathWithRect_(rect)
+                visibleRect = self.visibleRect()
+                path = NSBezierPath.bezierPathWithRect_(visibleRect)
                 path.setLineWidth_(6)
                 insertionLocationColor.set()
                 insertionLocationShadow.set()
