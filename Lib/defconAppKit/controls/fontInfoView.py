@@ -31,7 +31,8 @@ class DefconAppKitTextField(NSTextField):
         result = super(DefconAppKitTextField, self).becomeFirstResponder()
         if result:
             view = self.superview()
-            view.scrollControlToVisible_(self)
+            if hasattr(view, "scrollControlToVisible_"):
+                view.scrollControlToVisible_(self)
         return result
 
 
@@ -49,7 +50,8 @@ class DefconAppKitTextView(NSTextView):
         if result:
             scrollView = self.enclosingScrollView()
             view = scrollView.superview()
-            view.scrollControlToVisible_(scrollView)
+            if hasattr(view, "scrollControlToVisible_"):
+                view.scrollControlToVisible_(scrollView)
         return result
 
 
@@ -82,7 +84,8 @@ class DefconAppKitTableView(VanillaTableViewSubclass):
                 if hasattr(view, "scrollControlToVisible_"):
                     break
             if view is not None:
-                view.scrollControlToVisible_(parentView)
+                if hasattr(view, "scrollControlToVisible_"):
+                    view.scrollControlToVisible_(parentView)
         return result
 
 
