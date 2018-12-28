@@ -10,7 +10,7 @@ from Foundation import NSArray
 from AppKit import NSOnOffButton, NSRoundRectBezelStyle, NSDate, NSColor, NSFontNameAttribute, \
     NSFormatter, NSTextField, NSTextView, NSTextFieldCell, NSView, NSNoTabsNoBorder, NSButton, NSObject, \
     NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle, \
-    NSMutableIndexSet
+    NSMutableIndexSet, NSSegmentedCell, NSRectFill
 import vanilla
 from vanilla.py23 import python_method
 from vanilla import dialogs
@@ -3249,9 +3249,9 @@ def setAttributeValue(info, attr, value):
 
 # Toolbar
 
-toolbarColor1 = NSColor.colorWithCalibratedWhite_alpha_(.4, .6)
-toolbarColor2 = NSColor.colorWithCalibratedWhite_alpha_(.4, .2)
-toolbarColor3 = NSColor.colorWithCalibratedWhite_alpha_(.65, 1)
+toolbarColor1 = NSColor.underPageBackgroundColor()
+toolbarColor2 = NSColor.windowBackgroundColor()
+toolbarColor3 = NSColor.tertiaryLabelColor()
 toolbarColorFallback = NSColor.colorWithCalibratedWhite_alpha_(0, .25)
 
 
@@ -3290,6 +3290,21 @@ class FontInfoToolbarButton(vanilla.Button):
         "small": (0, 0, 0, 0),
         "regular": (0, 0, 0, 0),
     }
+
+
+class DefconAppKitFontInfoSegmentedCell(NSSegmentedCell):
+
+    def drawWithFrame_inView_(self, frame, view):
+        NSColor.windowBackgroundColor().set()
+        backgroundRect = NSInsetRect(frame, 3, 5)
+        backgroundRectFillPath = roundedRectBezierPath(backgroundRect, 5)
+        backgroundRectFillPath.fill()
+        super(DefconAppKitFontInfoSegmentedCell, self).drawWithFrame_inView_(frame, view)
+
+
+class FontInfoSegmentedButton(vanilla.SegmentedButton):
+
+    nsSegmentedCellClass = DefconAppKitFontInfoSegmentedCell
 
 
 # Group View
@@ -3344,7 +3359,7 @@ class FontInfoCategoryControlsGroup(vanilla.Group):
     nsViewClass = DefconAppKitFontInfoCategoryControlsGroup
 
 
-backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.93, 1)
+backgroundColor = NSColor.windowBackgroundColor()
 
 
 class FontInfoSection(vanilla.Group):
@@ -3751,7 +3766,7 @@ class FontInfoView(vanilla.Tabs):
         buttonWidth = 85 * len(self._allControlOrganization)
         buttonLeft = (width - buttonWidth) / 2
         segments = [dict(title=sectionName) for sectionName in sectionNames]
-        self._segmentedButton = vanilla.SegmentedButton((buttonLeft, -26, buttonWidth, 24), segments, callback=self._tabSelectionCallback, sizeStyle="regular")
+        self._segmentedButton = FontInfoSegmentedButton((buttonLeft, -26, buttonWidth, 24), segments, callback=self._tabSelectionCallback, sizeStyle="regular")
         self._segmentedButton.set(0)
         # sections
         for index, sectionData in enumerate(self._allControlOrganization):
