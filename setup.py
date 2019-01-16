@@ -32,7 +32,7 @@ setup(name="defconAppKit",
     description="A set of interface objects for working with font data.",
     author="Tal Leming",
     author_email="tal@typesupply.com",
-    url="https://github.com/typesupply/defconAppKit",
+    url="https://github.com/robotools/defconAppKit",
     license="MIT",
     packages=[
         "defconAppKit",
