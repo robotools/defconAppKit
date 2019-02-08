@@ -415,7 +415,7 @@ class GlyphView(PlacardScrollView):
                 if len(layerSet.layerOrder) > 1:
                     items.append(NSMenuItem.separatorItem())
                     # prep the state dictionary
-                    for layerName in self._placardLayerOptions.keys():
+                    for layerName in list(self._placardLayerOptions.keys()):
                         if layerName not in layerSet:
                             del self._placardLayerOptions[layerName]
                     for layerName in layerSet.layerOrder:
