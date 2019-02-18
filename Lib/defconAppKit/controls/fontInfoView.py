@@ -2715,7 +2715,6 @@ woffMetadataVendorClassItem = inputItemDict(
     hasDefault=False
 )
 
-
 # WOFF Credits
 
 def woffMetadataCreditsFromUFO(value):
@@ -3207,6 +3206,13 @@ controlOrganization = [
 ]
 
 
+controlRequiredPrototypes = {
+    "woffMetadataDescription": {"text": [{'text': 'Text'}]},
+    "woffMetadataVendor": {"name": ""},
+    "woffMetadataLicensee": {"name": ""},
+}
+
+
 # Attribute Getting and Setting
 
 def getAttributeValue(info, attr):
@@ -3236,7 +3242,7 @@ def setAttributeValue(info, attr, value):
     keys = keys[1:]
     d = getattr(info, attr)
     if d is None:
-        d = {}
+        d = deepcopy(controlRequiredPrototypes.get(attr, {}))
     for key in keys[:-1]:
         if key not in d:
             d[key] = {}
