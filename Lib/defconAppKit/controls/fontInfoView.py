@@ -139,7 +139,7 @@ class NumberEditText(InfoEditText):
         newString = string
         try:
             value = self._numberClass(string)
-            if self._allowFloat and float(value).is_integer():
+            if self._allowFloat and value.is_integer():
                 value = int(value)
             if value < 0 and not self._allowNegative:
                 newString = self._previousString
