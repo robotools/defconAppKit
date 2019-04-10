@@ -132,13 +132,15 @@ class NumberEditText(InfoEditText):
         if self._allowFloat:
             if not float(value).is_integer():
                 return self._floatFormat % value
-        return str(value)
+        return "%i" % value
 
     def _stringToNumber(self, string):
         value = None
         newString = string
         try:
             value = self._numberClass(string)
+            if self._allowFloat and value.is_integer():
+                value = int(value)
             if value < 0 and not self._allowNegative:
                 newString = self._previousString
                 value, n = self._stringToNumber(newString)
@@ -185,10 +187,7 @@ class NumberEditText(InfoEditText):
         if value == "":
             value = None
         if isinstance(value, basestring):
-            if self._allowFloat:
-                value = float(value)
-            else:
-                value = int(value)
+            value = self._numberClass(value)
         if value is not None:
             value = self._numberToString(value)
         super(NumberEditText, self).set(value)
