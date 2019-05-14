@@ -16,13 +16,16 @@ HUDWindowColor = NSColor.colorWithCalibratedWhite_alpha_(0, .65)
 
 class DefconAppKitInformationPopUpWindowContentView(NSView):
 
+    windowColor = HUDWindowColor
+    windowLineColor = HUDWindowLineColor
+
     def drawRect_(self, rect):
         rect = self.bounds()
         rect = NSInsetRect(rect, .5, .5)
         path = roundedRectBezierPath(rect, 7)
-        HUDWindowColor.set()
+        self.windowColor.set()
         path.fill()
-        HUDWindowLineColor.set()
+        self.windowLineColor.set()
         path.stroke()
 
 
@@ -164,10 +167,12 @@ class DefconAppKitInteractivePopUpNSWindow(NSPanel):
 
 class DefconAppKitInteractivePopUpWindowContentView(NSView):
 
+    windowColor = interactiveWindowColor
+
     def drawRect_(self, rect):
         rect = self.bounds()
         path = roundedRectBezierPath(rect, 5)
-        interactiveWindowColor.set()
+        self.windowColor.set()
         path.fill()
 
 
