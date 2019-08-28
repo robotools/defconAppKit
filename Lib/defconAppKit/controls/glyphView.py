@@ -1,6 +1,6 @@
 from AppKit import NSView, NSMenuItem, NSAffineTransform, NSRectFill, NSColor
 import vanilla
-from vanilla.py23 import python_method
+from objc import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton
 from defconAppKit.tools import drawing
 

@@ -1,6 +1,3 @@
-from fontTools.misc.py23 import *
-
-
 def characterToGlyphName(c, cmap):
     try:
         c = unicode(c)

@@ -1,9 +1,3 @@
-from fontTools.misc.py23 import *
-try:
-    long
-except:
-    # py3 has no long
-    long = int
 import time
 from copy import deepcopy
 from Foundation import NSArray
@@ -12,7 +6,7 @@ from AppKit import NSOnOffButton, NSRoundRectBezelStyle, NSDate, NSColor, NSFont
     NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle, \
     NSMutableIndexSet, NSSegmentedCell, NSRectFill
 import vanilla
-from vanilla.py23 import python_method
+from objc import python_method
 from vanilla import dialogs
 from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
@@ -1236,9 +1230,7 @@ def openTypeGaspRangeRecordsToUFO(value):
         sorter[ppem] = item
     records = []
     for ppem, item in sorted(sorter.items()):
-        if isinstance(ppem, long):
-            ppem = int(ppem)
-        elif isinstance(ppem, NSDecimalNumber):
+        if isinstance(ppem, NSDecimalNumber):
             ppem = int(ppem.intValue())
         behavior = []
         if item["gridfit"]:
@@ -1259,9 +1251,7 @@ def openTypeGaspRangeRecordsInputValidator(records):
     ppems = []
     for record in records:
         ppem = record["ppem"]
-        if isinstance(ppem, long):
-            ppem = int(ppem)
-        elif isinstance(ppem, NSDecimalNumber):
+        if isinstance(ppem, NSDecimalNumber):
             ppem = int(ppem.intValue())
         if ppem in ppems:
             return False, "A duplicate PPEM %d record has been created." % ppem, "Duplicate PPEM records aren't allowed. Only the final PPEM %d record will be stored in the font." % ppem
@@ -3708,8 +3698,6 @@ class FontInfoSection(vanilla.Group):
             pass
         elif isinstance(value, NSArray):
             value = list(value)
-        elif isinstance(value, long):
-            value = int(value)
         if conversionFunction is not None:
             value = conversionFunction(value)
         # set

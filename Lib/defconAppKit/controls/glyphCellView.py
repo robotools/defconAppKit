@@ -11,9 +11,8 @@ from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, 
     NSCompositeSourceOver, NSCompositePlusDarker, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
 
 from math import ceil, floor
-from fontTools.misc.py23 import unichr
 import vanilla
-from vanilla.py23 import python_method
+from objc import python_method
 from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox, HUDHorizontalLine
 
@@ -864,7 +863,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             NSBackspaceCharacter,
             NSDeleteFunctionKey,
             NSDeleteCharacter,
-            unichr(0x007F),
+            chr(0x007F),
         ]
         arrowCharacters = [
             NSUpArrowFunctionKey,
@@ -877,7 +876,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         nonCharacters = [
             NSPageUpFunctionKey,
             NSPageDownFunctionKey,
-            unichr(0x0003),
+            chr(0x0003),
             u"\033",  # esc
             u"\r",
             u"\t",

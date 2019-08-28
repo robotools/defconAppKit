@@ -2,7 +2,7 @@ import math
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.cocoaPen import CocoaPen
-from ufoLib.pointPen import AbstractPointPen
+from fontTools.ufoLib.pointPen import AbstractPointPen
 from AppKit import NSImage, NSGraphicsContext, NSData, NSCompositeSourceOver
 from Quartz import CIColor, CIImage, CIFilter
 

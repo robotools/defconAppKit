@@ -5,7 +5,7 @@ from AppKit import NSTextView, NSColor, NSFont, NSMiniControlSize, NSOnState, NS
     NSNumberFormatter, NSNumber, NSFocusRingTypeNone, NSUnionRect
 import vanilla
 from vanilla.vanillaTextEditor import VanillaTextEditorDelegate
-from vanilla.py23 import python_method
+from objc import python_method
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton
 from defconAppKit.windows.popUpWindow import InteractivePopUpWindow
 from defconAppKit.tools.featureTextTools import breakFeatureTextIntoRuns, findBlockOpenLineStarts

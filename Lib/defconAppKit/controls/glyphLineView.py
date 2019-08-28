@@ -2,7 +2,7 @@ import weakref
 from AppKit import NSView, NSGraphicsContext, NSColor, NSAffineTransform, NSMenu, NSPoint, NSRectFill, \
     NSRectFillUsingOperation, NSPointInRect, NSCompositeSourceOver, NSMenuItem
 import vanilla
-from vanilla.py23 import python_method
+from objc import python_method
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton, DefconAppKitPlacardNSScrollView
 from defconAppKit.tools import drawing
 
