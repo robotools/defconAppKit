@@ -180,7 +180,7 @@ class NumberEditText(InfoEditText):
             self._previousString = value
         if value == "":
             value = None
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             value = self._numberClass(value)
         if value is not None:
             value = self._numberToString(value)
@@ -198,7 +198,7 @@ class NumberSequenceFormatter(NSFormatter):
     def stringForObjectValue_(self, obj):
         if obj is None or isinstance(obj, NSNull):
             return ""
-        if isinstance(obj, basestring):
+        if isinstance(obj, str):
             return obj
         else:
             return " ".join([str(i) for i in obj])
@@ -3737,7 +3737,7 @@ class FontInfoSection(vanilla.Group):
                 value = getAttrWithFallback(self._font.info, attribute)
                 if value is None:
                     value = ""
-                if not isinstance(value, basestring):
+                if not isinstance(value, str):
                     value = str(value)
                 control.setPlaceholder(value)
 
