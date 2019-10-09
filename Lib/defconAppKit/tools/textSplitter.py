@@ -1,13 +1,9 @@
 def characterToGlyphName(c, cmap):
-    try:
-        c = unicode(c)
-        v = ord(c)
-        v = cmap.get(v)
-        if isinstance(v, list):
-            v = v[0]
-        return v
-    except UnicodeDecodeError:
-        return None
+    v = ord(c)
+    v = cmap.get(v)
+    if isinstance(v, list):
+        v = v[0]
+    return v
 
 
 def splitText(text, cmap, fallback=".notdef"):
