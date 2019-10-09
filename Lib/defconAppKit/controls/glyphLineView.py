@@ -44,11 +44,22 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._upm = 1000
         self._descender = -250
         self._bufferLeft = self._bufferRight = self._bufferBottom = self._bufferTop = 15
+        
+        self._cutoffDisplayPointSizes = dict(
+            showFontVerticalMetrics=150,
+            showGlyphStartPoints=175,
+            showGlyphOnCurvePoints=175,
+            showGlyphOffCurvePoints=175,
+            showGlyphPointCoordinates=250,
+            showGlyphAnchors=50
+        )
 
         self._fitToFrame = None
 
         self._backgroundColor = NSColor.whiteColor()
         self._glyphColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 0, 0, 1)
+        self._strokeColor = None
+        self._pointColor = None
         self._alternateHighlightColor = defaultAlternateHighlightColor
         self._notdefBackgroundColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 0, 0, .25)
         return self
@@ -93,6 +104,14 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._glyphColor = color
         self.setNeedsDisplay_(True)
 
+    def setStrokeColor_(self, color):
+        self._strokeColor = color
+        self.setNeedsDisplay_(True)
+
+    def setPointColor_(self, color):
+        self._pointColor = color
+        self.setNeedsDisplay_(True)
+
     def setBackgroundColor_(self, color):
         self._backgroundColor = color
         self.setNeedsDisplay_(True)
@@ -133,7 +152,14 @@ class DefconAppKitGlyphLineNSView(NSView):
             return self._fallbackDrawingAttributes.get(attr)
         d = self._layerDrawingAttributes.get(layerName, {})
         return d.get(attr)
-
+    
+    def setCutoffDisplayPointSizeAttribute_value_(self, attr, value):
+        self._cutoffDisplayPointSizes[attr] = value
+        self.setNeedsDisplay_(True)
+    
+    def getCutoffDisplayPointSizeAttribute_(self, attr):
+        return self._cutoffDisplayPointSizes.get(attr, None)
+        
     # ----------------
     # Frame Management
     # ----------------
@@ -319,7 +345,7 @@ class DefconAppKitGlyphLineNSView(NSView):
 
     @python_method
     def drawVerticalMetrics(self, glyph, layerName, rect):
-        drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > 150
+        drawText = self.getDrawingAttribute_layerName_("showFontVerticalMetricsTitles", layerName) and self._impliedPointSize > self._cutoffDisplayPointSizes["showFontVerticalMetrics"]
         drawing.drawFontVerticalMetrics(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
 
     @python_method
@@ -333,22 +359,29 @@ class DefconAppKitGlyphLineNSView(NSView):
         fillColor = None
         if not self._showLayers:
             fillColor = self._glyphColor
-        drawing.drawGlyphFillAndStroke(glyph, self._inverseScale, rect, drawFill=showFill, drawStroke=showStroke, contourFillColor=fillColor, componentFillColor=fillColor, backgroundColor=self._backgroundColor)
+            strokeColor = self._strokeColor
+        drawing.drawGlyphFillAndStroke(glyph, self._inverseScale, rect, drawFill=showFill, drawStroke=showStroke, contourFillColor=fillColor, contourStrokeColor=strokeColor, componentFillColor=fillColor, backgroundColor=self._backgroundColor)
 
     @python_method
     def drawPoints(self, glyph, layerName, rect):
-        drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", layerName) and self._impliedPointSize > 175
-        drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) and self._impliedPointSize > 175
-        drawOffCurves = self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName) and self._impliedPointSize > 175
-        drawCoordinates = self.getDrawingAttribute_layerName_("showGlyphPointCoordinates", layerName) and self._impliedPointSize > 250
+        drawStartPoint = self.getDrawingAttribute_layerName_("showGlyphStartPoints", layerName) and self._impliedPointSize > self._cutoffDisplayPointSizes["showGlyphStartPoints"]
+        drawOnCurves = self.getDrawingAttribute_layerName_("showGlyphOnCurvePoints", layerName) and self._impliedPointSize > self._cutoffDisplayPointSizes["showGlyphOnCurvePoints"]
+        drawOffCurves = self.getDrawingAttribute_layerName_("showGlyphOffCurvePoints", layerName) and self._impliedPointSize > self._cutoffDisplayPointSizes["showGlyphOffCurvePoints"]
+        drawCoordinates = self.getDrawingAttribute_layerName_("showGlyphPointCoordinates", layerName) and self._impliedPointSize > self._cutoffDisplayPointSizes["showGlyphPointCoordinates"]
+        pointColor = None
+        if not self._showLayers:
+            pointColor = self._pointColor
         drawing.drawGlyphPoints(glyph, self._inverseScale, rect,
             drawStartPoint=drawStartPoint, drawOnCurves=drawOnCurves, drawOffCurves=drawOffCurves, drawCoordinates=drawCoordinates,
-            backgroundColor=self._backgroundColor, flipped=True)
+            color=pointColor, backgroundColor=self._backgroundColor, flipped=True)
 
     @python_method
     def drawAnchors(self, glyph, layerName, rect):
-        drawText = self._impliedPointSize > 50
-        drawing.drawGlyphAnchors(glyph, self._inverseScale, rect, drawText=drawText, backgroundColor=self._backgroundColor, flipped=True)
+        drawText = self._impliedPointSize > self._cutoffDisplayPointSizes["showGlyphAnchors"]
+        color = None
+        if not self._showLayers:
+            color = self._glyphColor
+        drawing.drawGlyphAnchors(glyph, self._inverseScale, rect, drawText=drawText, color=color, backgroundColor=self._backgroundColor, flipped=True)
 
     @python_method
     def drawGlyphForeground(self, glyph, rect, alternate=False):

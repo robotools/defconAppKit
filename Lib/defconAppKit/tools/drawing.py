@@ -365,14 +365,16 @@ def drawGlyphFillAndStroke(glyph, scale, rect,
 # points
 
 def drawGlyphPoints(glyph, scale, rect, drawStartPoint=True, drawOnCurves=True, drawOffCurves=True, drawCoordinates=True, color=None, backgroundColor=None, flipped=False):
+    # get the layer color
     layer = glyph.layer
-    if layer is not None:
-        if layer.color is not None:
-            color = colorToNSColor(layer.color)
-    if color is None:
+    layerColor = None
+    if layer is not None and layer.color is not None:
+        layerColor = colorToNSColor(layer.color)
+    # work out the colors
+    if color is None and layerColor is not None:
+        color = layerColor
+    elif color is None and layerColor is None:
         color = getDefaultColor("glyphPoints")
-    if backgroundColor is None:
-        backgroundColor = getDefaultColor("background")
     # get the outline data
     outlineData = glyph.getRepresentation("defconAppKit.OutlineInformation")
     points = []
