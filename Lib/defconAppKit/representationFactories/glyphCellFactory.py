@@ -6,13 +6,6 @@ from defconAppKit.tools.drawing import colorToNSColor
 GlyphCellHeaderHeight = 14
 GlyphCellMinHeightForHeader = 40
 
-cellBackgroundColor = NSColor.whiteColor()
-cellHeaderBaseColor = NSColor.colorWithCalibratedWhite_alpha_(0.968, 1.0)
-cellHeaderHighlightColor = NSColor.colorWithCalibratedWhite_alpha_(0.98, 1.0)
-cellHeaderLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .2)
-cellMetricsLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
-cellMetricsFillColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
-
 
 def GlyphCellFactory(glyph, width, height, drawHeader=False, drawMetrics=False):
     obj = GlyphCellFactoryDrawingController(glyph=glyph, font=glyph.font, width=width, height=height, drawHeader=drawHeader, drawMetrics=drawMetrics)
@@ -43,6 +36,13 @@ class GlyphCellFactoryDrawingController(object):
     the appearance of cells.
     """
 
+    cellBackgroundColor = NSColor.whiteColor()
+    cellHeaderBaseColor = NSColor.colorWithCalibratedWhite_alpha_(0.968, 1.0)
+    cellHeaderHighlightColor = NSColor.colorWithCalibratedWhite_alpha_(0.98, 1.0)
+    cellHeaderLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .2)
+    cellMetricsLineColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
+    cellMetricsFillColor = NSColor.colorWithCalibratedWhite_alpha_(0, .08)
+
     def __init__(self, glyph, font, width, height, drawHeader=False, drawMetrics=False):
         self.glyph = glyph
         self.font = font
@@ -69,7 +69,7 @@ class GlyphCellFactoryDrawingController(object):
         bodyRect = ((0, 0), (self.width, self.height - self.headerHeight))
         headerRect = ((0, -self.height + self.headerHeight), (self.width, self.headerHeight))
         # draw a background color
-        cellBackgroundColor.set()
+        self.cellBackgroundColor.set()
         NSRectFill(((0, 0), (self.width, self.height)))
         # background
         context.saveGraphicsState()
@@ -124,7 +124,7 @@ class GlyphCellFactoryDrawingController(object):
             y = round((y * scale) + yMin + yOffset) - .5
             path.moveToPoint_((xMin, y))
             path.lineToPoint_((xMin + width, y))
-        cellMetricsLineColor.set()
+        self.cellMetricsLineColor.set()
         path.setLineWidth_(1.0)
         path.stroke()
 
@@ -139,7 +139,7 @@ class GlyphCellFactoryDrawingController(object):
             ((xMin, yMin), (left - xMin, height)),
             ((xMin + right, yMin), (width - xMin + right, height))
         ]
-        cellMetricsFillColor.set()
+        self.cellMetricsFillColor.set()
         NSRectFillListUsingOperation(rects, len(rects), NSCompositeSourceOver)
 
 #    def drawCellGlyph(self):
@@ -170,13 +170,13 @@ class GlyphCellFactoryDrawingController(object):
         (xMin, yMin), (width, height) = rect
         # background
         try:
-            gradient = NSGradient.alloc().initWithColors_([cellHeaderHighlightColor, cellHeaderBaseColor])
+            gradient = NSGradient.alloc().initWithColors_([cellHeaderHighlightColor, self.cellHeaderBaseColor])
             gradient.drawInRect_angle_(rect, 90)
         except NameError:
-            cellHeaderBaseColor.set()
+            self.cellHeaderBaseColor.set()
             NSRectFill(rect)
         # bottom line
-        cellHeaderLineColor.set()
+        self.cellHeaderLineColor.set()
         bottomPath = NSBezierPath.bezierPath()
         bottomPath.moveToPoint_((xMin, yMin + height - .5))
         bottomPath.lineToPoint_((xMin + width, yMin + height - .5))
