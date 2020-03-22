@@ -81,8 +81,8 @@ class GlyphCellFactoryDrawingController(object):
         context.restoreGraphicsState()
         # glyph
         if self.shouldDrawMetrics:
-            self.drawCellHorizontalMetrics(bodyRect)
             self.drawCellVerticalMetrics(bodyRect)
+            self.drawCellHorizontalMetrics(bodyRect)
         context.saveGraphicsState()
         NSBezierPath.clipRect_(((0, 0), (self.width, self.height - self.headerHeight)))
         glyphTransform = NSAffineTransform.transform()
