@@ -1,7 +1,7 @@
 import weakref
 from AppKit import NSView, NSSegmentStyleSmallSquare, NSSmallSquareBezelStyle
 import vanilla
-from defconAppKit.controls.glyphCellView import DefconAppKitGlyphCellNSView, gridColor, GlyphInformationPopUpWindow, GlyphCellItem
+from defconAppKit.controls.glyphCellView import DefconAppKitGlyphCellNSView, GlyphInformationPopUpWindow, GlyphCellItem
 from defconAppKit.controls.fontInfoView import GradientButtonBar
 
 
@@ -221,7 +221,7 @@ class GlyphCollectionView(vanilla.Group):
         else:
             self._placard = None
         # tweak the scroll view
-        self._list.getNSScrollView().setBackgroundColor_(gridColor)
+        self._list.getNSScrollView().setBackgroundColor_(DefconAppKitGlyphCellNSView.gridColor)
         # set the mode
         self._mode = None
         self.setMode(initialMode)

@@ -17,15 +17,6 @@ from defconAppKit.tools.iconCountBadge import addCountBadgeToIcon
 from defconAppKit.windows.popUpWindow import InformationPopUpWindow, HUDTextBox, HUDHorizontalLine
 
 
-gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
-selectionColor = NSColor.selectedControlColor()
-insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
-insertionLocationShadow = NSShadow.shadow()
-insertionLocationShadow.setShadowColor_(NSColor.whiteColor())
-insertionLocationShadow.setShadowBlurRadius_(10)
-insertionLocationShadow.setShadowOffset_((0, 0))
-
-
 def _makeGlyphCellDragIcon(glyphs):
     font = None
     glyphRepresentation = None
@@ -157,6 +148,11 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     nsArrayControllerClass = vanilla.vanillaList.VanillaArrayController
 
+    gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
+    selectionColor = NSColor.selectedControlColor()
+    insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
+    insertionLocationShadowColor = NSColor.whiteColor()
+
     def initWithFont_cellRepresentationName_detailWindowClass_(self, font, cellRepresentationName, detailWindowClass):
         self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(((0, 0), (400, 400)))
         self._cellRepresentationName = cellRepresentationName
@@ -200,6 +196,11 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         self._havePreviousMouseDown = False
         self._windowIsClosed = False
+
+        self.insertionLocationShadow = NSShadow.shadow()
+        self.insertionLocationShadow.setShadowColor_(self.insertionLocationShadowColor)
+        self.insertionLocationShadow.setShadowBlurRadius_(10)
+        self.insertionLocationShadow.setShadowOffset_((0, 0))
 
         return self
 
@@ -474,7 +475,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def drawRect_(self, rect):
         if self._font is None:
             return
-        backgroundColor.set()
+        self.backgroundColor.set()
         NSRectFill(rect)
 
         cellWidth = self._cellWidth
@@ -513,7 +514,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                         (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                     )
                 if selection.containsIndex_(index):
-                    selectionColor.set()
+                    self.selectionColor.set()
                     r = ((left, t), (cellWidth, cellHeight))
                     NSRectFillUsingOperation(r, NSCompositePlusDarker)
 
@@ -553,7 +554,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         #     left = (i * cellWidth) - .5
         #     path.moveToPoint_((left, 0))
         #     path.lineToPoint_((left, height))
-        gridColor.set()
+        self.gridColor.set()
         path.setLineWidth_(1.0)
         path.stroke()
 
@@ -565,7 +566,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 cellRect = NSInsetRect(cellRect, 1, 1)
                 path = NSBezierPath.bezierPathWithRect_(cellRect)
                 path.setLineWidth_(2)
-                insertionLocationColor.set()
+                self.insertionLocationColor.set()
                 path.stroke()
             # drop between cells
             elif self._dropTargetBetween:
@@ -590,19 +591,19 @@ class DefconAppKitGlyphCellNSView(NSView):
                     path.appendBezierPathWithRect_(((x - 2, y), (3, h)))
                     path.appendBezierPathWithOvalInRect_(((x - 5, y - 5), (9, 9)))
                     path.appendBezierPathWithOvalInRect_(((x - 5, y + h - 5), (9, 9)))
-                    insertionLocationShadow.set()
+                    self.insertionLocationShadow.set()
                     path.setLineWidth_(2)
                     NSColor.whiteColor().set()
                     path.stroke()
-                    insertionLocationColor.set()
+                    self.insertionLocationColor.set()
                     path.fill()
             # drop on view
             else:
                 visibleRect = self.visibleRect()
                 path = NSBezierPath.bezierPathWithRect_(visibleRect)
                 path.setLineWidth_(6)
-                insertionLocationColor.set()
-                insertionLocationShadow.set()
+                self.insertionLocationColor.set()
+                self.insertionLocationShadow.set()
                 path.stroke()
 
     # ---------
