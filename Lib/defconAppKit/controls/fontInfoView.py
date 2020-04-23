@@ -4,7 +4,7 @@ from Foundation import NSArray
 from AppKit import NSOnOffButton, NSRoundRectBezelStyle, NSDate, NSColor, NSFontNameAttribute, \
     NSFormatter, NSTextField, NSTextView, NSTextFieldCell, NSView, NSNoTabsNoBorder, NSButton, NSObject, \
     NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle, \
-    NSMutableIndexSet, NSSegmentedCell, NSRectFill
+    NSMutableIndexSet, NSSegmentedCell, NSRectFill, NSLineBreakByTruncatingTail
 import vanilla
 from objc import python_method
 from vanilla import dialogs
@@ -33,6 +33,10 @@ class DefconAppKitTextField(NSTextField):
 class InfoEditText(vanilla.EditText):
 
     nsTextFieldClass = DefconAppKitTextField
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.getNSTextField().setLineBreakMode_(NSLineBreakByTruncatingTail)
 
 
 # TextEditor
