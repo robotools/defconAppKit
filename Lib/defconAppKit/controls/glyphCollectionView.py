@@ -9,7 +9,8 @@ class DefconAppKitGlyphCollectionView(NSView):
 
     def viewDidMoveToWindow(self):
         wrapper = self.vanillaWrapper()
-        wrapper.setPosSize(wrapper.getPosSize())
+        if wrapper is not None:
+            wrapper.setPosSize(wrapper.getPosSize())
         for subview in self.subviews():
             if hasattr(subview, "vanillaWrapper"):
                 wrapper = subview.vanillaWrapper()
