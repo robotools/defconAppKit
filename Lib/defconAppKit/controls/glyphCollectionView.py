@@ -454,10 +454,9 @@ class GlyphCollectionView(vanilla.Group):
     def _convertDropInfo(self, dropInfo):
         source = dropInfo["source"]
         indexes = [int(i) for i in dropInfo["data"]]
-        if isinstance(source, vanilla.VanillaBaseObject):
-            glyphs = [source[i] for i in indexes]
-        else:
-            glyphs = source.getGlyphsAtIndexes_(indexes)
+        glyphs = [source[i] for i in indexes]
+        if isinstance(source, vanilla.List):
+            glyphs = [item.glyph() for item in glyphs]
         dropInfo["data"] = glyphs
         return dropInfo
 
