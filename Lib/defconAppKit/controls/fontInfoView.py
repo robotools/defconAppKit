@@ -1433,9 +1433,9 @@ nameIDs = OpenTypeNameNameIDsRecordDict({
     20 : '[20] PostScript CID name',
     21 : '[21] WWS Family Name',
     22 : '[22] WWS Subfamily Name',
-    # 23 : '[23] Light Background Palette',
-    # 24 : '[24] Dark Background Palette',
-    # 25 : '[25] Variations PostScript Name Prefix'
+    23 : '[23] Light Background Palette',
+    24 : '[24] Dark Background Palette',
+    25 : '[25] Variations PostScript Name Prefix'
 })
 
 
