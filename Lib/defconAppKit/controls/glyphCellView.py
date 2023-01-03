@@ -8,7 +8,7 @@ from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, 
     NSDragOperationNone, NSString, NSBackspaceCharacter, NSDeleteFunctionKey, NSDeleteCharacter, NSKeyValueObservingOptionNew, \
     NSMutableIndexSet, NSWindowWillCloseNotification, NSDragPboard, NSRectFill, NSEvent, NSApp, NSRightArrowFunctionKey, \
     NSHomeFunctionKey, NSBeginFunctionKey, NSPageUpFunctionKey, NSPageDownFunctionKey, NSIntersectsRect, \
-    NSCompositeSourceOver, NSCompositeMultiply, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
+    NSCompositeSourceOver, NSCompositePlusDarker, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
 
 from math import ceil, floor
 import vanilla
