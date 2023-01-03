@@ -150,6 +150,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
     gridColor = backgroundColor = NSColor.colorWithCalibratedWhite_alpha_(.6, 1.0)
     selectionColor = NSColor.selectedControlColor()
+    compositingOperation = NSCompositePlusDarker
     insertionLocationColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(.16, .3, .85, 1)
     insertionLocationShadowColor = NSColor.whiteColor()
 
@@ -516,7 +517,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 if selection.containsIndex_(index):
                     r = ((left, t), (cellWidth, cellHeight))
                     self.selectionColor.set()
-                    NSRectFillUsingOperation(r, NSCompositeMultiply)
+                    NSRectFillUsingOperation(r, self.compositingOperation)
 
             index += 1
             left += cellWidth
