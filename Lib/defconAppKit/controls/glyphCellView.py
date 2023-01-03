@@ -8,7 +8,7 @@ from AppKit import NSColor, NSShadow, NSImage, NSGraphicsContext, NSBezierPath, 
     NSDragOperationNone, NSString, NSBackspaceCharacter, NSDeleteFunctionKey, NSDeleteCharacter, NSKeyValueObservingOptionNew, \
     NSMutableIndexSet, NSWindowWillCloseNotification, NSDragPboard, NSRectFill, NSEvent, NSApp, NSRightArrowFunctionKey, \
     NSHomeFunctionKey, NSBeginFunctionKey, NSPageUpFunctionKey, NSPageDownFunctionKey, NSIntersectsRect, \
-    NSCompositeSourceOver, NSCompositePlusDarker, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
+    NSCompositeSourceOver, NSCompositeMultiply, NSRectFillUsingOperation, NSAlternateKeyMask, NSEndFunctionKey
 
 from math import ceil, floor
 import vanilla
@@ -514,9 +514,9 @@ class DefconAppKitGlyphCellNSView(NSView):
                         (left, t), ((0, 0), (cellWidth, cellHeight)), NSCompositeSourceOver, 1.0
                     )
                 if selection.containsIndex_(index):
-                    self.selectionColor.set()
                     r = ((left, t), (cellWidth, cellHeight))
-                    NSRectFillUsingOperation(r, NSCompositePlusDarker)
+                    self.selectionColor.set()
+                    NSRectFillUsingOperation(r, NSCompositeMultiply)
 
             index += 1
             left += cellWidth
