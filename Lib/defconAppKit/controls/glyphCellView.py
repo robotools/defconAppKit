@@ -241,21 +241,12 @@ class DefconAppKitGlyphCellNSView(NSView):
     def getCellSize(self):
         return self._cellWidth, self._cellHeight
 
-    def visibleCellRect(self):
-        rect = self.visibleRect()
-        cellHeight = self._cellHeight
-        visibleStart = int(floor(rect.origin.y / cellHeight))
-        visibleRows = int(ceil(rect.size.height / cellHeight)) + 1
-        rect.origin.y = visibleStart * cellHeight
-        rect.size.height = visibleRows * cellHeight
-        return rect
-
     def getCellRepresentationName(self):
         return self._cellRepresentationName
 
     def setCellRepresentationArguments_(self, kwargs):
         self._cellRepresentationArguments = kwargs
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
 
     def getCellRepresentationArguments(self):
         return dict(self._cellRepresentationArguments)
@@ -347,7 +338,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         repName = self.getCellRepresentationName()
         for glyph in self._subscribedGlyphs:
             glyph.destroyRepresentation(repName, **repArgs)
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
 
     @python_method
     def _glyphNameChanged(self, notification):
@@ -358,14 +349,14 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._glyphNames[index] = newName
         items = self.arrayController.arrangedObjects()
         items[index].renameGlyphName_(newName)
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
 
     @python_method
     def _glyphChanged(self, notification):
         glyph = notification.object
         if glyph.name not in self._glyphNames:
             return
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
     # --------------
     # NSView methods
     # --------------
@@ -480,7 +471,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self.setFrame_(((0, 0), (newWidth, newHeight)))
         self._columnCount = columnCount
         self._rowCount = rowCount
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
 
     def drawRect_(self, rect):
         if self._font is None:
@@ -793,7 +784,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             selection.removeAllIndexes()
             if self._currentSelection is not None and not selection.isEqualToIndexSet_(self._currentSelection):
                 self.arrayController.setSelectionIndexes_(selection)
-                self.setNeedsDisplayInRect_(self.visibleCellRect())
+                self.setNeedsDisplay_(True)
             return
         modifiers = event.modifierFlags()
         shiftDown = modifiers & NSShiftKeyMask
@@ -847,7 +838,7 @@ class DefconAppKitGlyphCellNSView(NSView):
 
         if self._currentSelection is not None and not selection.isEqualToIndexSet_(self._currentSelection):
             self.arrayController.setSelectionIndexes_(selection)
-            self.setNeedsDisplayInRect_(self.visibleCellRect())
+            self.setNeedsDisplay_(True)
 
     # key
     @python_method
@@ -860,7 +851,7 @@ class DefconAppKitGlyphCellNSView(NSView):
     def selectAll_(self, sender):
         selection = NSIndexSet.indexSetWithIndexesInRange_((0, len(self._glyphNames)))
         self.arrayController.setSelectionIndexes_(selection)
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
 
     def keyDown_(self, event):
         # adapted from vanilla.vanillaList.List._keyDown
@@ -983,7 +974,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 selection = NSIndexSet.indexSetWithIndex_(newSelection)
                 self.arrayController.setSelectionIndexes_(selection)
                 self.scrollToCell_(newSelection)
-                self.setNeedsDisplayInRect_(self.visibleCellRect())
+                self.setNeedsDisplay_(True)
 
     @python_method
     def _arrowKeyDown(self, character, haveShiftKey, haveCommandKey):
@@ -1047,7 +1038,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             selection.addIndex_(newSelection)
         self._lastSelectionFound = newSelection
         self.arrayController.setSelectionIndexes_(selection)
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
         self.scrollToCell_(newSelection)
 
     # -------------
@@ -1213,7 +1204,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         if (allowDropOnRow or allowDropBetweenRows) and rowIndex is None:
             dropInformation["rowIndex"] = len(self._glyphNames)
         # redraw
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
         # sometimes the callback will need to be called
         if callCallback:
             dropInformation["data"] = self._unpackPboard(settings, draggingInfo)
@@ -1243,7 +1234,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._dropTargetBetween = None
         self._dropTargetOn = None
         self._dropTargetSelf = False
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
         return None
 
     def prepareForDragOperation_(self, sender):
@@ -1253,7 +1244,7 @@ class DefconAppKitGlyphCellNSView(NSView):
             self._dropTargetBetween = None
             self._dropTargetOn = None
             self._dropTargetSelf = False
-            self.setNeedsDisplayInRect_(self.visibleCellRect())
+            self.setNeedsDisplay_(True)
         return result
 
     def performDragOperation_(self, sender):
@@ -1262,7 +1253,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         self._dropTargetBetween = None
         self._dropTargetOn = None
         self._dropTargetSelf = False
-        self.setNeedsDisplayInRect_(self.visibleCellRect())
+        self.setNeedsDisplay_(True)
         return result
 
 # -------------------------
