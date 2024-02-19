@@ -1,7 +1,7 @@
 import time
 from AppKit import NSColor, NSView, NSBorderlessWindowMask, NSTornOffMenuWindowLevel, NSInsetRect, NSPanel, NSRectFill
 import vanilla
-from objc import python_method
+from objc import python_method, super
 from defconAppKit.tools.roundedRectBezierPath import roundedRectBezierPath
 
 

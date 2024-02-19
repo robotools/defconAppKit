@@ -6,7 +6,7 @@ from AppKit import NSOnOffButton, NSRoundRectBezelStyle, NSDate, NSColor, NSFont
     NSDecimalNumber, NSString, NSInsetRect, NSNumberFormatter, NSPointInRect, NSMaxY, NSNull, NSWarningAlertStyle, \
     NSMutableIndexSet, NSSegmentedCell, NSRectFill, NSLineBreakByTruncatingTail
 import vanilla
-from objc import python_method
+from objc import python_method, super
 from vanilla import dialogs
 from vanilla.vanillaList import VanillaTableViewSubclass
 from ufo2fdk.fontInfoData import getAttrWithFallback, dateStringToTimeValue
