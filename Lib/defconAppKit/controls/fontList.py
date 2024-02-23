@@ -2,7 +2,6 @@ import os
 from AppKit import NSMenuItem, NSImage, NSBezierPath, NSColor, NSCompositeSourceOver, NSGradient, NSNull, \
     NSMutableDictionary, NSMutableParagraphStyle, NSParagraphStyleAttributeName, NSFormatter, \
     NSLineBreakByTruncatingHead, NSActionCell, NSAttributedString
-
 import vanilla
 from defconAppKit.controls.placardScrollView import DefconAppKitPlacardNSScrollView, PlacardPopUpButton
 

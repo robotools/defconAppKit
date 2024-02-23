@@ -3,6 +3,7 @@ import weakref
 from AppKit import NSTextView, NSColor, NSFont, NSMiniControlSize, NSOnState, NSOffState, NSFontAttributeName, \
     NSIntersectsRect, NSRulerView, NSNotificationCenter, NSNotFound, NSFontNameAttribute, NSString, NSTextStorageDidProcessEditingNotification, \
     NSNumberFormatter, NSNumber, NSFocusRingTypeNone, NSUnionRect
+from objc import super
 import vanilla
 from vanilla.vanillaTextEditor import VanillaTextEditorDelegate
 from objc import python_method

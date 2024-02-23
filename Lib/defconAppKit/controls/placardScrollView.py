@@ -1,5 +1,6 @@
 from AppKit import NSColor, NSScrollView, NSRectFill, NSRectFillUsingOperation, NSBezierPath, \
     NSCompositeSourceOver, NSPopUpButtonCell, NSSegmentedCell, NSGradientConvexStrong
+from objc import super
 import vanilla
 import platform
 
