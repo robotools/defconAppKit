@@ -125,14 +125,26 @@ class PlacardSegmentedButton(vanilla.SegmentedButton):
 
 class DefconAppKitPlacardNSPopUpButtonCell(NSPopUpButtonCell):
 
+    def init(self):
+        self = super(DefconAppKitPlacardNSPopUpButtonCell, self).init()
+        self._backgroundColor = None
+        return self
+
+    def setBackgroundColor_(self, color):
+        self._backgroundColor = color
+
     def drawBorderAndBackgroundWithFrame_inView_(self, frame, view):
         # draw background
-        try:
-            gradient = NSGradient.alloc().initWithColors_([placardGradientColor1, placardGradientColor2])
-            gradient.drawInRect_angle_(frame, 90)
-        except NameError:
-            placardGradientColorFallback.set()
+        if self._backgroundColor is not None:
+            self._backgroundColor.set()
             NSRectFill(frame)
+        else:
+            try:
+                gradient = NSGradient.alloc().initWithColors_([placardGradientColor1, placardGradientColor2])
+                gradient.drawInRect_angle_(frame, 90)
+            except NameError:
+                placardGradientColorFallback.set()
+                NSRectFill(frame)
         # draw border
         (x, y), (w, h) = frame
         path = NSBezierPath.bezierPath()
@@ -158,3 +170,6 @@ class PlacardPopUpButton(vanilla.PopUpButton):
         super(PlacardPopUpButton, self).__init__(posSize, items, **kwargs)
         self._nsObject.setBordered_(False)
         self._nsObject.cell().setGradientType_(NSGradientConvexStrong)
+
+    def setBackgroundColor(self, color):
+        self._nsObject.cell().setBackgroundColor_(color)
