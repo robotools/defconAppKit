@@ -2,7 +2,7 @@ import weakref
 from AppKit import NSView, NSGraphicsContext, NSColor, NSAffineTransform, NSMenu, NSPoint, NSRectFill, \
     NSRectFillUsingOperation, NSPointInRect, NSCompositeSourceOver, NSMenuItem
 import vanilla
-from objc import python_method
+from objc import python_method, super
 from defconAppKit.controls.placardScrollView import PlacardScrollView, PlacardPopUpButton, DefconAppKitPlacardNSScrollView
 from defconAppKit.tools import drawing
 
@@ -44,7 +44,7 @@ class DefconAppKitGlyphLineNSView(NSView):
         self._upm = 1000
         self._descender = -250
         self._bufferLeft = self._bufferRight = self._bufferBottom = self._bufferTop = 15
-        
+
         self._cutoffDisplayPointSizes = dict(
             showFontVerticalMetrics=150,
             showGlyphStartPoints=175,
@@ -152,14 +152,14 @@ class DefconAppKitGlyphLineNSView(NSView):
             return self._fallbackDrawingAttributes.get(attr)
         d = self._layerDrawingAttributes.get(layerName, {})
         return d.get(attr)
-    
+
     def setCutoffDisplayPointSizeAttribute_value_(self, attr, value):
         self._cutoffDisplayPointSizes[attr] = value
         self.setNeedsDisplay_(True)
-    
+
     def getCutoffDisplayPointSizeAttribute_(self, attr):
         return self._cutoffDisplayPointSizes.get(attr, None)
-        
+
     # ----------------
     # Frame Management
     # ----------------
