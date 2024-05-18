@@ -206,7 +206,8 @@ class InteractivePopUpWindow(vanilla.Window):
             return
         self.close()
 
-    def setBackgroundColor(self, color):
+    @python_method
+    def setContentBackgroundColor(self, color):
         self._window.contentView().setBackgroundColor_(color)
 
     # -----------------------------
