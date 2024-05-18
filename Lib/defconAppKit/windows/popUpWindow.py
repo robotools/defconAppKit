@@ -175,6 +175,10 @@ class DefconAppKitInteractivePopUpWindowContentView(NSView):
         self.windowColor.set()
         path.fill()
 
+    def setBackgroundColor_(self, color):
+        self.windowColor = windowColor
+        self.setNeedsDisplay_(True)
+
 
 class InteractivePopUpWindow(vanilla.Window):
 
@@ -201,6 +205,9 @@ class InteractivePopUpWindow(vanilla.Window):
         if self._closing:
             return
         self.close()
+
+    def setBackgroundColor(self, color):
+        self._window.contentView().setBackgroundColor_(color)
 
     # -----------------------------
     # methods requiring fade in/out
