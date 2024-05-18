@@ -176,7 +176,7 @@ class DefconAppKitInteractivePopUpWindowContentView(NSView):
         path.fill()
 
     def setBackgroundColor_(self, color):
-        self.windowColor = windowColor
+        self.windowColor = color
         self.setNeedsDisplay_(True)
 
 
