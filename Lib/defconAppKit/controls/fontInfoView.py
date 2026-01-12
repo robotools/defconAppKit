@@ -846,6 +846,7 @@ class EmbeddingControl(vanilla.Group):
         self.bitmapCheckBox = InfoCheckbox((0, 55, -10, 20), "Allow Only Bitmap Embedding", callback=self._controlCallback)
         self.subsettingCheckBox.enable(False)
         self.bitmapCheckBox.enable(False)
+        self.set(getAttrWithFallback({}, "openTypeOS2Type"))
 
     def _breakCycles(self):
         self._callback = None
@@ -861,14 +862,14 @@ class EmbeddingControl(vanilla.Group):
         self.bitmapCheckBox.enable(enable)
 
     def set(self, values):
-        if 1 in values:
+        if 0 in values:
+            self.basicsPopUp.set(0)
+        elif 1 in values:
             self.basicsPopUp.set(1)
         elif 2 in values:
             self.basicsPopUp.set(2)
         elif 3 in values:
             self.basicsPopUp.set(3)
-        else:
-            self.basicsPopUp.set(0)
         self.subsettingCheckBox.set(8 not in values)
         self.bitmapCheckBox.set(9 in values)
         self._handleEnable()
@@ -876,9 +877,9 @@ class EmbeddingControl(vanilla.Group):
     def get(self):
         values = []
         basicValue = self.basicsPopUp.get()
+        values.append(basicValue)
         if basicValue == 0:
             return values
-        values.append(basicValue)
         if not self.subsettingCheckBox.get():
             values.append(8)
         if self.bitmapCheckBox.get():
